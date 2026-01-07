@@ -1,0 +1,49 @@
+/* 1. Merapatkan bagian logo/header sidebar agar lebih naik ke atas */
+.sidebar-wrapper .sidebar-header {
+    padding: 1rem 1.5rem 0.2rem !important; /* Mengurangi padding vertikal */
+}
+
+/* 2. Menghilangkan margin atas pada menu utama agar langsung menempel ke header */
+.sidebar-menu {
+    margin-top: 0 !important;
+}
+
+/* 3. Merapatkan jarak pada judul kategori (Menu, Master Data, Manajemen) */
+.sidebar-wrapper .sidebar-menu .sidebar-title {
+    margin-top: 0.3rem !important;  /* Mengurangi jarak atas judul */
+    margin-bottom: 0.1rem !important; /* Mengurangi jarak bawah judul */
+    padding: 0 1.5rem !important;
+    font-size: 0.75rem !important;  /* Sedikit lebih kecil agar hemat ruang */
+}
+
+/* 4. Merapatkan jarak vertikal antar item menu agar tidak perlu scroll */
+.sidebar-wrapper .sidebar-menu .sidebar-item {
+    margin-bottom: 2px !important; /* Jarak antar baris dipersempit */
+}
+
+/* 5. Mengecilkan tinggi setiap tombol menu (Sidebar Link) */
+.sidebar-wrapper .sidebar-menu .sidebar-link {
+    padding: 0.4rem 0.8rem !important; /* Padding vertikal dikurangi dari standar 0.7rem */
+    line-height: 1.2 !important;
+}
+
+/* 6. Merapatkan item di dalam submenu (Jadwal) */
+.sidebar-wrapper .sidebar-menu .submenu .submenu-item {
+    padding: 2px 0 !important; /* Menghapus padding besar pada list submenu */
+}
+
+.sidebar-wrapper .sidebar-menu .submenu .submenu-link {
+    padding: 0.3rem 1rem !important; /* Padding vertikal submenu lebih kecil */
+    font-size: 0.8rem !important;
+}
+
+/* 7. Menghilangkan scrollbar secara visual agar tampilan bersih */
+.sidebar-wrapper {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    overflow-y: hidden; /* Mencegah scroll jika konten sudah muat */
+}
+
+.sidebar-wrapper::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}

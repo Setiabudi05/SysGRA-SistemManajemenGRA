@@ -1,0 +1,214 @@
+/*==============================================================
+# 3. ADMIN / DASHBOARD STYLES
+==============================================================*/
+
+/* --- 3.1. Pengaturan Jarak & Layout Global --- */
+.page-heading {
+    margin-top: -20px !important;
+}
+
+.page-title {
+    margin-bottom: 0px !important;
+    padding-bottom: 0px !important;
+}
+
+hr {
+    margin-top: 5px !important;
+    margin-bottom: 10px !important;
+    opacity: 0.1;
+}
+
+.section {
+    margin-top: -10px !important;
+}
+
+.card-body {
+    padding-top: 10px !important;
+}
+
+/* --- 3.2. Form & Komponen Input --- */
+.form-label, .form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.mandatory {
+    color: red;
+    margin-left: 2px;
+}
+
+.card-header-custom {
+    border-bottom: 1px solid #f0f1f5;
+    padding: 1.5rem;
+}
+
+.form-control[readonly] {
+    background-color: transparent !important;
+    color: inherit;
+    opacity: 1;
+    cursor: default;
+}
+
+/* --- 3.3. Filter & Dropdown --- */
+.filter-label, .filter-group, .filter-wrapper {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.form-select-sm {
+    min-width: 125px;
+}
+
+/* --- 3.4. Tabel & Konten Gambar --- */
+.img-container, .img-table {
+    width: 80px;
+    border-radius: 4px;
+    object-fit: cover;
+    display: inline-block;
+}
+
+.img-container {
+    height: 80px;
+    overflow: hidden;
+    border: 1px solid #ddd;
+}
+
+.img-table {
+    height: 50px;
+}
+
+.img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.table td {
+    max-width: 300px;
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+.table td:last-child {
+    white-space: nowrap !important;
+}
+
+/* --- 3.5. SweetAlert2 & Parsley Validation --- */
+.swal-custom-popup, .swal2-popup {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 450px;
+    font-size: 0.9rem !important;
+}
+
+.swal2-title {
+    color: #333;
+    font-weight: 700;
+}
+
+.swal2-icon.swal2-warning {
+    border-color: #c85716 !important;
+    color: #c85716 !important;
+}
+
+/* Validasi Parsley */
+.parsley-errors-list {
+    list-style: none;
+    padding-left: 0;
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+.parsley-error {
+    border-color: #dc3545 !important;
+}
+
+/* --- 3.6. Tombol & Warna Tema (SysGRA) --- */
+.btn.btn-primary.btn-sm {
+    background-color: #c85716 !important;
+    border-color: #c85716 !important;
+    font-size: 14px;
+}
+
+/* --- 3.7. Teks, Kontras & Dark Mode --- */
+.text-section-header {
+    color: #444;
+    font-weight: 700;
+}
+
+.text-section-muted {
+    color: #6c757d;
+}
+
+.alert-light-primary p {
+    color: #555;
+}
+
+/* OTOMATIS BERUBAH SAAT DARK MODE AKTIF */
+body.theme-dark .text-section-header,
+body.theme-dark .alert-light-primary p {
+    color: #ffffff !important;
+}
+
+body.theme-dark .text-section-muted {
+    color: #b0b0b0 !important;
+}
+
+body.theme-dark .alert-light-primary h5 {
+    color: #435ebe !important;
+}
+
+body.theme-dark .swal2-title {
+    color: #eee;
+}
+ .form-label { font-size: 0.9rem; }
+ 
+ /* --- 3.8. Statistik Keuangan (Pembukuan) --- */
+.stats-icon {
+    width: 3.2rem;
+    height: 3.2rem;
+    border-radius: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* Mencegah icon menjadi lonjong/gepeng */
+    transition: all 0.3s ease;
+}
+
+.stats-icon i {
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Memastikan teks nominal tidak merusak tata letak kartu */
+.card-stat h5 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.5px;
+}
+
+/* Border tambahan untuk konsistensi kartu statistik */
+.border-4 {
+    border-width: 0 0 0 4px !important;
+}
+
+/* Penyesuaian jarak responsif untuk kartu statistik */
+@media (max-width: 768px) {
+    .stats-icon {
+        width: 2.8rem;
+        height: 2.8rem;
+    }
+    .stats-icon i {
+        font-size: 1.2rem;
+    }
+}

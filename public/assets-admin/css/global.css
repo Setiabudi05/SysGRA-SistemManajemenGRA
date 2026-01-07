@@ -1,0 +1,142 @@
+/*==============================================================
+# 1. BASE VARIABLES & GLOBAL STYLING
+==============================================================*/
+
+/* Fonts */
+:root {
+    --default-font: "Roboto", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --heading-font: "Lato", sans-serif;
+    --nav-font: "Montserrat", sans-serif;
+}
+
+/* Global Colors */
+:root {
+    --background-color: #ffffff;
+    --default-color: #1a1715;
+    --heading-color: #110a06;
+    --accent-color: #c85716; /* Warna utama (Emas/Cokelat Oranye) */
+    --surface-color: #ffffff;
+    --contrast-color: #ffffff;
+}
+
+/* Nav Menu Colors (Defaults) */
+:root {
+    --nav-color: rgba(255, 255, 255, 0.8);
+    --nav-hover-color: #c85716;
+    --nav-mobile-background-color: #ffffff;
+    --nav-dropdown-color: #1a1715;
+    --nav-dropdown-hover-color: #c85716;
+}
+
+/* Color Presets */
+.light-background {
+    --background-color: #fffaf2;
+    --surface-color: #ffffff;
+}
+
+.dark-background {
+    --background-color: #000000;
+    --default-color: #ffffff;
+    --heading-color: #ffffff;
+    --surface-color: #252626;
+    --contrast-color: #ffffff;
+}
+
+/* Smooth scroll */
+:root {
+    scroll-behavior: smooth;
+}
+
+/*--------------------------------------------------------------
+# General Styling & Shared Classes
+--------------------------------------------------------------*/
+body {
+    color: var(--default-color);
+    background-color: var(--background-color);
+    font-family: var(--default-font);
+}
+
+a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+a:hover {
+    color: color-mix(in srgb, var(--accent-color), transparent 25%);
+    text-decoration: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--heading-color);
+    font-family: var(--heading-font);
+}
+
+/* PHP Email Form Messages (Hanya styling dasar form/notifikasi) */
+.php-email-form .error-message,
+.php-email-form .sent-message,
+.php-email-form .loading {
+    display: none;
+    padding: 15px;
+    margin-bottom: 24px;
+    font-weight: 600;
+}
+
+.php-email-form .error-message {
+    background: #df1529;
+    color: #ffffff;
+    text-align: left;
+}
+
+.php-email-form .sent-message {
+    color: #ffffff;
+    background: #059652;
+    text-align: center;
+}
+
+.php-email-form .loading {
+    background: var(--surface-color);
+    text-align: center;
+}
+
+.php-email-form .loading:before {
+    content: "";
+    display: inline-block;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    margin: 0 10px -6px 0;
+    border: 3px solid var(--accent-color);
+    border-top-color: var(--surface-color);
+    animation: php-email-form-loading 1s linear infinite;
+}
+
+@keyframes php-email-form-loading {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+input[type=text],
+input[type=email],
+textarea {
+    color: var(--default-color);
+    background-color: var(--surface-color);
+    font-size: 14px;
+    border-color: color-mix(in srgb, var(--default-color), transparent 80%);
+}
+
+input[type=text]:focus,
+input[type=email]:focus,
+textarea:focus {
+    border-color: var(--accent-color);
+}
+
+input[type=text]::placeholder,
+input[type=email]::placeholder,
+textarea::placeholder {
+    color: color-mix(in srgb, var(--default-color), transparent 70%);
+}
