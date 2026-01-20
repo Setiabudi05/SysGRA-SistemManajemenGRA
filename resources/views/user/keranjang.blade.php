@@ -1,330 +1,150 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="id">
 <head>
-    <meta charset="utf-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    
-    <title>Keranjang Pesanan - Griya Rias Asmara</title>
-    
-    <meta name="description" content="Jasa makeup, dekorasi, dan katering pernikahan profesional.">
-    <meta name="keywords" content="wedding organizer, rias pengantin, catering pernikahan, dekorasi pernikahan">
-
-    <link href="{{ asset('assets-admin/img/logo.png') }}" rel="icon">
-    <link href="{{ asset('assets-admin/img/logo.png') }}" rel="apple-touch-icon">
-
-    <link href="https://fonts.googleapis.com" rel="preconnect">
-    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
-        rel="stylesheet">
-
-    <link href="{{ asset('assets-admin/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets-admin/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets-admin/vendor/aos/aos.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets-admin/vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets-admin/vendor/glightbox/css/glightbox.min.css') }}" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <link href="{{ asset('assets-admin/css/main.css') }}" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SysGRA | Keranjang Booking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ asset('assets-user/css/custom-style.css') }}" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
+<body>
 
-<body class="index-page" data-cart-count="{{ count(Session::get('cart', [])) }}">
-
-    <header id="header" class="header fixed-top">
-        <div class="container-fluid container-xl position-relative">
-            <div class="top-row d-flex align-items-center justify-content-between">
-                <a href="{{ url('/') }}" class="logo d-flex align-items-center">
-                    <img src="{{ asset('assets-admin/img/logo.png') }}" alt="Logo Griya Rias Asmara" class="logo-img">
-                    <h1 class="sitename">GriyaRiasAsmara</h1>
-                </a>
-                <div class="d-flex align-items-center">
-                    
-                    <a href="{{ url('/keranjang-pesanan') }}" class="cart-icon position-relative">
-                        <i class="bi bi-cart"></i>
-                        <span id="cart-badge" 
-                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
-                              style="display: none; font-size: 10px; padding: 4px 6px;">
-                            0
-                        </span>
+{{-- HEADER / NAVBAR --}}
+<header class="header fixed-top py-3" style="background: rgba(0,0,0,0.9); border-bottom: 1px solid rgba(255,255,255,0.1);">
+    <div class="container d-flex align-items-center justify-content-between">
+        <a href="{{ url('/') }}" class="text-decoration-none">
+            <h2 class="m-0 text-white fw-bold">GriyaRiasAsmara</h2>
+        </a>
+        <div class="header-actions d-flex align-items-center">
+            @auth
+                <div class="dropdown">
+                    <a class="btn btn-outline-light rounded-pill px-3 py-1 dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle me-1"></i> Akun Saya
                     </a>
-                    
-                    <div class="social-links">
-                        <a href="#" class="facebook"><i class="bi bi-facebook"></i></a>
-                        <a href="#" class="twitter"><i class="bi bi-twitter"></i></a>
-                        <a href="#" class="instagram"><i class="bi bi-instagram"></i></a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="nav-wrap">
-            <div class="container d-flex justify-content-center position-relative">
-                <nav id="navmenu" class="navmenu">
-                    <ul>
-                        <li><a href="{{ url('/user/index') }}#hero">Home</a></li>
-                        <li><a href="{{ url('/user/index') }}#about">Tentang Kami</a></li>
-                        <li><a href="{{ url('/user/index') }}#features">Layanan Kami</a></li>
-                        <li><a href="{{ url('/user/index') }}#gallery">Galeri</a></li>
-                        <li><a href="{{ url('/user/index') }}#pricing">Paket</a></li>
-                        <li><a href="{{ url('/user/index') }}#portfolio-unggulan">Portofolio</a></li>
-                        <li><a href="{{ url('/user/index') }}#vendor-partners">Mitra Vendor</a></li>
-                        <li><a href="{{ url('/user/index') }}#testimonials">Testimoni</a></li>
-                        <li><a href="{{ url('/user/index') }}#contact">Kontak</a></li>
-                    </ul>
-                    <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
-                </nav>
-            </div>
-        </div>
-    </header>
-
-    <main class="main">
-
-        <section id="keranjang" class="keranjang section" style="padding-top: 150px;">
-            <div class="container" data-aos="fade-up">
-
-                <div class="container section-title">
-                    <span class="subtitle">Checkout</span>
-                    <h2>Keranjang Pesanan Anda</h2>
-                    <p>Periksa kembali pesanan Anda sebelum melanjutkan ke pembayaran DP.</p>
-                </div>
-
-                @if(session('error'))
-                    <div class="alert alert-danger">
-                        {{ session('error') }}
-                    </div>
-                @endif
-                @if(session('success'))
-                    <div class="alert alert-success">
-                        {{ session('success') }}
-                    </div>
-                @endif
-
-                @forelse($cartItems as $item)
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h4 class="card-title">{{ $item['package_name'] }}</h4>
-                            <h5 class="text-danger mt-2 mb-3">{{ $item['package_price'] }}</h5>
-                            
-                            <hr>
-                            
-                            <h5>Data Pemesan:</h5>
-                            <p class="mb-1"><strong>Pemesan:</strong> {{ $item['customer_name'] }}</p>
-                            <p class="mb-1"><strong>No. Telp/WA:</strong> {{ $item['whatsapp_number'] }}</p>
-
-                            {{-- Data Opsional Pemesan (Hanya tampil jika diisi) --}}
-                            @if(!empty($item['bride_groom_name']))
-                                <p class="mb-1"><strong>Nama Pengantin:</strong> {{ $item['bride_groom_name'] }}</p>
-                            @endif
-                            @if(!empty($item['parent_name']))
-                                <p class="mb-1"><strong>Nama Orang Tua:</strong> {{ $item['parent_name'] }}</p>
-                            @endif
-                            @if(!empty($item['facebook_name']))
-                                <p class="mb-1"><strong>Facebook:</strong> {{ $item['facebook_name'] }}</p>
-                            @endif
-                            @if(!empty($item['instagram_name']))
-                                <p class="mb-1"><strong>Instagram:</strong> {{ $item['instagram_name'] }}</p>
-                            @endif
-
-                            <h5 class="mt-4">Detail Acara:</h5>
-                            <p class="mb-1"><strong>Tanggal Acara:</strong> {{ \Carbon\Carbon::parse($item['event_date'])->format('d F Y') }}</p>
-                            <p class="mb-1"><strong>Alamat Acara:</strong> {{ $item['event_address'] }}</p>
-                            <p class="mb-1"><strong>Durasi Acara:</strong> {{ $item['event_duration'] }}</p>
-                            
-                            {{-- Data Opsional Catatan (Hanya tampil jika diisi) --}}
-                            
-                            @if(!empty($item['add_ons']))
-                                <h5 class="mt-4">Paket Tambahan (Add-Ons):</h5>
-                                <p class="mb-1 p-2 bg-light rounded" style="white-space: pre-wrap;">{{ $item['add_ons'] }}</p>
-                            @endif
-
-                            @if(!empty($item['gown_notes']))
-                                <h5 class="mt-4">Catatan Kebaya/Gown:</h5>
-                                <p class="mb-1 p-2 bg-light rounded" style="white-space: pre-wrap;">{{ $item['gown_notes'] }}</p>
-                            @endif
-
-                            @if(!empty($item['other_notes']))
-                                <h5 class="mt-4">Catatan Lainnya:</h5>
-                                <p class="mb-1 p-2 bg-light rounded" style="white-space: pre-wrap;">{{ $item['other_notes'] }}</p>
-                            @endif
-
-                        </div>
-                    </div>
-                @empty
-                    <div class="alert alert-info">
-                        Keranjang Anda masih kosong.
-                    </div>
-                @endforelse
-
-
-                @if(!empty($cartItems))
-                    <hr>
-                    <h3>Total Pesanan: Rp {{ number_format($totalPrice, 0, ',', '.') }}</h3>
-                    
-                    <div class="card mt-4">
-                        <div class="card-body">
-                            <h4>Lanjutkan Pembayaran</h4>
-                            <p>Silakan lakukan pembayaran DP (minimal 50%) untuk mengamankan tanggal Anda.</p>
-                            
-                            <form action="{{ route('checkout.process') }}" method="POST">
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li><a class="dropdown-item" href="{{ route('profile') }}">Profil</a></li>
+                        <li><a class="dropdown-item" href="{{ url('/pesanan-saya') }}">Pesanan Saya</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <div class="mb-3">
-                                    <label for="down_payment" class="form-label">Masukkan Nominal DP</label>
-                                    
-                                    <input type="number" name="down_payment" class="form-control @error('down_payment') is-invalid @enderror" 
-                                           placeholder="Contoh: {{ $minDp }}" required>
-                                           
-                                    @error('down_payment')
-                                        <div class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-                                
-                                <button type="submit" class="btn btn-primary" style="background-color: #c85716; border-color: #c85716;">
-                                    Konfirmasi & Lanjutkan Pembayaran
-                                </button>
+                                <button type="submit" class="dropdown-item text-danger border-0 bg-transparent">Logout</button>
                             </form>
-                        </div>
-                    </div>
-                @endif
-            </div>
-        </section>
-        </main>
+                        </li>
+                    </ul>
+                </div>
+            @endauth
+        </div>
+    </div>
+</header>
 
-    <footer id="footer" class="footer dark-background">
-        <div class="container">
-            <div class="row gy-5">
-                <div class="col-lg-4">
-                    <div class="footer-content">
-                        <a href="{{ url('/') }}" class="logo d-flex align-items-center mb-4">
-                            <span class="sitename">GriyaRiasAsmara</span>
-                        </a>
-                        <p class="mb-4">Spesialisasi kami dalam mewujudkan pernikahan impian Anda, mulai dari riasan
-                            flawless,
-                            busana adat & modern, hingga dekorasi pelaminan yang elegan.</p>
-                        <div class="newsletter-form">
-                            <h5>Dapatkan Inspirasi Terbaru</h5>
-                            <form action="" method="post">
-                                <div class="input-group">
-                                    <input type="email" name="email" class="form-control"
-                                        placeholder="Masukkan email Anda" required="">
-                                    <button type="submit" class="btn-subscribe">
-                                        <i class="bi bi-send"></i>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+<main style="margin-top: 130px; padding-bottom: 80px;">
+    <div class="container">
+        
+        {{-- TOMBOL KEMBALI --}}
+        <div class="mb-4">
+            <a href="{{ url('/') }}" class="back-link">
+                <i class="bi bi-arrow-left me-2 text-danger"></i> Kembali Berbelanja
+            </a>
+        </div>
+
+        <div class="row g-4">
+            {{-- Bagian Kiri: List Pesanan --}}
+            <div class="col-lg-8">
+                <div class="card card-custom h-100">
+                    <div class="card-header bg-white py-3 border-0 rounded-top-4">
+                        <h5 class="m-0 fw-bold text-dark-custom">
+                            <i class="bi bi-cart-check-fill text-danger me-2"></i> Konfirmasi Booking
+                        </h5>
                     </div>
-                </div>
-                <div class="col-lg-2 col-6">
-                    <div class="footer-links">
-                        <h4>Tentang Kami</h4>
-                        <ul>
-                            <li><a href="{{ url('/user/index') }}#about"><i class="bi bi-chevron-right"></i> Filosofi Kami</a></li>
-                            <li><a href="#contact"><i class="bi bi-chevron-right"></i> Hubungi Kami</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-6">
-                    <div class="footer-links">
-                        <h4>Layanan Utama</h4>
-                        <ul>
-                            <li><a href="{{ url('/user/index') }}#features"><i class="bi bi-chevron-right"></i> Rias Pengantin</a></li>
-                            <li><a href="{{ url('/user/index') }}#gallery"><i class="bi bi-chevron-right"></i> Dekorasi</a></li>
-                            <li><a href="{{ url('/user/index') }}#pricing"><i class="bi bi-chevron-right"></i> Paket Lengkap</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="footer-contact">
-                        <h4>Lokasi & Kontak</h4>
-                        <div class="contact-item">
-                            <div class="contact-icon"><i class="bi bi-geo-alt"></i></div>
-                            <div class="contact-info">
-                                <p>Dukuh Kendaga, RT.02/RW.11, Kendaga, Larangan, Kec. Larangan, Kabupaten Brebes, Jawa
-                                    Tengah 52262</p>
+                    <div class="card-body p-4 text-dark-custom">
+                        @if($cartItems->count() > 0)
+                            <div class="table-responsive">
+                                <table class="table align-middle">
+                                    <thead class="text-muted small text-uppercase">
+                                        <tr>
+                                            <th>Paket Pengantin</th>
+                                            <th>Tanggal</th>
+                                            <th>Harga</th>
+                                            <th class="text-center">Hapus</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-dark-custom">
+                                        @foreach($cartItems as $index => $item)
+                                        <tr>
+                                            <td>
+                                                <h6 class="m-0 fw-bold">{{ $item['package_name'] }}</h6>
+                                                <small class="text-muted">SysGRA Organizer</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border fw-normal">
+                                                    {{ $item['event_date'] }}
+                                                </span>
+                                            </td>
+                                            <td class="fw-bold">{{ $item['package_price'] }}</td>
+                                            <td class="text-center">
+                                                <form action="{{ route('cart.remove', $index) }}" method="POST">
+                                                    @csrf @method('DELETE')
+                                                    <button type="submit" class="btn btn-link text-danger p-0">
+                                                        <i class="bi bi-trash3"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
+                        @else
+                            <div class="text-center py-5">
+                                <i class="bi bi-cart-x text-muted" style="font-size: 4rem; opacity: 0.3;"></i>
+                                <h4 class="fw-bold mt-3">Keranjang Kosong</h4>
+                                <p class="text-muted">Yuk, pilih paket pernikahan impianmu!</p>
+                                <a href="{{ url('/') }}#pricing" class="btn btn-danger rounded-pill px-5 shadow-sm">Lihat Paket</a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            {{-- Bagian Kanan: Summary --}}
+            <div class="col-lg-4">
+                <div class="card card-custom p-2">
+                    <div class="card-body text-dark-custom">
+                        <h5 class="fw-bold mb-4 border-bottom pb-3">Ringkasan Biaya</h5>
+                        
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Total Harga Paket</span>
+                            <span class="fw-bold">Rp {{ number_format($totalPrice, 0, ',', '.') }}</span>
                         </div>
-                        <div class="contact-item">
-                            <div class="contact-icon"><i class="bi bi-telephone"></i></div>
-                            <div class="contact-info"><p>085866659930</p></div>
+                        
+                        <div class="d-flex justify-content-between mb-4">
+                            <span class="text-muted text-danger">Minimal DP (50%)</span>
+                            <span class="h5 fw-bold text-danger">Rp {{ number_format($minDp, 0, ',', '.') }}</span>
                         </div>
-                        <div class="contact-item">
-                            <div class="contact-icon"><i class="bi bi-envelope"></i></div>
-                            <div class="contact-info"><p>info@griyariasasmara.com</p></div>
+
+                        <div class="alert alert-secondary border-0 small rounded-4 mb-4" style="background-color: #f8f9fa;">
+                            <i class="bi bi-info-circle-fill me-2 text-primary"></i>
+                            Pembayaran dilakukan via **Transfer Bank**. Anda wajib mengunggah bukti bayar setelah ini.
                         </div>
-                        <div class="social-links">
-                            <a href="#"><i class="bi bi-facebook"></i></a>
-                            <a href="#"><i class="bi bi-instagram"></i></a>
-                        </div>
+
+                        <form action="{{ route('checkout.process') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="btn btn-checkout w-100 shadow-sm" {{ $cartItems->count() == 0 ? 'disabled' : '' }}>
+                                Lanjutkan Pembayaran <i class="bi bi-arrow-right-short fs-5 ms-1"></i>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="footer-bottom">
-            <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-lg-6">
-                        <div class="copyright">
-                            <p>© <span>Hak Cipta</span> <strong class="px-1 sitename">GriyaRiasAsmara</strong>
-                                <span>Semua Hak Dilindungi</span>
-                            </p>
-                        </div>
-                    </div>
-                    <div class_lg="col-lg-6">
-                        <div class="footer-bottom-links">
-                            <a href="#">Kebijakan Privasi</a>
-                            <a href="#">Ketentuan Layanan</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
+    </div>
+</main>
 
-    <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i
-            class="bi bi-arrow-up-short"></i></a>
-    <div id="preloader"></div>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="{{ asset('assets-admin/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('assets-admin/vendor/php-email-form/validate.js') }}"></script>
-    <script src="{{ asset('assets-admin/vendor/aos/aos.js') }}"></script>
-    <script src="{{ asset('assets-admin/vendor/purecounter/purecounter_vanilla.js') }}"></script>
-    <script src="{{ asset('assets-admin/vendor/swiper/swiper-bundle.min.js') }}"></script>
-    <script src="{{ asset('assets-admin/vendor/imagesloaded/imagesloaded.pkgd.min.js') }}"></script>
-    <script src="{{ asset('assets-admin/vendor/isotope-layout/isotope.pkgd.min.js') }}"></script>
-    <script src="{{ asset('assets-admin/vendor/glightbox/js/glightbox.min.js') }}"></script>
-    <script src="{{ asset('assets-admin/js/main.js') }}"></script>
-
-    {{-- 
-    =========================================================
-    INI ADALAH BAGIAN SCRIPT YANG DIPERBAIKI
-    =========================================================
-    --}}
-    <script>
-        $(document).ready(function() {
-            
-            function updateCartBadgeOnLoad() {
-                
-                // 1. Baca jumlah dari 'data-cart-count' di tag <body>
-                let cartCount = parseInt($('body').attr('data-cart-count')) || 0;
-                
-                // 2. Tampilkan/sembunyikan badge berdasarkan jumlah
-                if (cartCount > 0) {
-                    $('#cart-badge')
-                        .text(cartCount)
-                        .show();
-                } else {
-                    $('#cart-badge').hide();
-                }
-            }
-
-            // Panggil fungsi saat halaman siap
-            // Ini adalah perbaikannya (dipindahkan ke dalam 'document.ready')
-            updateCartBadgeOnLoad();
-
-        });
-    </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

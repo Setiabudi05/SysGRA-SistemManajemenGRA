@@ -75,8 +75,8 @@
                 processing: true,
                 serverSide: true,
                 ajax: "{{ route('admin.dekorasi.data') }}",
-                lengthMenu: [[5, 10, 20, 30], [5, 10, 20, 30]],
-                pageLength: 5,
+                lengthMenu: [[3, 5, 10, 20, 30], [3, 5, 10, 20, 30]],
+                pageLength: 3,
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
                     {

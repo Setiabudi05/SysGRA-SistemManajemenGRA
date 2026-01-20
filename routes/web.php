@@ -5,8 +5,6 @@ use Illuminate\Support\Facades\Auth;
 
 // --- A. AUTHENTICATION CONTROLLERS ---
 use App\Http\Controllers\Auth\SocialiteController;
-// Pastikan controller di bawah ini ada jika Anda menggunakan sistem login dari proyek lama
-// Jika menggunakan Laravel Breeze, biasanya sudah dihandle oleh auth.php
 
 // --- B. ADMIN CONTROLLERS ---
 use App\Http\Controllers\Admin\DashboardController;
@@ -28,6 +26,7 @@ use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\BookingController as UserBookingController;
 use App\Http\Controllers\User\CheckoutController;
 use App\Http\Controllers\User\UserProfileController;
+use App\Http\Controllers\User\OrderController; // <-- Tambahan: Untuk fitur Pesanan Saya
 
 /*
 |--------------------------------------------------------------------------
@@ -38,11 +37,9 @@ require __DIR__ . '/auth.php';
 
 // RUTE GOOGLE LOGIN (Socialite)
 Route::middleware('guest')->group(function () {
-    // Mengarahkan ke Google
     Route::get('auth/google', [SocialiteController::class, 'redirectToProvider'])
         ->name('socialite.google.redirect');
 
-    // Callback dari Google
     Route::get('auth/google/callback', [SocialiteController::class, 'handleProviderCallback'])
         ->name('socialite.google.callback');
 });
@@ -68,6 +65,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile/update', [UserProfileController::class, 'update'])->name('profile.update');
     Route::get('/keranjang-pesanan', [CartController::class, 'index'])->name('cart.index');
     Route::post('/checkout', [CheckoutController::class, 'process'])->name('checkout.process');
+
+    // --- RUTE TAMBAHAN: PESANAN SAYA ---
+    Route::get('/pesanan-saya', [OrderController::class, 'index'])->name('pesanan.index');
+    Route::post('/pesanan/upload-bukti/{id}', [OrderController::class, 'uploadBukti'])->name('pesanan.upload');
 });
 
 /*
@@ -184,7 +185,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
         // --- MANAGEMENT PESANAN (BOOKING) ---
         Route::prefix('booking')->name('booking.')->group(function () {
-            Route::get('/', [BookingController::class, 'index'])->name('index'); // admin.booking.index
+            Route::get('/', [BookingController::class, 'index'])->name('index');
             Route::get('/data', [BookingController::class, 'data'])->name('data');
             Route::get('/create', [BookingController::class, 'create'])->name('create');
             Route::post('/store', [BookingController::class, 'store'])->name('store');
@@ -192,14 +193,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::put('/{id}/status', [BookingController::class, 'updateStatus'])->name('updateStatus');
             Route::delete('/{id}', [BookingController::class, 'destroy'])->name('destroy');
         });
-        // --- MANAGEMENT PEMBAYARAN (PISAHKAN DARI BOOKING) ---
-        Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
-            Route::get('/', [PembayaranController::class, 'index'])->name('index'); // admin.pembayaran.index
-            Route::get('/data', [PembayaranController::class, 'data'])->name('data'); // admin.pembayaran.data
-            Route::put('/{id}/status', [PembayaranController::class, 'updateStatus'])->name('status'); // admin.pembayaran.status
 
-            // Perbaikan Baris Ini (Cukup .nota)
-            Route::get('/{id}/nota', [PembayaranController::class, 'cetakNota'])->name('nota'); // admin.pembayaran.nota
+        // --- MANAGEMENT PEMBAYARAN ---
+        Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
+            Route::get('/', [PembayaranController::class, 'index'])->name('index');
+            Route::get('/data', [PembayaranController::class, 'data'])->name('data');
+            Route::put('/{id}/status', [PembayaranController::class, 'updateStatus'])->name('status');
+            Route::get('/{id}/nota', [PembayaranController::class, 'cetakNota'])->name('nota');
         });
     });
 });

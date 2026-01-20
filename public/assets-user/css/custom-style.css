@@ -1,0 +1,179 @@
+/* public/assets-user/css/custom-style.css */
+
+/* --- 1. SETTING DASAR & LAYOUT --- */
+body {
+    background-color: #121212 !important; /* Hitam elegan agar konten putih melayang */
+    font-family: 'Inter', sans-serif;
+}
+
+.top-row {
+    padding: 12px 0;
+    min-height: 70px;
+}
+
+/* --- 2. DROPDOWN AKUN SAYA & NAVIGASI --- */
+.dropdown-profile .btn-account {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 7px 18px;
+    border-radius: 50px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    transition: 0.3s;
+    text-decoration: none;
+}
+
+.dropdown-profile .btn-account:hover {
+    background: #e84545;
+    border-color: #e84545;
+}
+
+.dropdown-toggle::after {
+    display: none; /* Menghilangkan panah default agar bersih */
+}
+
+.dropdown-menu {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.6);
+    background-color: #212529; /* Tema gelap elegan */
+    padding: 10px;
+    margin-top: 12px !important;
+}
+
+.dropdown-item {
+    color: #ffffff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    transition: 0.2s;
+}
+
+.dropdown-item i {
+    font-size: 18px;
+    margin-right: 12px;
+}
+
+.dropdown-item:hover {
+    background-color: #e84545;
+    color: white;
+}
+
+.dropdown-item.text-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* --- 3. IKON KERANJANG & BADGE --- */
+.cart-link {
+    color: #ffffff;
+    font-size: 24px;
+    margin-left: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.cart-link:hover {
+    color: #e84545;
+}
+
+#cart-badge {
+    font-size: 10px;
+    padding: 4px 6px;
+    font-weight: bold;
+}
+
+/* Navigasi Menu Bawah */
+.nav-wrap {
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.navmenu ul {
+    gap: 10px;
+}
+
+.navmenu a {
+    font-size: 13px !important;
+}
+
+/* --- 4. STYLING HALAMAN KERANJANG (CART) --- */
+.back-link {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 14px;
+    transition: 0.3s;
+    opacity: 0.8;
+}
+
+.back-link:hover {
+    opacity: 1;
+    color: #e84545;
+}
+
+/* Card Keranjang Putih Melayang */
+.card-custom {
+    background-color: #ffffff;
+    border: none;
+    border-radius: 20px !important;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Efek bayangan melayang */
+    transition: transform 0.3s ease;
+}
+
+.card-header-custom {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #eee !important;
+    padding: 20px 25px !important;
+}
+
+/* Penyelaras Tabel agar Teks Jelas */
+.table thead th {
+    background-color: #f8f9fa;
+    color: #888;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 15px;
+    border-top: none;
+}
+
+.table tbody td {
+    padding: 20px 15px;
+    color: #333 !important; /* Teks tabel dipaksa gelap agar terbaca jelas */
+}
+
+/* --- 5. TOMBOL AKSI --- */
+.btn-checkout {
+    background: linear-gradient(45deg, #e84545, #ff6b6b); /* Gradien merah modern */
+    border: none;
+    color: white;
+    padding: 15px;
+    font-weight: 700;
+    transition: 0.3s;
+    border-radius: 50px;
+}
+
+.btn-checkout:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(232, 69, 69, 0.4);
+    color: white;
+}
+
+.btn-danger {
+    background-color: #e84545;
+    border: none;
+}
+
+.btn-danger:hover {
+    background-color: #d43d3d;
+}
+
+/* Helper text kontras */
+.text-dark-custom {
+    color: #333 !important;
+}
