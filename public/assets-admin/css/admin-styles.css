@@ -27,7 +27,8 @@ hr {
 }
 
 /* --- 3.2. Form & Komponen Input --- */
-.form-label, .form-group label {
+.form-label,
+.form-group label {
     font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -54,7 +55,9 @@ hr {
 }
 
 /* --- 3.3. Filter & Dropdown --- */
-.filter-label, .filter-group, .filter-wrapper {
+.filter-label,
+.filter-group,
+.filter-wrapper {
     font-size: 0.85rem;
     font-weight: 600;
 }
@@ -64,7 +67,8 @@ hr {
 }
 
 /* --- 3.4. Tabel & Konten Gambar --- */
-.img-container, .img-table {
+.img-container,
+.img-table {
     width: 80px;
     border-radius: 4px;
     object-fit: cover;
@@ -98,7 +102,8 @@ hr {
 }
 
 /* --- 3.5. SweetAlert2 & Parsley Validation --- */
-.swal-custom-popup, .swal2-popup {
+.swal-custom-popup,
+.swal2-popup {
     border-radius: 12px !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     max-width: 450px;
@@ -166,9 +171,12 @@ body.theme-dark .alert-light-primary h5 {
 body.theme-dark .swal2-title {
     color: #eee;
 }
- .form-label { font-size: 0.9rem; }
- 
- /* --- 3.8. Statistik Keuangan (Pembukuan) --- */
+
+.form-label {
+    font-size: 0.9rem;
+}
+
+/* --- 3.8. Statistik Keuangan (Pembukuan) --- */
 .stats-icon {
     width: 3.2rem;
     height: 3.2rem;
@@ -176,7 +184,8 @@ body.theme-dark .swal2-title {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0; /* Mencegah icon menjadi lonjong/gepeng */
+    flex-shrink: 0;
+    /* Mencegah icon menjadi lonjong/gepeng */
     transition: all 0.3s ease;
 }
 
@@ -208,7 +217,56 @@ body.theme-dark .swal2-title {
         width: 2.8rem;
         height: 2.8rem;
     }
+
     .stats-icon i {
         font-size: 1.2rem;
     }
+}
+
+/* Card Container agar lebih simetris */
+.card-summary {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Mengatur jarak Judul agar tidak terlalu mepet ke atas */
+.summary-header {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #adb5bd;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 25px;
+    display: block;
+}
+
+/* Membuat baris data sejajar sempurna */
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.summary-label {
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Container Angka dengan lebar tetap agar simbol Rp lurus */
+.summary-value {
+    display: flex;
+    justify-content: space-between;
+    width: 130px;
+    /* Menyesuaikan agar jarak tidak terlalu jauh */
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.total-row {
+    border-top: 1px solid #f1f3f5;
+    padding-top: 15px;
+    margin-top: 15px;
 }

@@ -9,35 +9,16 @@ class Pembayaran extends Model
 {
     use HasFactory;
 
-    // Nama tabel di database
-    protected $table = 'pembayarans';
-
-    // Kolom yang boleh diisi (Mass Assignment)
     protected $fillable = [
-        'booking_id',
-        'bukti_transfer',
-        'jumlah_bayar',
-        'status_pembayaran',
-        'catatan_admin',
+        'booking_id', 
+        'jumlah_bayar', 
+        'keterangan', 
+        'status'
     ];
 
-    /**
-     * Relasi Balik ke Booking
-     * Satu pembayaran dimiliki oleh satu booking.
-     */
+    // Relasi balik ke Booking
     public function booking()
     {
-        return $this->belongsTo(Booking::class, 'booking_id');
-    }
-
-    /**
-     * Accessor untuk mendapatkan URL foto bukti transfer yang valid
-     */
-    public function getBuktiTransferUrlAttribute()
-    {
-        if ($this->bukti_transfer) {
-            return asset('storage/' . $this->bukti_transfer);
-        }
-        return asset('assets/images/no-image.png'); // Pastikan ada gambar default jika tidak ada foto
+        return $this->belongsTo(Booking::class);
     }
 }

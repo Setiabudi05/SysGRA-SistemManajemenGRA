@@ -11,16 +11,10 @@ use Illuminate\Support\Facades\Route;
 class RouteServiceProvider extends ServiceProvider
 {
     /**
-     * The path to your application's "home" route.
-     *
-     * @var string
+     * Ubah ini agar user yang baru login/register langsung diminta verifikasi
      */
-    // Tujuan redirect untuk pengguna biasa (role: user)
-    public const HOME = '/user'; 
+    public const HOME = '/verify-email'; 
 
-    /**
-     * Define your route model bindings, pattern filters, and other route configuration.
-     */
     public function boot(): void
     {
         RateLimiter::for('api', function (Request $request) {

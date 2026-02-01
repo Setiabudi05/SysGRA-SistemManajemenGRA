@@ -204,22 +204,21 @@ class PembukuanController extends Controller
     // ✅ Cetak Laporan PDF
     public function print(Request $request)
     {
-        $tanggal = $request->input('tanggal', now()->toDateString());
+        // Menggunakan helper Carbon::parse untuk keamanan tambahan
+        try {
+            $tanggal = $request->input('tanggal') ? \Carbon\Carbon::parse($request->input('tanggal'))->toDateString() : now()->toDateString();
+        } catch (\Exception $e) {
+            $tanggal = now()->toDateString();
+        }
 
-        $pemasukan = Pembukuan::whereDate('tanggal', $tanggal)
-            ->where('tipe', 'pemasukan')
-            ->get();
-
-        $pengeluaran = Pembukuan::whereDate('tanggal', $tanggal)
-            ->where('tipe', 'pengeluaran')
-            ->get();
+        $pemasukan = Pembukuan::whereDate('tanggal', $tanggal)->where('tipe', 'pemasukan')->get();
+        $pengeluaran = Pembukuan::whereDate('tanggal', $tanggal)->where('tipe', 'pengeluaran')->get();
 
         $totalPemasukan = $pemasukan->sum('nominal');
         $totalPengeluaran = $pengeluaran->sum('nominal');
         $saldo = $totalPemasukan - $totalPengeluaran;
 
         $pdf = PDF::loadView('admin.pembukuan.print', compact(
-
             'tanggal',
             'pemasukan',
             'pengeluaran',
@@ -228,6 +227,7 @@ class PembukuanController extends Controller
             'saldo'
         ))->setPaper('A4', 'portrait');
 
-        return $pdf->download("Pembukuan-{$tanggal}.pdf");
+        // MENGGUNAKAN STREAM: Agar identik dengan Cetak Nota
+        return $pdf->stream("Laporan_Pembukuan_{$tanggal}.pdf");
     }
 }

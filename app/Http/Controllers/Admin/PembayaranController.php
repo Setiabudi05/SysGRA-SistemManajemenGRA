@@ -4,98 +4,147 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
+use App\Models\Booking;
+use App\Models\Pembukuan;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
-use Barryvdh\DomPDF\Facade\Pdf; // Pastikan ini ada
 
 class PembayaranController extends Controller
 {
+    /**
+     * Menampilkan halaman utama manajemen pembayaran (Tabel Ringkasan)
+     */
     public function index()
     {
         return view('admin.pembayaran.index');
     }
 
+    /**
+     * Menampilkan halaman form tambah cicilan baru (Halaman Terpisah)
+     */
+    public function create()
+    {
+        // Mengambil data pesanan yang belum lunas agar muncul di dropdown
+        $list_booking = Booking::where('status', '!=', 'LUNAS')
+            ->orderBy('bride_groom_name', 'asc')
+            ->get();
+
+        return view('admin.pembayaran.create', compact('list_booking'));
+    }
+
+    /**
+     * Memproses data DataTables untuk ringkasan pembayaran per pengantin
+     */
     public function data()
     {
-        $query = Pembayaran::with('booking')->select('pembayarans.*');
+        // Mengambil data booking yang sudah punya riwayat pembayaran
+        $query = Booking::has('pembayarans')->with('pembayarans')->latest();
 
         return DataTables::of($query)
             ->addIndexColumn()
-            ->addColumn('pengantin', function ($row) {
-                return $row->booking->bride_groom_name ?? '-';
+            ->addColumn('pengantin', fn($row) => $row->bride_groom_name)
+            ->addColumn('total_bayar', function ($row) {
+                return 'Rp ' . number_format($row->total_bayar, 0, ',', '.');
             })
-            ->addColumn('harga', function ($row) {
-                $harga = $row->booking->package_price ?? 0;
-                $cleanHarga = is_numeric($harga) ? $harga : (int) preg_replace('/[^0-9]/', '', $harga);
-                return 'Rp ' . number_format($cleanHarga, 0, ',', '.');
+            ->addColumn('sisa', function ($row) {
+                return 'Rp ' . number_format($row->sisa_tagihan, 0, ',', '.');
             })
-            ->addColumn('total_masuk', function ($row) {
-                return 'Rp ' . number_format($row->booking->total_bayar ?? 0, 0, ',', '.');
-            })
-            ->addColumn('sisa_tagihan', function ($row) {
-                return 'Rp ' . number_format($row->booking->sisa_tagihan ?? 0, 0, ',', '.');
-            })
-            ->editColumn('jumlah_bayar', function ($row) {
-                return 'Rp ' . number_format($row->jumlah_bayar, 0, ',', '.');
-            })
-            ->editColumn('bukti_transfer', function ($row) {
-                if ($row->bukti_transfer) {
-                    $url = asset('storage/' . $row->bukti_transfer);
-                    return '<img src="' . $url . '" width="70" class="rounded img-tf shadow-sm" onclick="viewFoto(\'' . $url . '\')" style="cursor:pointer">';
+            ->addColumn('status', function ($row) {
+                /**
+                 * LOGIKA OTOMATIS STATUS
+                 * Jika Total Bayar >= 2.000.000 maka status CONFIRMED (Hijau)
+                 * Jika kurang dari itu tetap PENDING (Kuning/Biru)
+                 */
+                if ($row->total_bayar >= 2000000) {
+                    return '<span class="badge bg-success">CONFIRMED</span>';
                 }
-                return '<span class="text-muted small">No Image</span>';
+
+                return '<span class="badge bg-warning text-dark">PENDING</span>';
             })
-            ->editColumn('status_pembayaran', function ($row) {
-                $badges = [
-                    'pending' => 'bg-light-warning text-warning',
-                    'valid' => 'bg-light-success text-success',
-                    'invalid' => 'bg-light-danger text-danger',
-                ];
-                $status = $row->status_pembayaran ?? 'pending';
-                $badgeClass = $badges[$status] ?? 'bg-light-secondary text-secondary';
-                return '<span class="badge ' . $badgeClass . ' px-3 py-2 fw-bold">' . strtoupper($status) . '</span>';
+            ->addColumn('action', function ($row) {
+                return '
+            <div class="btn-group gap-2">
+                <a href="' . route('admin.pembayaran.histori', $row->id) . '" class="btn btn-sm btn-info text-white shadow-sm">
+                    <i class="bi bi-eye"></i> Detail
+                </a>
+            </div>';
             })
-            ->addColumn('aksi', function ($row) {
-                $btn = '<div class="btn-group gap-1">';
-                $btn .= '<button onclick="verifikasi(' . $row->id . ', \'valid\')" class="btn btn-sm btn-success shadow-sm" title="Setujui"><i class="bi bi-check-lg"></i></button>';
-                $btn .= '<button onclick="verifikasi(' . $row->id . ', \'invalid\')" class="btn btn-sm btn-danger shadow-sm" title="Tolak"><i class="bi bi-x-lg"></i></button>';
-                $btn .= '<a href="' . route('admin.pembayaran.nota', $row->id) . '" target="_blank" class="btn btn-sm btn-dark shadow-sm" title="Cetak Nota"><i class="bi bi-printer"></i></a>';
-                $btn .= '</div>';
-                return $btn;
-            })
-            ->rawColumns(['bukti_transfer', 'status_pembayaran', 'aksi'])
-            ->orderColumn('pengantin', false)
-            ->orderColumn('harga', false)
-            ->orderColumn('total_masuk', false)
-            ->orderColumn('sisa_tagihan', false)
+            ->rawColumns(['action', 'status'])
             ->make(true);
     }
 
-    public function updateStatus(Request $request, $id)
+    /**
+     * Menyimpan data pembayaran baru dan otomatis masuk ke pembukuan
+     */
+    public function store(Request $request)
     {
-        $pembayaran = Pembayaran::findOrFail($id);
-        $pembayaran->update(['status_pembayaran' => $request->status]);
+        $request->validate([
+            'booking_id' => 'required|exists:bookings,id',
+            'jumlah_bayar' => 'required',
+            'keterangan' => 'required|string|max:255'
+        ]);
 
-        if ($request->status === 'valid' && $pembayaran->booking) {
-            $pembayaran->booking->update(['status' => 'confirmed']);
-        }
+        // Membersihkan format titik dari input rupiah
+        $nominal = (int) preg_replace('/[^0-9]/', '', $request->jumlah_bayar);
 
-        return response()->json(['success' => true, 'message' => 'Status berhasil diperbarui!']);
+        // 1. Simpan ke Tabel Pembayaran
+        $pembayaran = Pembayaran::create([
+            'booking_id' => $request->booking_id,
+            'jumlah_bayar' => $nominal,
+            'keterangan' => $request->keterangan,
+            'status' => 'valid'
+        ]);
+
+        // 2. OTOMATIS: Simpan ke Tabel Pembukuan (Revisi Dosen)
+        Pembukuan::create([
+            'tanggal' => now()->toDateString(),
+            'tipe' => 'pemasukan',
+            'customer' => $pembayaran->booking->bride_groom_name,
+            'keterangan' => 'Cicilan: ' . $request->keterangan,
+            'nominal' => $nominal,
+            'pembayaran_id' => $pembayaran->id
+        ]);
+
+        // Redirect ke halaman HISTORI (agar user langsung lihat hasilnya) dengan pesan sukses
+        return redirect()->route('admin.pembayaran.histori', $request->booking_id)
+            ->with('swal_success', 'Pembayaran & Pembukuan Berhasil Dicatat!');
+    }
+    /**
+     * Melihat rincian riwayat cicilan untuk satu pesanan spesifik
+     */
+    public function histori($id)
+    {
+        $booking = Booking::with('pembayarans')->findOrFail($id);
+        return view('admin.pembayaran.histori', compact('booking'));
     }
 
-    // FUNGSI CETAK (Sama alurnya dengan Jadwal Dekor)
+    /**
+     * Fungsi Cetak Nota PDF Per Transaksi Cicilan
+     */
     public function cetakNota($id)
     {
-        $pembayaran = Pembayaran::with(['booking.pembayarans' => function ($q) {
-            $q->where('status_pembayaran', 'valid');
-        }])->findOrFail($id);
+        $pembayaran = Pembayaran::with('booking')->findOrFail($id);
 
-        $booking = $pembayaran->booking;
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.pembayaran.nota_pdf', compact('pembayaran'))
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'chroot' => public_path() // Akses logo di folder public
+            ])
+            ->setPaper('A4', 'portrait');
 
-        // LoadView mengarah ke file yang akan kita buat di bawah
-        $pdf = Pdf::loadView('admin.pembayaran.nota', compact('pembayaran', 'booking'))
-                  ->setPaper('A4', 'portrait');
+        return $pdf->stream("Nota_GRA_{$pembayaran->booking->customer_name}.pdf");
+    }
 
-        return $pdf->stream('Nota-Pembayaran-' . ($booking->bride_groom_name ?? $id) . '.pdf');
+    /**
+     * Menghapus data pembayaran cicilan
+     */
+    public function destroy($id)
+    {
+        // Penghapusan pembayaran otomatis akan memicu penghapusan pembukuan jika relasi diatur cascade
+        $pembayaran = Pembayaran::findOrFail($id);
+        $pembayaran->delete();
+
+        return response()->json(['success' => true]);
     }
 }

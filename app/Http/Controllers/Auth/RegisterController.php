@@ -77,24 +77,16 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
-        // 1. Jalankan validator
+        // 1. Validasi input
         $this->validator($request->all())->validate();
 
-        // 2. Buat user baru
-        event(new Registered($user = $this->create($request->all())));
+        // 2. Buat user baru di database
+        $user = $this->create($request->all());
 
-        // 3. (BAGIAN PENTING)
-        // Baris ini adalah yang otomatis me-login-kan user.
-        // Kita beri komentar agar tidak dijalankan.
-        // $this->guard()->login($user); 
+        // 3. TRIGGER PENTING: Laravel mengirim email verifikasi di baris ini
+        event(new Registered($user));
 
-        // 4. Panggil method 'registered' (jika ada)
-        if ($response = $this->registered($request, $user)) {
-            return $response;
-        }
-
-        // 5. Arahkan kembali ke halaman LOGIN dengan pesan sukses
-        // Pastikan Anda punya 'flash message' di file blade login Anda untuk 'status'
-        return redirect(route('login'))->with('status', 'Registrasi berhasil! Silakan login dengan akun baru Anda.');
+        // 4. Redirect ke login dengan pesan instruksi
+        return redirect()->route('login')->with('status', 'Registrasi berhasil! Silakan cek Inbox atau Spam Gmail Anda untuk verifikasi sebelum login.');
     }
 }

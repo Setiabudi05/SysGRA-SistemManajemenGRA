@@ -2,155 +2,226 @@
 @section('title', 'Detail Pesanan #' . $booking->id)
 
 @push('css')
+<link rel="stylesheet" href="{{ asset('assets-admin/css/admin-styles.css') }}">
 <style>
-    /* Style khusus untuk tampilan cetak */
-    @media print {
-        .btn, .sidebar-wrapper, .navbar, .page-heading hr, .breadcrumb {
-            display: none !important;
-        }
-        .card {
-            border: 1px solid #000 !important;
-            box-shadow: none !important;
-        }
-        .card-header {
-            background-color: #f8f9fa !important;
-            color: #000 !important;
-            border-bottom: 2px solid #000 !important;
-        }
-        body {
-            background-color: white !important;
-        }
-    }
+    /* CSS Bersih Anti-Error VS Code */
+    .info-label { font-size: 0.72rem; color: #6c757d; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 3px; display: block; }
+    .info-value { font-size: 0.9rem; font-weight: 600; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 0; }
+    .bg-light-info { background-color: #f8fafc; border: 1px solid #e2e8f0; }
+    .progress { background-color: #f1f5f9; border-radius: 10px; height: 12px !important; overflow: hidden; }
+    .progress-bar { transition: width .6s ease; }
+    .section-title-sm { font-size: 0.85rem; font-weight: 800; color: #435ebe; border-left: 4px solid #435ebe; padding-left: 10px; margin-bottom: 15px; text-transform: uppercase; }
 </style>
 @endpush
 
 @section('content')
+{{-- Header & Navigasi: Mengikuti Gaya Dekorasi --}}
 <div class="page-heading">
     <div class="page-title">
         <div class="row align-items-center">
-            <div class="col-12 col-md-6 text-start">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.booking.index') }}">Pesanan</a></li>
-                        <li class="breadcrumb-item active">Detail #{{ $booking->id }}</li>
+            {{-- Sisi Kiri: Judul dan Navigasi Breadcrumb --}}
+            <div class="col-12 col-md-6">
+                <nav aria-label="breadcrumb" class="mb-1">
+                    <ol class="breadcrumb" style="font-size: 0.85rem;">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}" class="text-muted">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admin.booking.index') }}" class="text-muted">Pesanan</a></li>
+                        <li class="breadcrumb-item active text-primary" aria-current="page">Detail #{{ $booking->id }}</li>
                     </ol>
                 </nav>
-                <h3 class="fw-bold">Rincian Lengkap Pesanan</h3>
+                <h3 class="fw-bold mb-0">Detail Pesanan</h3>
+                <p class="text-muted mb-0 small">Informasi rincian pengantin dan status pembayaran.</p>
             </div>
-            <div class="col-12 col-md-6 d-flex justify-content-md-end gap-2 d-print-none">
-                <a href="{{ route('admin.booking.index') }}" class="btn btn-secondary shadow-sm">
-                    <i class="bi bi-arrow-left"></i> Kembali
+
+            {{-- POSISI KANAN: Navigasi Teks Halus --}}
+            <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0">
+                <a href="{{ route('admin.booking.index') }}" class="text-muted small fw-bold text-decoration-none">
+                    <i class="bi bi-chevron-left"></i> Kembali ke daftar pesanan
                 </a>
-                <button onclick="window.print()" class="btn btn-dark shadow-sm">
-                    <i class="bi bi-printer"></i> Cetak Format Booking
-                </button>
             </div>
         </div>
     </div>
-    <hr>
+    <hr class="mb-4">
 </div>
 
 <section class="section">
     <div class="row">
-        {{-- SISI KIRI: DATA LENGKAP --}}
+        {{-- SISI KIRI: INFORMASI UTAMA --}}
         <div class="col-md-8">
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-primary text-white py-3">
-                    <h5 class="card-title mb-0 text-white text-center">FORMULIR BOOKING WEDDING</h5>
-                    <p class="text-center mb-0 small opacity-75">Griya Rias Asmara Management</p>
-                </div>
                 <div class="card-body p-4">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="fw-bold small text-muted">NAMA PEMESAN</label>
-                            <p class="border-bottom pb-1 fw-bold">{{ $booking->customer_name }}</p>
+                    <div class="section-title-sm">Identitas & Media Sosial</div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Nama Pemesan</label>
+                            <p class="info-value">{{ $booking->customer_name }}</p>
                         </div>
-                        <div class="col-md-6">
-                            <label class="fw-bold small text-muted">WHATSAPP</label>
-                            <p class="border-bottom pb-1">{{ $booking->whatsapp_number }}</p>
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Nama Pengantin</label>
+                            <p class="info-value text-primary fw-bold">{{ $booking->bride_groom_name }}</p>
                         </div>
-                        <div class="col-md-6">
-                            <label class="fw-bold small text-muted">NAMA PENGANTIN</label>
-                            <p class="border-bottom pb-1 text-primary fw-bold">{{ $booking->bride_groom_name ?? '-' }}</p>
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Facebook</label>
+                            <p class="info-value text-muted">{{ $booking->facebook_name ?? '-' }}</p>
                         </div>
-                        <div class="col-md-6">
-                            <label class="fw-bold small text-muted">NAMA ORANG TUA</label>
-                            <p class="border-bottom pb-1">{{ $booking->parent_name ?? '-' }}</p>
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Instagram</label>
+                            <p class="info-value text-muted">{{ $booking->instagram_name ?? '-' }}</p>
                         </div>
-                        <div class="col-md-6">
-                            <label class="fw-bold small text-muted">INSTAGRAM</label>
-                            <p class="border-bottom pb-1">{{ $booking->instagram_name ?? '-' }}</p>
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">No. Telp / WA</label>
+                            <p class="info-value">{{ $booking->whatsapp_number }}</p>
                         </div>
-                        <div class="col-md-6">
-                            <label class="fw-bold small text-muted">FACEBOOK</label>
-                            <p class="border-bottom pb-1">{{ $booking->facebook_name ?? '-' }}</p>
-                        </div>
-                        <div class="col-12">
-                            <label class="fw-bold small text-muted">ALAMAT LENGKAP ACARA</label>
-                            <p class="border p-2 bg-light rounded">{{ $booking->event_address }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="fw-bold small text-muted">TANGGAL PELAKSANAAN</label>
-                            <p class="border-bottom pb-1 fw-bold text-danger">{{ \Carbon\Carbon::parse($booking->event_date)->isoFormat('D MMMM Y') }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="fw-bold small text-muted">DURASI ACARA</label>
-                            <p class="border-bottom pb-1">{{ $booking->event_duration }}</p>
-                        </div>
-                        <div class="col-12 mt-4">
-                            <label class="fw-bold small text-muted">PAKET TAMBAHAN (ADD-ONS)</label>
-                            <p class="border p-2 min-vh-10">{{ $booking->add_ons ?? 'Tidak ada tambahan' }}</p>
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Nama Orang Tua</label>
+                            <p class="info-value">{{ $booking->parent_name ?? '-' }}</p>
                         </div>
                     </div>
 
-                    {{-- Tanda Tangan Cetak --}}
-                    <div class="row mt-5 d-none d-print-flex text-center">
-                        <div class="col-6">
-                            <p>Customer,</p>
-                            <br><br><br>
-                            <p>( ............................ )</p>
+                    <div class="section-title-sm">Waktu & Tempat Pelaksanaan</div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Tanggal Pelaksanaan</label>
+                            <p class="info-value text-danger fw-bold">{{ \Carbon\Carbon::parse($booking->event_date)->isoFormat('D MMMM Y') }}</p>
                         </div>
-                        <div class="col-6">
-                            <p>Admin SysGRA,</p>
-                            <br><br><br>
-                            <p>( ............................ )</p>
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Durasi Acara</label>
+                            <p class="info-value">{{ $booking->event_duration }} Hari</p>
                         </div>
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Alamat Lengkap</label>
+                            <p class="info-value small text-truncate">{{ $booking->event_address }}</p>
+                        </div>
+                    </div>
+
+                    <div class="section-title-sm">Rincian Paket & Layanan</div>
+                    <div class="row g-3 mb-2">
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Paket Utama</label>
+                            <p class="info-value">{{ $booking->package_name }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Paket Tambahan</label>
+                            <p class="info-value text-muted">{{ $booking->add_ons ?? '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="info-label text-uppercase">Catatan Khusus</label>
+                            <p class="info-value text-muted">{{ $booking->notes ?? '-' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end align-items-center">
+                        {{-- Tombol Edit Tetap di Kanan --}}
+                        <a href="{{ route('admin.booking.edit', $booking->id) }}" class="btn btn-warning btn-sm px-3 fw-bold shadow-sm">
+                            <i class="bi bi-pencil-square"></i> Edit data
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- SISI KANAN: RINGKASAN BIAYA & STATUS --}}
+        {{-- SISI KANAN: PROGRES & STATUS --}}
         <div class="col-md-4">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
-                    <label class="fw-bold small text-muted mb-2 d-block">STATUS PESANAN</label>
-                    <div class="mb-3">
-                        @php $badges = ['pending'=>'bg-warning', 'confirmed'=>'bg-primary', 'completed'=>'bg-success']; @endphp
-                        <span class="badge {{ $badges[$booking->status] }} p-2 px-3 w-100 text-uppercase fw-bold">{{ $booking->status == 'confirmed' ? 'Terkonfirmasi' : $booking->status }}</span>
+                    <h6 class="fw-bold mb-3 text-muted text-uppercase small">Progres Pembayaran</h6>
+                    @php
+                    $hargaBersih = (float) preg_replace('/[^0-9]/', '', $booking->package_price);
+                    $totalBayar = (float) $booking->total_bayar;
+                    $sisaTagihan = $hargaBersih - $totalBayar;
+                    $persenValue = ($hargaBersih > 0) ? ($totalBayar / $hargaBersih) * 100 : 0;
+                    $persenValue = $persenValue > 100 ? 100 : round($persenValue);
+                    @endphp
+
+                    <div class="progress mb-3">
+                        <div class="progress-bar bg-success" role="progressbar"
+                            style="width: <?php echo $persenValue; ?>%;">
+                            {{ $persenValue }}%
+                        </div>
                     </div>
-                    <hr>
-                    <label class="fw-bold small text-muted">PAKET TERPILIH</label>
-                    <h5 class="fw-bold mt-1">{{ $booking->package_name }}</h5>
-                    <div class="bg-light p-3 rounded">
-                        <span class="small text-muted d-block">Total Biaya Paket:</span>
-                        <h3 class="text-success fw-bold mb-0">{{ $booking->package_price }}</h3>
+
+                    <div class="bg-light-info p-3 rounded mb-3">
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span>Status Bayar</span>
+                            <span class="badge {{ $sisaTagihan <= 0 ? 'bg-success' : 'bg-warning text-dark' }}">
+                                {{ $sisaTagihan <= 0 ? 'Lunas' : 'Belum Lunas' }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span>Harga Paket</span>
+                            <span class="fw-bold text-primary">Rp {{ number_format($hargaBersih, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-danger fw-bold small border-top pt-2">
+                            <span>Sisa Tagihan</span>
+                            <span>Rp {{ number_format($sisaTagihan, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="{{ route('admin.booking.print', $booking->id) }}" target="_blank" class="btn btn-primary shadow-sm">
+                            <i class="bi bi-printer"></i> CETAK DOKUMEN PDF
+                        </a>
                     </div>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm d-print-none">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <label class="fw-bold small text-muted mb-3 d-block text-start">UPDATE STATUS</label>
-                    <form action="{{ route('admin.booking.updateStatus', $booking->id) }}" method="POST" class="d-grid gap-2">
-                        @csrf 
-                        @method('PUT')
-                        <button name="status" value="confirmed" class="btn btn-outline-primary btn-sm" {{ $booking->status != 'pending' ? 'disabled' : '' }}>Konfirmasi DP</button>
-                        <button name="status" value="completed" class="btn btn-success btn-sm" {{ $booking->status == 'completed' ? 'disabled' : '' }}>Selesaikan (Lunas)</button>
-                    </form>
+                    <h6 class="fw-bold mb-3 text-muted text-uppercase small">Update Status Pesanan</h6>
+                    <div class="d-grid gap-2">
+                        @if($booking->total_bayar >= 2000000)
+                        <button onclick="updateStatus('confirmed')" class="btn btn-primary w-100 shadow-sm"
+                            {{ $booking->status == 'confirmed' ? 'disabled' : '' }}>
+                            <i class="bi bi-check2-circle"></i> {{ $booking->status == 'confirmed' ? 'Sudah Dikonfirmasi' : 'Konfirmasi DP' }}
+                        </button>
+                        @else
+                        <button class="btn btn-secondary w-100" disabled>Konfirmasi DP (Belum Ada DP)</button>
+                        <small class="text-danger d-block mt-1 text-center">Input DP minimal Rp 2.000.000 di menu Pembayaran dulu.</small>
+                        @endif
+                        <button onclick="updateStatus('completed')" class="btn btn-success shadow-sm"
+                            {{ $sisaTagihan > 0 ? 'disabled' : '' }}>
+                            <i class="bi bi-patch-check"></i> Selesaikan Pesanan (Lunas)
+                        </button>
+                    </div>
+                    @if($sisaTagihan > 0)
+                    <div class="alert alert-warning mt-3 mb-0 py-2 border-0 shadow-none text-center" style="font-size: 0.75rem;">
+                        <i class="bi bi-info-circle me-1"></i> Tombol <b>Selesaikan</b> aktif jika sisa tagihan Rp 0.
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 </section>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function updateStatus(val) {
+        Swal.fire({
+            title: 'Update Status?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#435ebe',
+            confirmButtonText: 'Ya, Update!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "{{ route('admin.booking.updateStatus', $booking->id) }}",
+                    type: "PUT",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        status: val
+                    },
+                    success: function(res) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    }
+                });
+            }
+        });
+    }
+</script>
 @endsection

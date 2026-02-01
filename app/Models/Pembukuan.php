@@ -17,5 +17,11 @@ class Pembukuan extends Model
         'customer',
         'keterangan',
         'nominal',
+        'pembayaran_id', // Menghubungkan ke tabel pembayaran
     ];
+
+    public function pembayaran()
+    {
+        return $this->belongsTo(Pembayaran::class, 'pembayaran_id');
+    }
 }

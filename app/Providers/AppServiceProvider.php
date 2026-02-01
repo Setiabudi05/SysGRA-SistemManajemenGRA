@@ -19,6 +19,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Sinkronisasi waktu lokal untuk pencatatan jadwal pengantin
+        config(['app.timezone' => 'Asia/Jakarta']);
+        date_default_timezone_set('Asia/Jakarta');
     }
 }

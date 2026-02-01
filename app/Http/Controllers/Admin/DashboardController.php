@@ -15,47 +15,47 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Statistik Utama (Kartu Atas)
-        $totalPaket = Paket::count();
-        $totalDekorasi = Dekorasi::count();
-        
-        // Mengambil jumlah user dengan role 'USER' agar sinkron dengan menu Kelola User
-        $totalPelanggan = User::where('role', 'USER')->count();
-        
-        // Mengambil total jadwal (Booking)
-        $totalBooking = JadwalPengantin::count();
+        $totalPaket = \App\Models\Paket::count();
+        $totalDekorasi = \App\Models\Dekorasi::count(); // Sesuaikan nama model Anda
+        $totalPelanggan = \App\Models\Booking::distinct('customer_name')->count();
+        $totalBooking = \App\Models\Booking::count();
 
-        // Statistik Keuangan (Sidebar Kanan)
-        $totalPemasukan = Pembukuan::where('tipe', 'pemasukan')->sum('nominal');
-        $totalPengeluaran = Pembukuan::where('tipe', 'pengeluaran')->sum('nominal');
-        $pendapatanBersih = $totalPemasukan - $totalPengeluaran;
+        // Statistik Finansial dari tabel Pembukuan
+        $netIncome = \App\Models\Pembukuan::where('tipe', 'pemasukan')->sum('nominal') -
+            \App\Models\Pembukuan::where('tipe', 'pengeluaran')->sum('nominal');
 
-        // Ambil data jadwal bulan berjalan untuk tabel dashboard
-        $bulanIndo = $this->getBulanIndo(Carbon::now()->format('F'));
-        $tahun = Carbon::now()->year;
+        // Sisa tagihan dari kolom virtual/accessor model Booking
+        $pendingPayment = \App\Models\Booking::all()->sum('sisa_tagihan');
 
-        $jadwalSekarang = JadwalPengantin::where('bulan', $bulanIndo)
-            ->where('tahun', $tahun)
-            ->orderBy('tanggal_awal', 'asc')
-            ->limit(5)
-            ->get();
+        // Mengambil 5 aktivitas terbaru
+        $recentBookings = \App\Models\Booking::latest()->take(5)->get();
 
         return view('admin.dashboard', compact(
-            'totalPaket', 
-            'totalDekorasi', 
-            'totalPelanggan', 
-            'totalBooking', 
-            'pendapatanBersih',
-            'jadwalSekarang'
+            'totalPaket',
+            'totalDekorasi',
+            'totalPelanggan',
+            'totalBooking',
+            'netIncome',
+            'pendingPayment',
+            'recentBookings'
         ));
     }
 
-    private function getBulanIndo($month) {
+    private function getBulanIndo($month)
+    {
         $map = [
-            'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
-            'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
-            'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September',
-            'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
+            'January' => 'Januari',
+            'February' => 'Februari',
+            'March' => 'Maret',
+            'April' => 'April',
+            'May' => 'Mei',
+            'June' => 'Juni',
+            'July' => 'Juli',
+            'August' => 'Agustus',
+            'September' => 'September',
+            'October' => 'Oktober',
+            'November' => 'November',
+            'December' => 'Desember'
         ];
         return $map[$month] ?? $month;
     }

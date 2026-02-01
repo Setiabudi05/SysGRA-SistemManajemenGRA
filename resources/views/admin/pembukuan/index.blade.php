@@ -2,8 +2,8 @@
 @section('title', 'Kelola Pembukuan')
 
 @push('css')
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="{{ asset('assets-admin/css/admin-styles.css') }}">
+<link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="{{ asset('assets-admin/css/admin-styles.css') }}">
 @endpush
 
 @section('content')
@@ -22,9 +22,8 @@
             </div>
             <div class="col-12 col-md-6 d-flex justify-content-md-end align-items-center gap-2 mt-3 mt-md-0">
                 <input type="date" id="tanggal" class="form-control shadow-sm w-auto" value="{{ $tanggal }}">
-                
-                <button id="btn-print" class="btn btn-secondary shadow-sm px-3">
-                    <i class="bi bi-printer"></i> Cetak Laporan
+                <button type="button" id="btn-print" class="btn btn-primary shadow-sm px-3 fw-bold">
+                    <i class="bi bi-printer me-1"></i> Cetak Laporan
                 </button>
             </div>
         </div>
@@ -82,7 +81,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-transparent d-flex justify-content-between align-items-center pb-0 border-0">
                     <h5 class="mb-0 text-success fw-bold">Pemasukan</h5>
-                   <a href="{{ route('admin.pembukuan.createPemasukan') }}" class="btn btn-success btn-sm">+ Tambah</a>
+                    <a href="{{ route('admin.pembukuan.createPemasukan') }}" class="btn btn-success btn-sm">+ Tambah</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -106,7 +105,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-transparent d-flex justify-content-between align-items-center pb-0 border-0">
                     <h5 class="mb-0 text-danger fw-bold">Pengeluaran</h5>
-                     <a href="{{ route('admin.pembukuan.createPengeluaran') }}" class="btn btn-danger btn-sm">+ Tambah</a>
+                    <a href="{{ route('admin.pembukuan.createPengeluaran') }}" class="btn btn-danger btn-sm">+ Tambah</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -135,68 +134,57 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-$(document).ready(function () {
-    // 1. Logika Sinkronisasi Parameter URL
+$(document).ready(function() {
     const urlParams = new URLSearchParams(window.location.search);
     const getTanggal = urlParams.get('tanggal');
 
-    if (getTanggal) {
-        $('#tanggal').val(getTanggal);
-    }
+    if (getTanggal) { $('#tanggal').val(getTanggal); }
 
     const renderHarga = (data) => {
-    let val = typeof data === 'string' ? data.replace(/[^0-9]/g, '') : data;
-    let formatted = parseInt(val || 0).toLocaleString('id-ID');
-    
-    // PERBAIKAN: Hapus text-dark
-    return `<span class="fw-bold">Rp ${formatted}</span>`;
-};
+        let val = typeof data === 'string' ? data.replace(/[^0-9]/g, '') : data;
+        let formatted = parseInt(val || 0).toLocaleString('id-ID');
+        return `<span class="fw-bold">Rp ${formatted}</span>`;
+    };
 
-    // 2. Inisialisasi Tabel Pemasukan
     let tablePemasukan = $('#pemasukan-table').DataTable({
-        processing: true, 
+        processing: true,
         serverSide: true,
         ajax: {
             url: "{{ route('admin.pembukuan.pemasukanData') }}",
             data: d => { d.tanggal = $('#tanggal').val(); }
         },
         columns: [
-            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
-            { data: 'customer', name: 'customer', class: 'fw-bold' },
-            { data: 'nominal', name: 'nominal', render: renderHarga },
-            { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-center' }
+            { data: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
+            { data: 'customer', class: 'fw-bold' },
+            { data: 'nominal', render: renderHarga },
+            { data: 'action', orderable: false, searchable: false, class: 'text-center' }
         ]
     });
 
-    // 3. Inisialisasi Tabel Pengeluaran
     let tablePengeluaran = $('#pengeluaran-table').DataTable({
-        processing: true, 
+        processing: true,
         serverSide: true,
         ajax: {
             url: "{{ route('admin.pembukuan.pengeluaranData') }}",
             data: d => { d.tanggal = $('#tanggal').val(); }
         },
         columns: [
-            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
-            { data: 'keterangan', name: 'keterangan', class: 'fw-bold' },
-            { data: 'nominal', name: 'nominal', render: renderHarga },
-            { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-center' }
+            { data: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
+            { data: 'keterangan', class: 'fw-bold' },
+            { data: 'nominal', render: renderHarga },
+            { data: 'action', orderable: false, searchable: false, class: 'text-center' }
         ]
     });
 
-    // 4. Event Handler Ganti Tanggal
-    $('#tanggal').on('change', function () {
+    $('#tanggal').on('change', function() {
         const tgl = $(this).val();
-        
-        // Update URL Browser (PushState)
-        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?tanggal=' + tgl;
-        window.history.pushState({path:newUrl}, '', newUrl);
+        const newUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?tanggal=${tgl}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
 
         tablePemasukan.draw();
         tablePengeluaran.draw();
 
-        // Update Statistik melalui Ajax
-        $.get("{{ route('admin.pembukuan.getSaldo') }}", { tanggal: tgl }, function (res) {
+        $.get("{{ route('admin.pembukuan.getSaldo') }}", { tanggal: tgl }, function(res) {
             $('#stat-pemasukan').text('Rp ' + parseInt(res.pemasukan).toLocaleString('id-ID'));
             $('#stat-pengeluaran').text('Rp ' + parseInt(res.pengeluaran).toLocaleString('id-ID'));
             $('#stat-saldo').text('Rp ' + parseInt(res.saldo).toLocaleString('id-ID'));
@@ -204,16 +192,17 @@ $(document).ready(function () {
     });
 
     $('#btn-print').on('click', function() {
-        window.open("{{ route('admin.pembukuan.print') }}?tanggal=" + $('#tanggal').val(), '_blank');
+        const tgl = $('#tanggal').val();
+        if (tgl) {
+            window.open("{{ route('admin.pembukuan.print') }}?tanggal=" + tgl, '_blank');
+        } else {
+            Swal.fire("Peringatan", "Silakan pilih tanggal terlebih dahulu", "warning");
+        }
     });
 
-    // Trigger update saldo jika halaman dibuka dari redirect (membawa parameter tanggal)
-    if(getTanggal) {
-        $('#tanggal').trigger('change');
-    }
+    if (getTanggal) { $('#tanggal').trigger('change'); }
 });
 
-// FUNGSI HAPUS
 function hapusPembukuan(id) {
     Swal.fire({
         title: "Hapus Transaksi?",
@@ -221,32 +210,20 @@ function hapusPembukuan(id) {
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
-        confirmButtonText: "Ya, Hapus!",
-        cancelButtonText: "Batal"
+        confirmButtonText: "Ya, Hapus!"
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
                 url: "{{ url('admin/pembukuan/destroy') }}/" + id,
                 type: "DELETE",
                 data: { _token: "{{ csrf_token() }}" },
-                success: function (res) {
-                    Swal.fire({ 
-                        icon: res.success ? 'success' : 'error', 
-                        title: res.success ? 'Berhasil!' : 'Gagal!', 
-                        text: res.message, 
-                        timer: 1500, 
-                        showConfirmButton: false 
-                    });
-
+                success: function(res) {
+                    Swal.fire({ icon: res.success ? 'success' : 'error', title: res.success ? 'Berhasil!' : 'Gagal!', text: res.message, timer: 1500, showConfirmButton: false });
                     if (res.success) {
                         $('#pemasukan-table').DataTable().ajax.reload(null, false);
                         $('#pengeluaran-table').DataTable().ajax.reload(null, false);
-                        $('#tanggal').trigger('change'); // Refresh saldo otomatis
+                        $('#tanggal').trigger('change');
                     }
-                },
-                error: function() {
-                    Swal.fire({ icon: 'error', title: 'Error!', text: 'Terjadi kesalahan sistem.', timer: 1500, showConfirmButton: false });
                 }
             });
         }
@@ -257,13 +234,7 @@ function hapusPembukuan(id) {
 @if(session('success'))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        Swal.fire({ 
-            icon: 'success', 
-            title: 'Berhasil!', 
-            text: "{{ session('success') }}", 
-            timer: 1500, 
-            showConfirmButton: false 
-        });
+        Swal.fire({ icon: 'success', title: 'Berhasil!', text: "{{ session('success') }}", timer: 1500, showConfirmButton: false });
     });
 </script>
 @endif

@@ -41,11 +41,18 @@
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                     <li><h6 class="dropdown-header">Halo, {{ explode(' ', Auth::user()->name)[0] }}!</h6></li>
-                    <li><a class="dropdown-item" href="#"><i class="icon-mid bi bi-person me-2"></i> Profil Saya</a></li>
+                    
+                    {{-- PERBAIKAN: Menghubungkan ke Route Profil Admin --}}
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.profile.index') }}">
+                            <i class="icon-mid bi bi-person me-2"></i> Profil Saya
+                        </a>
+                    </li>
+                    
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        {{-- GANTI href="#" MENJADI route('logout') --}}
-                        <a class="dropdown-item text-danger fw-bold" href="{{ route('logout') }}" id="logout-btn">
+                        {{-- PERBAIKAN: Logout dikendalikan oleh ID JavaScript --}}
+                        <a class="dropdown-item text-danger fw-bold" href="#" id="logout-btn">
                             <i class="icon-mid bi bi-box-arrow-right me-2"></i> Logout
                         </a>
                     </li>
@@ -55,7 +62,7 @@
     </div>
 </nav>
 
-{{-- Form Logout Tetap Dibutuhkan --}}
+{{-- Form Logout Tersembunyi (Wajib untuk metode POST) --}}
 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
     @csrf
 </form>
@@ -65,12 +72,10 @@
         const btnLogout = document.getElementById('logout-btn');
         if (btnLogout) {
             btnLogout.addEventListener('click', function(e) {
-                // e.preventDefault() akan membatalkan navigasi normal ke URL logout (GET)
-                // dan menggantinya dengan popup konfirmasi ini
                 e.preventDefault();
 
                 Swal.fire({
-                    title: 'Apakah kamu yakin?',
+                    title: 'Apakah Anda yakin?',
                     text: "Sesi Anda akan segera berakhir!",
                     icon: 'warning',
                     showCancelButton: true,
@@ -81,7 +86,7 @@
                     reverseButtons: true
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Jika dikonfirmasi, form POST akan dijalankan
+                        // Menjalankan submit form POST
                         document.getElementById('logout-form').submit();
                     }
                 })

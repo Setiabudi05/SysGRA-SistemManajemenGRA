@@ -22,26 +22,43 @@ class Booking extends Model
         'package_name',
         'package_price',
         'add_ons',
+        'notes', // Tambahkan ini agar catatan bisa tersimpan
         'status'
     ];
 
+    protected $casts = [
+        'package_price' => 'integer',
+        'event_date' => 'date',
+    ];
+
+    // Menghubungkan accessor ke model agar bisa dipanggil langsung di Blade
+    protected $appends = ['total_bayar', 'sisa_tagihan'];
+
+    // Tambahkan relasi ke tabel Pembayaran
     public function pembayarans()
     {
         return $this->hasMany(Pembayaran::class, 'booking_id');
     }
 
-    // Menghitung total yang sudah dibayar (Hanya status VALID)
+    // Menghitung total semua cicilan yang sudah masuk
+    public function getTotalTerbayarAttribute()
+    {
+        return (int) $this->pembayarans()->where('status_pembayaran', 'valid')->sum('jumlah_bayar');
+    }
+
+    // Mengambil total bayar (hanya yang valid)
+    // Ganti bagian ini di Model Booking Anda
     public function getTotalBayarAttribute()
     {
-        return $this->pembayarans()->where('status_pembayaran', 'valid')->sum('jumlah_bayar');
+        return (int) $this->pembayarans()
+            ->where('status', 'valid') // Ubah dari 'status_pembayaran' menjadi 'status'
+            ->sum('jumlah_bayar');
     }
-
-    // Menghitung sisa tagihan
+    // Kalkulasi Sisa Tagihan
     public function getSisaTagihanAttribute()
     {
-        // Pastikan package_price bersih dari titik/karakter non-numeric jika disimpan sebagai string
-        $price = (int) preg_replace('/[^0-9]/', '', $this->package_price);
-        return $price - $this->total_bayar;
+        // Menghitung selisih harga paket dengan total bayar
+        $sisa = (int) $this->package_price - (int) $this->total_bayar;
+        return $sisa < 0 ? 0 : $sisa;
     }
-
 }

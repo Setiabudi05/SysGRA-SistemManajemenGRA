@@ -137,21 +137,30 @@
                                 @csrf
 
                                 @if (session('status'))
-                                    <div class="alert alert-success alert-dismissible fade show small" role="alert">
-                                        {{ session('status') }}
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
+                                <div class="alert alert-success alert-dismissible fade show small" role="alert">
+                                    {{ session('status') }}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
                                 @endif
 
                                 @if ($errors->any())
-                                    <div class="alert alert-danger alert-dismissible fade show small" role="alert">
-                                        {{ $errors->first() }}
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
+                                <div class="alert alert-danger alert-dismissible fade show small" role="alert">
+                                    {{ $errors->first() }}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                @endif
+
+                                @if (session('verified'))
+                                <div class="alert alert-success alert-dismissible fade show small" role="alert">
+                                    Email Anda telah berhasil diverifikasi! Silakan login.
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
                                 @endif
 
                                 <div class="form-group mb-3">
@@ -215,13 +224,25 @@
         const btnToggle = document.querySelector('#btnToggle');
         const passwordField = document.querySelector('#passwordField');
 
-        btnToggle.addEventListener('click', function () {
+        btnToggle.addEventListener('click', function() {
             const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordField.setAttribute('type', type);
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
     </script>
+
+    <script>
+        $(document).ready(function() {
+            window.setTimeout(function() {
+                $(".alert").fadeTo(300, 0).slideUp(300, function() {
+                    $(this).remove();
+                });
+            }, 3000);
+        });
+    </script>
+
+</body>
 </body>
 
 </html>
