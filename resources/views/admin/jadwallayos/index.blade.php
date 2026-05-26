@@ -1,9 +1,8 @@
 @extends('layouts.master')
-@section('title', content: 'Data Jadwal Layos')
+@section('title', 'Data Jadwal Layos')
 
 @push('css')
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.bootstrap5.min.css">
-    {{-- Memanggil CSS Global untuk sinkronisasi tampilan --}}
     <link rel="stylesheet" href="{{ asset('assets-admin/css/admin-styles.css') }}">
 @endpush
 
@@ -19,7 +18,7 @@
                     </ol>
                 </nav>
                 <h3 class="fw-bold mb-0">Data Jadwal Layos</h3>
-                <p class="text-muted mb-0">Monitor ketersediaan tenda dan perlengkapan pesta.</p>
+                <p class="text-muted mb-0 small">Monitor ketersediaan tenda dan perlengkapan pesta.</p>
             </div>
             <div class="col-12 col-md-5 d-flex justify-content-md-end align-items-center mt-3 mt-md-0 gap-2">
                 <button id="btn-print" class="btn btn-secondary shadow-sm px-3">
@@ -40,23 +39,20 @@
             <div class="d-flex flex-wrap align-items-center gap-3">
                 <h5 class="card-title mb-0 me-auto">Log Operasional Layos</h5>
                 
-                {{-- Filter Bulan --}}
                 <div class="d-flex align-items-center gap-2">
-                    <span class="filter-wrapper text-muted">Bulan:</span>
+                    <span class="text-muted">Bulan:</span>
                     <select id="filter-bulan" class="form-select form-select-sm shadow-sm">
                         <option value="">Semua</option>
-                        @foreach (['Januari','Februari','Maret','April','Mei','Juni',
-                                   'Juli','Agustus','September','Oktober','November','Desember'] as $b)
+                        @foreach (['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $b)
                             <option value="{{ $b }}">{{ $b }}</option>
                         @endforeach
                     </select>
                 </div>
 
-                {{-- Filter Tahun --}}
                 <div class="d-flex align-items-center gap-2">
-                    <span class="filter-wrapper text-muted">Tahun:</span>
+                    <span class="text-muted">Tahun:</span>
                     <select id="filter-tahun" class="form-select form-select-sm shadow-sm">
-                        @for ($y = 2028; $y >= date('Y') - 1; $y--)
+                        @for ($y = date('Y') + 2; $y >= date('Y') - 1; $y--)
                             <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
                         @endfor
                     </select>
@@ -71,8 +67,8 @@
                         <tr>
                             <th class="text-center" width="5%">No</th>
                             <th>Tanggal</th>
-                            <th>Bulan</th>
                             <th>Nama</th>
+                            <th>Alamat</th>
                             <th>Paket</th>
                             <th>Layos</th>
                             <th class="text-center" width="120px">Aksi</th>
@@ -96,19 +92,12 @@
 
 <script>
 $(document).ready(function () {
-    // 1. Ambil parameter dari URL browser (menangkap kiriman dari redirect Controller)
     const urlParams = new URLSearchParams(window.location.search);
     const getBulan = urlParams.get('bulan');
     const getTahun = urlParams.get('tahun');
-
     const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
     let now = new Date();
     
-    /**
-     * LOGIC PRIORITAS FILTER:
-     * 1. Jika ada parameter di URL (habis Edit/Tambah), gunakan itu.
-     * 2. Jika tidak ada, baru gunakan Bulan saat ini.
-     */
     if (getBulan) {
         $('#filter-bulan').val(getBulan);
     } else if (!$('#filter-bulan').val()) {
@@ -117,34 +106,31 @@ $(document).ready(function () {
 
     if (getTahun) {
         $('#filter-tahun').val(getTahun);
+    } else if (!$('#filter-tahun').val()) {
+        $('#filter-tahun').val(now.getFullYear());
     }
 
-    // 2. Inisialisasi DataTable dengan ID yang benar
     let table = $('#jadwal-layos-table').DataTable({
         processing: true,
         serverSide: true,
         ajax: {
-            url: "{{ route('admin.jadwallayos.data') }}",
+            url: "{{ route('admin.jadwallayos.data') }}", 
             data: function(d) {
-                // Mengirimkan nilai filter yang sedang aktif ke Controller
                 d.bulan = $('#filter-bulan').val();
                 d.tahun = $('#filter-tahun').val();
             }
         },
-        lengthMenu: [[10, 25, 50], [10, 25, 50]],
-        pageLength: 10,
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false, class: 'text-center' },
-            { data: 'tanggal', name: 'tanggal' },
-            { data: 'bulan', name: 'bulan' },
-            { data: 'nama', name: 'nama', class: 'fw-bold' },
+            { data: 'tanggal_full', name: 'tanggal_awal' },
+            { data: 'nama', name: 'nama', class: 'fw-bold text-primary' },
+            { data: 'alamat', name: 'alamat' },
             { data: 'paket', name: 'paket' },
-            { data: 'layos', name: 'layos' },
-            { data: 'action', name: 'action', orderable:false, searchable:false, class: 'text-center' },
+            { data: 'layos_detail', name: 'layos_detail' },
+            { data: 'action', name: 'action', orderable:false, searchable:false, class: 'text-center' }
         ]
     });
 
-    // Reload tabel saat filter diubah manual
     $('#filter-bulan, #filter-tahun').change(() => table.draw());
 
     $('#btn-print').click(function () {
@@ -154,9 +140,14 @@ $(document).ready(function () {
 });
 
 function hapusJadwal(id){
+    if (id === null || id === 'null') {
+        Swal.fire("Info", "Rincian belum diisi, tidak ada data untuk dihapus.", "info");
+        return;
+    }
+
     Swal.fire({
-        title: "Hapus Jadwal Layos?",
-        text: "Data jadwal penugasan layos akan dihapus permanen!",
+        title: "Apakah Anda Yakin?",
+        text: "Data rincian ini akan dihapus permanen!",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#d33",
@@ -177,9 +168,7 @@ function hapusJadwal(id){
                         timer: 1500,
                         showConfirmButton: false
                     });
-
                     if(res.success){
-                        // PERBAIKAN: Gunakan ID yang benar untuk reload
                         $('#jadwal-layos-table').DataTable().ajax.reload(null, false);
                     }
                 }
@@ -188,18 +177,4 @@ function hapusJadwal(id){
     });
 }
 </script>
-
-@if(session('swal_success'))
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        Swal.fire({
-            icon: 'success',
-            title: 'Berhasil!',
-            text: "{{ session('swal_success') }}",
-            timer: 1500,
-            showConfirmButton: false
-        });
-    });
-</script>
-@endif
 @endpush

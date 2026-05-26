@@ -12,6 +12,7 @@
         "laravel/socialite": "^5.24",
         "laravel/tinker": "^2.10.1",
         "laravel/ui": "^4.6",
+        "midtrans/midtrans-php": "^2.6",
         "realrashid/sweet-alert": "^7.3",
         "yajra/laravel-datatables-oracle": "^12.6"
     },

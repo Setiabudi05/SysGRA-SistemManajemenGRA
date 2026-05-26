@@ -27,11 +27,14 @@ class LoginController extends Controller
         $role = Auth::user()->role;
 
         if ($role === 'admin') {
-            // Admin diarahkan ke dashboard admin
             return '/admin/dashboard';
+        } elseif ($role === 'owner') {
+            return '/owner/dashboard';
+        } elseif ($role === 'kru') {
+            return '/kru/dashboard';
         } else {
-            // User biasa diarahkan ke halaman utama (landing page)
-            return '/';
+            // Pelanggan diarahkan ke dashboard user
+            return '/user/dashboard';
         }
     }
 
@@ -48,24 +51,24 @@ class LoginController extends Controller
 
         // Tentukan path redirect
         $redirectPath = $this->redirectPath();
-        
+
         // Dapatkan role user yang baru saja login
         $role = Auth::user()->role;
-        
+
         // Inisialisasi kunci flash message
         $flashKey = '';
 
         if ($role === 'admin') {
             // **ADMIN:** Gunakan kunci yang dideteksi oleh paket SweetAlert (misalnya: 'toast_success')
-            $flashKey = 'toast_success'; 
+            $flashKey = 'toast_success';
         } else {
             // **USER BIASA:** Gunakan kunci yang dideteksi oleh script manual Anda (yaitu: 'success_message')
-            $flashKey = 'success_message'; 
+            $flashKey = 'success_message';
         }
 
         // Redirect dengan flash message yang sesuai dengan layout masing-masing
         return redirect()->intended($redirectPath)
-                         ->with($flashKey, 'berhasil login'); 
+            ->with($flashKey, 'berhasil login');
     }
 
     /**

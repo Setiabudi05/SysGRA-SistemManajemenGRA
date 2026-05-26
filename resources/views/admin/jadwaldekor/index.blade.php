@@ -73,7 +73,6 @@
                             <tr>
                                 <th class="text-center" width="5%">No</th>
                                 <th>Tanggal</th>
-                                <th>Bulan</th>
                                 <th>Nama</th>
                                 <th>Alamat</th>
                                 <th>Paket</th>
@@ -128,33 +127,28 @@
 
     // 3. Inisialisasi DataTable
     let table = $('#jadwal-table').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: {
-            url: "{{ route('admin.jadwaldekor.data') }}",
-            data: function (d) {
-                // Mengambil nilai dari dropdown yang sudah terisi otomatis di atas
-                d.bulan = $('#filter-bulan').val();
-                d.tahun = $('#filter-tahun').val();
-            }
-        },
-        lengthMenu: [[10, 25, 50], [10, 25, 50]],
-        pageLength: 10,
-        columns: [
-            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
-            { data: 'tanggal', name: 'tanggal' },
-            { data: 'bulan', name: 'bulan' },
-            { data: 'nama', name: 'nama', class: 'fw-bold' },
-            { data: 'alamat', name: 'alamat' },
-            { data: 'paket', name: 'paket' },
-            { data: 'foto', name: 'foto', orderable: false, searchable: false, class: 'text-center' },
-            { data: 'deskripsi', name: 'deskripsi' },
-            { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-center' }
-        ]
-    });
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "{{ route('admin.jadwaldekor.data') }}",
+                data: function (d) {
+                    d.bulan = $('#filter-bulan').val();
+                    d.tahun = $('#filter-tahun').val();
+                }
+            },
+            columns: [
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
+                { data: 'tanggal_full', name: 'tanggal_awal' }, // Menggunakan kolom gabungan
+                { data: 'nama', name: 'nama', class: 'fw-bold' },
+                { data: 'alamat', name: 'alamat' },
+                { data: 'paket', name: 'paket' },
+                { data: 'foto', name: 'foto', orderable: false, searchable: false, class: 'text-center' },
+                { data: 'deskripsi', name: 'deskripsi' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-center' }
+            ]
+        });
 
-    // Reload saat filter dropdown diubah manual
-    $('#filter-bulan, #filter-tahun').change(function () { table.draw(); });
+        $('#filter-bulan, #filter-tahun').change(function () { table.draw(); });
 
     // Fungsi Print Laporan
     $('#btn-print').on('click', function () {

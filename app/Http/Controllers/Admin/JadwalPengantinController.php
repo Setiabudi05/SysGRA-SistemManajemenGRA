@@ -5,66 +5,64 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\JadwalPengantin;
+use App\Models\User;
+use App\Models\Paket;
+use App\Notifications\SistemNotifikasi; // Memastikan Notifikasi Ter-import
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
-use App\Models\Paket;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\Facade\Pdf; // Memastikan PDF Ter-import
 
 class JadwalPengantinController extends Controller
 {
-    /**
-     * Menampilkan halaman daftar jadwal pengantin.
-     */
     public function index()
     {
         return view('admin.jadwalpengantin.index');
     }
 
-    /**
-     * Mengambil data untuk DataTables dengan filter bulan dan tahun.
-     */
     public function data(Request $request)
     {
-        $query = JadwalPengantin::with('paket');
+        $query = JadwalPengantin::with('paket')->orderBy('tanggal_awal', 'asc');
 
-        // Filter pencarian
         if ($request->filled('bulan')) {
             $query->where('bulan', $request->bulan);
         }
-
         if ($request->filled('tahun')) {
             $query->where('tahun', $request->tahun);
         }
 
         return DataTables::of($query)
             ->addIndexColumn()
-            ->addColumn('tanggal', function ($row) {
-                $awal = $row->tanggal_awal ? Carbon::parse($row->tanggal_awal)->format('d') : '-';
-                $akhir = $row->tanggal_akhir ? Carbon::parse($row->tanggal_akhir)->format('d') : null;
-                return $akhir ? "$awal - $akhir" : $awal;
-            })
-            ->addColumn('paket', fn($row) => $row->paket?->nama_paket ?? '-')
-            ->addColumn('action', function ($row) use ($request) {
-                // Ambil filter aktif dari request pencarian
-                $params = [
-                    'id' => $row->id,
-                    'f_bulan' => $request->bulan,
-                    'f_tahun' => $request->tahun
-                ];
+            ->addColumn('tanggal_full', function ($row) {
+                $tglAwal = Carbon::parse($row->tanggal_awal)->format('d');
+                $tglAkhir = $row->tanggal_akhir ? Carbon::parse($row->tanggal_akhir)->format('d') : null;
+                $bulanTahun = $row->bulan . ' ' . $row->tahun;
 
-                return '
-            <div class="d-flex justify-content-center gap-2">
-                <a href="' . route('admin.jadwalpengantin.edit', $params) . '" 
-                   class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
-                   <i class="bi bi-pencil-square"></i> Edit
-                </a>
-                <button onclick="hapusJadwal(' . $row->id . ')" 
-                        class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
-                    <i class="bi bi-trash"></i> Hapus
-                </button>
-            </div>';
+                if ($tglAkhir && $tglAwal != $tglAkhir) {
+                    return "$tglAwal-$tglAkhir $bulanTahun";
+                }
+                return "$tglAwal $bulanTahun";
             })
-            ->rawColumns(['action'])
+            ->editColumn('asisten', function ($row) {
+                return $row->asisten ?? '<span class="text-muted small">Belum diplot</span>';
+            })
+            ->editColumn('fg', function ($row) {
+                return $row->fg ?? '<span class="text-muted small">Belum diplot</span>';
+            })
+            ->editColumn('layos', function ($row) {
+                return $row->layos ?? '<span class="text-muted small">Belum diplot</span>';
+            })
+            ->addColumn('keterangan_text', function ($row) {
+                if ($row->keterangan) {
+                    return '<i class="bi bi-info-circle text-primary me-1"></i>' . $row->keterangan;
+                }
+                return '<span class="text-muted small italic">Belum ada catatan</span>';
+            })
+            ->addColumn('action', function ($row) {
+                return '<a href="' . route('admin.jadwalpengantin.edit', $row->id) . '" class="btn btn-warning btn-sm shadow-sm">
+                            <i class="bi bi-pencil-square"></i> Edit
+                        </a>';
+            })
+            ->rawColumns(['asisten', 'fg', 'layos', 'action', 'keterangan_text'])
             ->make(true);
     }
 
@@ -74,27 +72,66 @@ class JadwalPengantinController extends Controller
     public function create()
     {
         $pakets = Paket::all();
-        return view('admin.jadwalpengantin.create', compact('pakets'));
+
+        // Pastikan 3 baris pemisahan kru ini ada di fungsi create()
+        $kruAsisten = User::where('role', 'kru')->where('jabatan', 'asisten')->get();
+        $kruFG      = User::where('role', 'kru')->where('jabatan', 'fg')->get();
+        $kruLayos   = User::where('role', 'kru')->where('jabatan', 'layos')->get();
+
+        // Kirimkan semua variabel kru ke dalam view
+        return view('admin.jadwalpengantin.create', compact('pakets', 'kruAsisten', 'kruFG', 'kruLayos'));
     }
 
     /**
-     * Menyimpan jadwal baru ke database.
+     * Menyimpan jadwal baru ke database DAN mengirim notifikasi.
      */
     public function store(Request $request)
     {
         $validated = $this->validateRequest($request);
-
-        // Mapping bulan dan tahun otomatis dari input tanggal_awal
         $mapping = $this->mapBulanTahun($request->tanggal_awal);
+
+        // Gabungkan array asisten menjadi string sebelum disimpan (Sama seperti logika update)
+        if ($request->has('asisten') && is_array($request->asisten)) {
+            $validated['asisten'] = implode(',', $request->asisten);
+        }
+
         $data = array_merge($validated, $mapping);
+        $jadwal = JadwalPengantin::create($data);
 
-        JadwalPengantin::create($data);
+        // --- LOGIKA NOTIFIKASI OTOMATIS INTERNAL SYSTEM ---
+        // 1. Notif untuk Fotografer (FG)
+        if ($request->filled('fg')) {
+            $userFg = User::where('name', $request->fg)->first();
+            if ($userFg) {
+                $userFg->notify(new SistemNotifikasi([
+                    'judul' => 'Penugasan Baru (FG)',
+                    'pesan' => 'Jadwal baru: ' . $jadwal->nama . ' di ' . $jadwal->alamat,
+                    'icon'  => 'bi-camera',
+                    'link'  => route('kru.jadwal.index')
+                ]));
+            }
+        }
 
-        // Redirect ke index dengan membawa parameter bulan dan tahun yang baru diinput
+        // 2. Notif untuk Asisten (Mendukung Multi-Asisten String)
+        if ($jadwal->asisten) {
+            $asistenList = explode(',', $jadwal->asisten);
+            foreach ($asistenList as $namaAsisten) {
+                $userAsisten = User::where('name', trim($namaAsisten))->first();
+                if ($userAsisten) {
+                    $userAsisten->notify(new SistemNotifikasi([
+                        'judul' => 'Penugasan Baru (Asisten)',
+                        'pesan' => 'Kamu ditugaskan di acara ' . $jadwal->nama,
+                        'icon'  => 'bi-person-badge',
+                        'link'  => route('kru.jadwal.index')
+                    ]));
+                }
+            }
+        }
+
         return redirect()->route('admin.jadwalpengantin.index', [
-            'bulan' => $mapping['bulan'], // Contoh: "Januari"
-            'tahun' => $mapping['tahun']  // Contoh: "2026"
-        ])->with('swal_success', 'Jadwal berhasil ditambahkan!');
+            'bulan' => $mapping['bulan'],
+            'tahun' => $mapping['tahun']
+        ])->with('swal_success', 'Jadwal berhasil ditambahkan & Notifikasi terkirim!');
     }
 
     /**
@@ -104,33 +141,49 @@ class JadwalPengantinController extends Controller
     {
         $jadwal = JadwalPengantin::findOrFail($id);
         $pakets = Paket::all();
-        return view('admin.jadwalpengantin.edit', compact('jadwal', 'pakets'));
+
+        // Mengambil data kru spesifik sesuai jabatan untuk dropdown terpisah
+        $kruAsisten = User::where('role', 'kru')->where('jabatan', 'asisten')->get();
+        $kruFG      = User::where('role', 'kru')->where('jabatan', 'fg')->get();
+        $kruLayos   = User::where('role', 'kru')->where('jabatan', 'layos')->get();
+
+        return view('admin.jadwalpengantin.edit', compact('jadwal', 'pakets', 'kruAsisten', 'kruFG', 'kruLayos'));
     }
 
-    /**
-     * Memperbarui data jadwal di database.
-     */
     public function update(Request $request, $id)
     {
-        $validated = $this->validateRequest($request);
         $jadwal = JadwalPengantin::findOrFail($id);
 
-        $data = array_merge($validated, $this->mapBulanTahun($request->tanggal_awal));
+        $validated = $request->validate([
+            'tanggal_awal' => 'required|date',
+            'tanggal_akhir' => 'nullable|date',
+            'nama' => 'required|string',
+            'paket_id' => 'required',
+            'alamat' => 'required|string',
+            'asisten' => 'nullable|array',
+            'fg' => 'nullable|string',
+            'layos' => 'nullable|string',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        if ($request->has('asisten')) {
+            $validated['asisten'] = implode(',', $request->asisten);
+        } else {
+            $validated['asisten'] = null;
+        }
+
+        // Sinkronisasi pemetaan ulang bulan dan tahun jika tanggal awal diganti saat edit
+        $mapping = $this->mapBulanTahun($request->tanggal_awal);
+        $data = array_merge($validated, $mapping);
+
         $jadwal->update($data);
 
-        // Ambil parameter filter asal
-        $lastBulan = $request->input('last_bulan');
-        $lastTahun = $request->input('last_tahun');
-
-        // Redirect kembali ke index dengan parameter filter agar tidak reset ke bulan sekarang
-        return redirect()->route('admin.jadwalpengantin.index', [
-            'bulan' => $lastBulan,
-            'tahun' => $lastTahun
-        ])->with('swal_success', 'Jadwal berhasil diperbarui!');
+        return redirect()->route('admin.jadwalpengantin.index')
+            ->with('swal_success', 'Jadwal dan Penugasan berhasil diperbarui oleh Admin!');
     }
 
     /**
-     * Menghapus jadwal melalui AJAX.
+     * Menghapus jadwal.
      */
     public function destroy($id)
     {
@@ -151,7 +204,7 @@ class JadwalPengantinController extends Controller
     }
 
     /**
-     * Mencetak jadwal pengantin ke format PDF.
+     * Cetak ke PDF.
      */
     public function print(Request $request)
     {
@@ -165,41 +218,28 @@ class JadwalPengantinController extends Controller
         }
 
         $jadwal = $query->orderBy('tanggal_awal', 'asc')->get()->map(function ($item) {
-            $awal = $item->tanggal_awal ? Carbon::parse($item->tanggal_awal)->format('d') : '-';
-            $akhir = $item->tanggal_akhir ? Carbon::parse($item->tanggal_akhir)->format('d') : null;
+            $awal = $item->tanggal_awal ? \Carbon\Carbon::parse($item->tanggal_awal)->format('d') : '-';
+            $akhir = $item->tanggal_akhir ? \Carbon\Carbon::parse($item->tanggal_akhir)->format('d') : null;
             $item->tanggal_display = $akhir ? "$awal - $akhir" : $awal;
             return $item;
         });
 
-        $pdf = Pdf::loadView('admin.jadwalpengantin.print', [
+        // PERBAIKAN UTAMA: Tambahkan setOptions untuk mematikan paksa deteksi image dari DOMPDF core
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.jadwalpengantin.print', [
             'jadwal' => $jadwal,
             'bulan' => $request->bulan,
             'tahun' => $request->tahun,
-        ])->setPaper('A4', 'portrait');
+        ])
+            ->setPaper('A4', 'portrait')
+            ->setOptions([
+                'isRemoteEnabled' => false,
+                'isHtml5ParserEnabled' => true,
+                'isFontSubsettingEnabled' => true
+            ]);
 
         return $pdf->stream('jadwal_pengantin.pdf');
     }
 
-    /**
-     * Fungsi Helper: Validasi Request (untuk store & update).
-     */
-    private function validateRequest(Request $request)
-    {
-        return $request->validate([
-            'nama' => 'required|string|max:255',
-            'alamat' => 'required|string|max:255',
-            'paket_id' => 'required|exists:pakets,id',
-            'tanggal_awal' => 'required|date',
-            'tanggal_akhir' => 'nullable|date|after_or_equal:tanggal_awal',
-            'asisten' => 'nullable|string|max:255',
-            'fg' => 'nullable|string|max:255',
-            'layos' => 'nullable|string|max:255',
-        ]);
-    }
-
-    /**
-     * Fungsi Helper: Mapping Nama Bulan Indonesia dan Tahun.
-     */
     private function mapBulanTahun($date)
     {
         $carbonDate = Carbon::parse($date);
@@ -223,4 +263,4 @@ class JadwalPengantinController extends Controller
             'tahun' => $carbonDate->format('Y'),
         ];
     }
-}
+} // Penutup Class Utama yang Benar

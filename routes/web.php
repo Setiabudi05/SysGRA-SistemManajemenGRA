@@ -6,7 +6,17 @@ use Illuminate\Support\Facades\Auth;
 // --- A. AUTHENTICATION CONTROLLERS ---
 use App\Http\Controllers\Auth\SocialiteController;
 
-// --- B. ADMIN CONTROLLERS ---
+// --- B. OWNER CONTROLLERS (Manajerial & Pembagian Kru) ---
+use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
+use App\Http\Controllers\Owner\BookingController as OwnerBookingController;
+use App\Http\Controllers\Owner\PembayaranController as OwnerPembayaranController;
+use App\Http\Controllers\Owner\LaporanPembukuanController;
+use App\Http\Controllers\Owner\UserController as OwnerUserController;
+use App\Http\Controllers\Owner\JadwalPengantinController as OwnerJadwalPengantin;
+use App\Http\Controllers\Owner\JadwalDekorController as OwnerJadwalDekor;
+use App\Http\Controllers\Owner\JadwalLayosController as OwnerJadwalLayos;
+
+// --- C. ADMIN CONTROLLERS (Operasional & Master Data) ---
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PaketController;
 use App\Http\Controllers\Admin\DekorasiController;
@@ -15,72 +25,198 @@ use App\Http\Controllers\Admin\JadwalDekorController;
 use App\Http\Controllers\Admin\JadwalGownController;
 use App\Http\Controllers\Admin\JadwalLayosController;
 use App\Http\Controllers\Admin\BajuPengantinController;
-use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\PembukuanController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\PembayaranController;
+use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 
-// --- C. USER CONTROLLERS ---
-use App\Http\Controllers\User\CartController;
-use App\Http\Controllers\User\BookingController as UserBookingController;
+// --- D. USER / PELANGGAN CONTROLLERS ---
+use App\Http\Controllers\User\BookingController as PelangganBooking;
 use App\Http\Controllers\User\CheckoutController;
-use App\Http\Controllers\User\UserProfileController;
+use App\Http\Controllers\User\ProfileController as PelangganProfile;
 use App\Http\Controllers\User\OrderController;
+use App\Http\Controllers\User\LandingController;
+use App\Http\Controllers\User\PembayaranController as PelangganBayar;
+
+// --- E. KRU CONTROLLERS ---
+use App\Http\Controllers\Kru\DashboardController as KruDashboardController;
+use App\Http\Controllers\Kru\JadwalPengantinController as KruJadwal;
+use App\Http\Controllers\Kru\RiwayatController;
+use App\Http\Controllers\Kru\ProfileController as KruProfileController;
 
 /*
 |--------------------------------------------------------------------------
-| 1. RUTE AUTENTIKASI (BREEZE & SOCIALITE)
+| 1. RUTE AUTENTIKASI & REDIRECT CERDAS
 |--------------------------------------------------------------------------
 */
 
 require __DIR__ . '/auth.php';
 
-// RUTE GOOGLE LOGIN (Socialite)
 Route::middleware('guest')->group(function () {
-    Route::get('auth/google', [SocialiteController::class, 'redirectToProvider'])
-        ->name('socialite.google.redirect');
+    Route::get('auth/google', [SocialiteController::class, 'redirectToProvider'])->name('socialite.google.redirect');
+    Route::get('auth/google/callback', [SocialiteController::class, 'handleProviderCallback'])->name('socialite.google.callback');
+});
 
-    Route::get('auth/google/callback', [SocialiteController::class, 'handleProviderCallback'])
-        ->name('socialite.google.callback');
+// Redirect Beranda Berdasarkan Role
+Route::get('/', function () {
+    if (Auth::check()) {
+        $role = Auth::user()->role;
+        return match ($role) {
+            'owner'     => redirect()->route('owner.dashboard'),
+            'admin'     => redirect()->route('admin.dashboard'),
+            'kru'       => redirect()->route('kru.dashboard'),
+            'pelanggan' => redirect()->route('user.dashboard'),
+            default     => redirect()->route('user.dashboard'),
+        };
+    }
+    return app(LandingController::class)->index();
+})->name('landing');
+
+Route::get('/home', function () {
+    $role = Auth::user()->role;
+    return match ($role) {
+        'owner'     => redirect()->route('owner.dashboard'),
+        'admin'     => redirect()->route('admin.dashboard'),
+        'kru'       => redirect()->route('kru.dashboard'),
+        'pelanggan' => redirect()->route('user.dashboard'),
+        default     => redirect()->route('user.dashboard'),
+    };
+})->name('home');
+
+/*
+|--------------------------------------------------------------------------
+| 2. RUTE OWNER (Prefix 'owner.') - STRATEGIS & PEMBAGIAN KRU
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('owner.')->group(function () {
+
+    // 1. Dashboard
+    Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
+
+    // 2. Kelola Akun Pegawai 
+    Route::get('users/json', [OwnerUserController::class, 'data'])->name('users.data');
+    Route::resource('users', OwnerUserController::class);
+
+    // 3. Laporan Keuangan
+    Route::get('/laporan-pembukuan', [LaporanPembukuanController::class, 'index'])->name('pembukuan.index');
+    // Route untuk Cetak Laporan (Ini yang error tadi)
+    Route::get('/pembukuan/print', [LaporanPembukuanController::class, 'print'])->name('pembukuan.print');
+
+    // 4. Kendali Operasional
+
+    // --- SISI OWNER: Jadwal Pengantin (Murni View, Edit Plotting, & Print) ---
+    Route::prefix('jadwalpengantin')->name('jadwalpengantin.')->group(function () {
+        Route::get('/', [OwnerJadwalPengantin::class, 'index'])->name('index');
+        Route::get('/data', [OwnerJadwalPengantin::class, 'data'])->name('data');
+        Route::get('/print', [OwnerJadwalPengantin::class, 'print'])->name('print');
+
+        // Rute Plotting Kru (Hanya ini yang boleh dimodifikasi Owner)
+        Route::get('/{id}/edit', [OwnerJadwalPengantin::class, 'edit'])->name('edit');
+        Route::put('/{id}/update', [OwnerJadwalPengantin::class, 'update'])->name('update');
+    });
+    // --- Jadwal Dekor ---
+    Route::prefix('jadwaldekor')->name('jadwaldekor.')->group(function () {
+        Route::get('/', [OwnerJadwalDekor::class, 'index'])->name('index');
+        Route::get('/data', [OwnerJadwalDekor::class, 'data'])->name('data');
+        Route::get('/print', [OwnerJadwalDekor::class, 'print'])->name('print');
+    });
+
+    // --- Jadwal Layos ---
+    Route::prefix('jadwallayos')->name('jadwallayos.')->group(function () {
+        Route::get('/', [OwnerJadwalLayos::class, 'index'])->name('index');
+        Route::get('/data', [OwnerJadwalLayos::class, 'data'])->name('data');
+        Route::get('/print', [OwnerJadwalLayos::class, 'print'])->name('print');
+        Route::get('/{id}/edit', [OwnerJadwalLayos::class, 'edit'])->name('edit');
+        Route::put('/{id}/update', [OwnerJadwalLayos::class, 'update'])->name('update');
+        Route::delete('/{id}', [OwnerJadwalLayos::class, 'destroy'])->name('destroy');
+    });
+    // --- Booking Owner (Read-Only Mode) ---
+    Route::prefix('booking')->name('booking.')->group(function () {
+        Route::get('/', [OwnerBookingController::class, 'index'])->name('index');
+        Route::get('/data', [OwnerBookingController::class, 'data'])->name('data');
+        Route::get('/{id}/detail', [OwnerBookingController::class, 'show'])->name('show');
+        Route::get('/print', [OwnerBookingController::class, 'print_all'])->name('print_all'); // Ganti ini
+        Route::get('/print/{id}', [OwnerBookingController::class, 'print'])->name('print');
+    });
+    // --- Pembayaran Owner ---
+    Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
+        Route::get('/', [OwnerPembayaranController::class, 'index'])->name('index');
+        Route::get('/data', [OwnerPembayaranController::class, 'data'])->name('data');
+        Route::get('/{id}/histori', [OwnerPembayaranController::class, 'histori'])->name('histori');
+        Route::get('/{id}/nota', [OwnerPembayaranController::class, 'cetakNota'])->name('nota');
+        Route::delete('/{id}', [OwnerPembayaranController::class, 'destroy'])->name('destroy');
+    });
 });
 
 /*
 |--------------------------------------------------------------------------
-| 2. RUTE PUBLIK (Kini Terproteksi)
+| 3. RUTE KRU (Prefix 'kru.')
 |--------------------------------------------------------------------------
 */
-// Rute Home kini wajib verifikasi agar user dipaksa cek Gmail dulu
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/', function () {
-        return view('user.index');
-    })->name('home');
+
+Route::middleware(['auth', 'verified', 'role:kru'])->prefix('kru')->name('kru.')->group(function () {
+
+    // --- DASHBOARD KRU ---
+    Route::get('/dashboard', [KruDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/data', [KruDashboardController::class, 'data'])->name('dashboard.data');
+
+    // --- PROFIL KRU ---
+    Route::get('/profile', [KruProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profile/update', [KruProfileController::class, 'update'])->name('profile.update');
+
+    // --- JADWAL KRU ---
+    Route::prefix('jadwal')->name('jadwal.')->group(function () {
+        Route::get('/', [KruJadwal::class, 'index'])->name('index');
+        Route::get('/data', [KruJadwal::class, 'data'])->name('data');
+        Route::get('/print', [KruJadwal::class, 'print'])->name('print');
+    });
+
+    Route::get('/notification/{id}/read', [KruJadwal::class, 'readNotification'])->name('notification.read');
+
+    // --- RIWAYAT KRU ---
+    Route::prefix('riwayat')->name('riwayat.')->group(function () {
+        Route::get('/', [RiwayatController::class, 'index'])->name('index');
+        Route::get('/data', [RiwayatController::class, 'data'])->name('data');
+        Route::get('/print', [RiwayatController::class, 'print'])->name('print');
+    });
+
+    Route::get('/job-detail/{id}', function ($id) {
+        return "Halaman Detail Pekerjaan ID: " . $id;
+    })->name('job.detail');
 });
 
-// Rute ini tetap bisa diakses untuk memproses booking (jika logic store Anda mengizinkan)
-Route::post('/booking/store', [UserBookingController::class, 'store'])->name('booking.store');
 /*
 |--------------------------------------------------------------------------
-| 3. RUTE AKSES TERBATAS (USER LOGIN)
+| 4. RUTE USER / PELANGGAN (Prefix 'user.')
 |--------------------------------------------------------------------------
 */
-// USER (PENGANTIN) TETAP WAJIB VERIFIKASI
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/profile', [UserProfileController::class, 'index'])->name('profile');
-    Route::put('/profile/update', [UserProfileController::class, 'update'])->name('profile.update');
-    Route::get('/keranjang-pesanan', [CartController::class, 'index'])->name('cart.index');
-    Route::post('/checkout', [CheckoutController::class, 'process'])->name('checkout.process');
-    // PESANAN SAYA
-    Route::get('/pesanan-saya', [OrderController::class, 'index'])->name('pesanan.index');
-    Route::post('/pesanan/upload-bukti/{id}', [OrderController::class, 'uploadBukti'])->name('pesanan.upload');
+
+Route::middleware(['auth', 'verified', 'role:pelanggan'])->prefix('user')->name('user.')->group(function () {
+
+    Route::get('/dashboard', [App\Http\Controllers\User\DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/booking', [PelangganBooking::class, 'index'])->name('booking');
+    Route::post('/booking/store', [PelangganBooking::class, 'storeToBooking'])->name('booking.store');
+    Route::get('/keranjang', [PelangganBooking::class, 'keranjang'])->name('keranjang');
+    Route::delete('/keranjang/{id}', [PelangganBooking::class, 'destroy'])->name('keranjang.destroy');
+    Route::post('/keranjang/konfirmasi', [PelangganBooking::class, 'konfirmasi'])->name('keranjang.konfirmasi');
+
+    Route::get('/pembayaran', [PelangganBayar::class, 'index'])->name('pembayaran');
+    Route::get('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+    Route::get('/riwayat', [OrderController::class, 'index'])->name('riwayat');
+
+    Route::get('/profile', [PelangganProfile::class, 'index'])->name('profile.index');
+    Route::put('/profile/update', [PelangganProfile::class, 'update'])->name('profile.update');
 });
 
 /*
 |--------------------------------------------------------------------------
-| 4. RUTE ADMIN (ROLE: ADMIN)
+| 5. RUTE ADMIN (Prefix 'admin.') - OPERASIONAL (Admin & Owner)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+
+Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')->group(function () {
 
     // --- DASHBOARD ---
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -90,7 +226,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/profile/update', [AdminProfileController::class, 'update'])->name('profile.update');
 
     // --- MASTER DATA ---
-
     // Paket
     Route::prefix('paket')->name('paket.')->group(function () {
         Route::get('/', [PaketController::class, 'index'])->name('index');
@@ -126,7 +261,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 
     // --- JADWAL OPERASIONAL ---
-
     // Jadwal Pengantin
     Route::prefix('jadwalpengantin')->name('jadwalpengantin.')->group(function () {
         Route::get('/', [JadwalPengantinController::class, 'index'])->name('index');
@@ -136,6 +270,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/edit/{id}', [JadwalPengantinController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [JadwalPengantinController::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [JadwalPengantinController::class, 'destroy'])->name('destroy');
+        Route::get('/print', [JadwalPengantinController::class, 'print'])->name('print');
     });
 
     // Jadwal Dekor
@@ -147,6 +282,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/edit/{id}', [JadwalDekorController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [JadwalDekorController::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [JadwalDekorController::class, 'destroy'])->name('destroy');
+        Route::get('/print', [JadwalDekorController::class, 'print'])->name('print');
     });
 
     // Jadwal Gown
@@ -158,6 +294,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/edit/{id}', [JadwalGownController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [JadwalGownController::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [JadwalGownController::class, 'destroy'])->name('destroy');
+        Route::get('/print', [JadwalGownController::class, 'print'])->name('print');
     });
 
     // Jadwal Layos
@@ -173,7 +310,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 
     // --- KEUANGAN & PEMBUKUAN ---
-
     Route::prefix('pembukuan')->name('pembukuan.')->group(function () {
         Route::get('/', [PembukuanController::class, 'index'])->name('index');
         Route::get('/pemasukan-data', [PembukuanController::class, 'pemasukanData'])->name('pemasukanData');
@@ -189,47 +325,28 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 
     // --- MANAJEMEN TRANSAKSI ---
-
-    // Booking (Pesanan)
+    // Booking Admin
     Route::prefix('booking')->name('booking.')->group(function () {
-        Route::get('/', [BookingController::class, 'index'])->name('index');
-        Route::get('/data', [BookingController::class, 'data'])->name('data');
-        Route::get('/create', [BookingController::class, 'create'])->name('create');
-        Route::post('/store', [BookingController::class, 'store'])->name('store');
-        Route::get('/{id}/detail', [BookingController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [BookingController::class, 'edit'])->name('edit');
-        Route::put('/{id}/update', [BookingController::class, 'update'])->name('update');
-        Route::put('/{id}/status', [BookingController::class, 'updateStatus'])->name('updateStatus');
-        Route::delete('/{id}', [BookingController::class, 'destroy'])->name('destroy');
-        Route::get('/print/{id}', [BookingController::class, 'print'])->name('print');
+        Route::get('/', [AdminBookingController::class, 'index'])->name('index');
+        Route::get('/data', [AdminBookingController::class, 'data'])->name('data');
+        Route::get('/create', [AdminBookingController::class, 'create'])->name('create');
+        Route::post('/store', [AdminBookingController::class, 'store'])->name('store');
+        Route::get('/{id}/detail', [AdminBookingController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [AdminBookingController::class, 'edit'])->name('edit');
+        Route::put('/{id}/update', [AdminBookingController::class, 'update'])->name('update');
+        Route::put('/{id}/status', [AdminBookingController::class, 'updateStatus'])->name('updateStatus');
+        Route::delete('/{id}', [AdminBookingController::class, 'destroy'])->name('destroy');
+        Route::get('/print/{id}', [AdminBookingController::class, 'print'])->name('print');
     });
 
-    // Pembayaran & Cicilan
+    // Pembayaran Admin
     Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
-        Route::get('/', [PembayaranController::class, 'index'])->name('index');
-        Route::get('/data', [PembayaranController::class, 'data'])->name('data');
-        Route::get('/create', [PembayaranController::class, 'create'])->name('create');
-        Route::post('/store', [PembayaranController::class, 'store'])->name('store');
-        Route::get('/{id}/histori', [PembayaranController::class, 'histori'])->name('histori');
-        Route::get('/{id}/nota', [PembayaranController::class, 'cetakNota'])->name('nota');
-        Route::delete('/{id}', [PembayaranController::class, 'destroy'])->name('destroy');
+        Route::get('/', [AdminPembayaranController::class, 'index'])->name('index');
+        Route::get('/data', [AdminPembayaranController::class, 'data'])->name('data');
+        Route::get('/create', [AdminPembayaranController::class, 'create'])->name('create');
+        Route::post('/store', [AdminPembayaranController::class, 'store'])->name('store');
+        Route::get('/{id}/histori', [AdminPembayaranController::class, 'histori'])->name('histori');
+        Route::get('/{id}/nota', [AdminPembayaranController::class, 'cetakNota'])->name('nota');
+        Route::delete('/{id}', [AdminPembayaranController::class, 'destroy'])->name('destroy');
     });
-
-    // --- SYSTEM USERS ---
-    Route::get('users/json', [UserController::class, 'data'])->name('users.data');
-    Route::resource('users', UserController::class);
-});
-
-use Illuminate\Support\Facades\Mail;
-
-Route::get('/tes-email', function () {
-    try {
-        Mail::raw('Halo SysGRA! Email ini dikirim untuk tes koneksi SMTP.', function ($message) {
-            $message->to('stiabdii2@gmail.com') // <--- Isi email Anda sendiri
-                ->subject('Tes SMTP SysGRA Berhasil');
-        });
-        return "Email berhasil dikirim! Cek inbox atau spam.";
-    } catch (\Exception $e) {
-        return "Gagal mengirim email. Error: " . $e->getMessage();
-    }
 });

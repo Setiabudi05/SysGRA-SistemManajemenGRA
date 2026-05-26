@@ -1,0 +1,170 @@
+/* ==========================================================================
+    SYSGRA MASTER USER CSS - GRIYA RIAS ASMARA
+   ========================================================================== */
+
+/* --- 1. GENERAL SETUP --- */
+body {
+    font-family: 'Nunito', sans-serif !important;
+    background-color: #f2f7ff;
+    color: #252d3a;
+}
+
+.content-wrapper {
+    min-height: 80vh;
+    padding-top: 1.5rem;
+}
+
+/* --- 2. HEADER & LOGO (MAZER STYLE) --- */
+.header-top {
+    padding: 1.2rem 0 !important;
+    background-color: #ffffff;
+    border-bottom: 1px solid #ebeef3;
+}
+
+.header-top .logo img {
+    height: 60px !important; /* Ukuran proporsional Mazer */
+    width: auto;
+    transition: all 0.3s ease;
+}
+
+.user-dropdown-name {
+    font-weight: 700;
+    color: #25396f; /* Biru Mazer */
+}
+
+/* --- 3. NAVBAR CLEAN STYLE (ANTI-KOTAK & ANTI-GOYANG) --- */
+.main-navbar {
+    background-color: #435ee0 !important;
+    border: none !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.main-navbar .menu-item .menu-link {
+    transition: all 0.2s ease;
+    padding: 0.7rem 1rem;
+    background-color: transparent !important;
+    border: none !important;
+}
+
+.main-navbar .menu-item .menu-link span, 
+.main-navbar .menu-item .menu-link i {
+    color: rgba(255, 255, 255, 0.65) !important; 
+    transition: color 0.2s ease-in-out;
+    font-weight: 700 !important; 
+}
+
+.main-navbar .menu-item .menu-link:hover {
+    background-color: transparent !important;
+}
+
+.main-navbar .menu-item:hover .menu-link span,
+.main-navbar .menu-item:hover .menu-link i {
+    color: #ffffff !important;
+}
+
+.main-navbar .menu-item.active .menu-link {
+    background-color: transparent !important;
+}
+
+.main-navbar .menu-item.active .menu-link span,
+.main-navbar .menu-item.active .menu-link i {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+/* --- 4. GLOBAL UI COMPONENTS --- */
+.adaptive-card { 
+    border-radius: 1.2rem !important; 
+    background-color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.welcome-banner {
+    background: linear-gradient(135deg, #435ee0 0%, #2e43ad 100%);
+    border-radius: 20px;
+}
+
+.title-text { 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    color: #252d3a !important;
+}
+
+.info-label-sm { 
+    font-weight: 800; 
+    font-size: 0.65rem; 
+    text-transform: uppercase; 
+    color: #6c757d; 
+    display: block; 
+    margin-bottom: 4px;
+}
+
+/* --- 5. DASHBOARD SPECIFIC --- */
+.stats-icon-wrapper {
+    width: 48px; height: 48px; display: flex; align-items: center;
+    justify-content: center; border-radius: 12px; font-size: 1.4rem;
+}
+
+.blue-theme { background: rgba(67, 94, 224, 0.15); color: #435ee0; }
+.light-blue-theme { background: rgba(0, 150, 255, 0.15); color: #0096ff; }
+
+/* --- 6. RESPONSIVE LOGIC (MAZER STYLE) --- */
+@media screen and (max-width: 1199px) {
+    .burger-btn {
+        display: block !important;
+    }
+
+    .burger-btn i {
+        color: #435ee0;
+        font-size: 1.6rem;
+    }
+
+    .main-navbar {
+        display: none; 
+        position: relative !important;
+        width: 100%;
+        background-color: #435ee0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .main-navbar.active {
+        display: block !important;
+    }
+
+    .main-navbar ul {
+        flex-direction: column;
+        padding: 10px 0 !important;
+    }
+
+    .main-navbar .menu-link {
+        padding: 15px 25px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .header-top .logo img { height: 45px !important; }
+    .header-top { padding: 1rem 0 !important; }
+}
+
+/* ... Kode Table & Avatar Anda tetap lanjut di bawah ... */
+/* --- 7. KERANJANG & BOOKING SPECIFIC --- */
+.hover-shadow:hover { box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important; border-color: #435ee0 !important; }
+.bg-light-primary { background-color: #e8f3ff !important; color: #435ee0 !important; }
+.bg-light-warning { background-color: #fff9e6 !important; color: #856404 !important; }
+.italic { font-style: italic; }
+.btn-mazer-blue { background-color: #435ee0 !important; border-color: #435ee0 !important; }
+
+/* --- 8. PROFILE (AVATAR) --- */
+.avatar-wrapper { padding: 4px; border: 3px solid #435ee0; border-radius: 50%; display: inline-block; }
+.avatar-circle { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+
+/* --- 9. TABLE & PAYMENTS --- */
+.text-dark { color: #252d3a !important; }
+.bg-light-success { background-color: #e8fadf !important; color: #155724 !important; }
+.bg-light-danger { background-color: #fcebeb !important; color: #721c24 !important; }
+.bg-light-secondary { background-color: #f8f9fa !important; }
+.table thead th { border-top: none; background-color: #fafdff; text-transform: uppercase; font-size: 0.75rem;}

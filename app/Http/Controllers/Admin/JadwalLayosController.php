@@ -28,9 +28,9 @@ class JadwalLayosController extends Controller
      */
     public function data(Request $request)
     {
-        $query = JadwalLayos::with('pengantin.paket');
+        // Mengambil data utama dari Jadwal Pengantin
+        $query = \App\Models\JadwalPengantin::with(['paket', 'jadwalLayos'])->orderBy('tanggal_awal', 'asc');
 
-        // Filter pencarian
         if ($request->filled('bulan')) {
             $query->where('bulan', $request->bulan);
         }
@@ -40,38 +40,32 @@ class JadwalLayosController extends Controller
 
         return DataTables::of($query)
             ->addIndexColumn()
-            ->addColumn('tanggal', function ($row) {
-                return $row->pengantin
-                    ? Carbon::parse($row->pengantin->tanggal_awal)->translatedFormat('d')
-                    : '-';
+            ->addColumn('tanggal_full', function ($row) {
+                $awal = $row->tanggal_awal ? \Carbon\Carbon::parse($row->tanggal_awal)->format('d') : '-';
+                $akhir = $row->tanggal_akhir ? \Carbon\Carbon::parse($row->tanggal_akhir)->format('d') : null;
+                $bulanTahun = $row->bulan . ' ' . $row->tahun;
+                return ($akhir && $awal != $akhir) ? "$awal - $akhir $bulanTahun" : "$awal $bulanTahun";
             })
-            ->addColumn('nama', fn($row) => $row->pengantin->nama ?? '-')
-            ->addColumn('paket', fn($row) => $row->pengantin->paket->nama_paket ?? '-')
-            // Sisipkan parameter filter aktif ke URL Edit
-            ->addColumn('action', function ($row) use ($request) {
-                $params = [
-                    'id' => $row->id,
-                    'f_bulan' => $request->bulan,
-                    'f_tahun' => $request->tahun
-                ];
-
+            ->addColumn('paket', fn($row) => $row->paket?->nama_paket ?? '-')
+            // Menampilkan rincian tenda/layos
+            ->addColumn('layos_detail', function ($row) {
+                return $row->jadwalLayos->deskripsi ?? '<span class="text-muted italic small">Belum ada rincian...</span>';
+            })
+            ->addColumn('action', function ($row) {
+                $layosId = $row->jadwalLayos ? $row->jadwalLayos->id : 'null';
                 return '
-                <div class="d-flex justify-content-center gap-2">
-                    <a href="' . route('admin.jadwallayos.edit', $params) . '" 
-                       class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
-                       <i class="bi bi-pencil-square"></i> Edit
-                    </a>
-                    <button onclick="hapusJadwal(' . $row->id . ')" 
-                            class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
-                        <i class="bi bi-trash"></i> Hapus
-                    </button>
-                </div>';
+            <div class="d-flex justify-content-center gap-2">
+                <a href="' . route('admin.jadwallayos.edit', $row->id) . '" class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
+                    <i class="bi bi-pencil-square"></i> Edit
+                </a>
+                <button onclick="hapusLayos(' . $layosId . ')" class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
+                    <i class="bi bi-trash"></i> Hapus
+                </button>
+            </div>';
             })
-            ->rawColumns(['action'])
+            ->rawColumns(['layos_detail', 'action'])
             ->make(true);
     }
-
-
 
     /**
      * Tampilkan form tambah jadwal layos.
@@ -118,7 +112,7 @@ class JadwalLayosController extends Controller
     /**
      * Perbarui data jadwal layos.
      */
-     public function update(Request $request, $id)
+    public function update(Request $request, $id)
     {
         $validated = $this->validateRequest($request);
         $jadwal = JadwalLayos::findOrFail($id);

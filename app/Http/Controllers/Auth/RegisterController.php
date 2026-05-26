@@ -62,7 +62,7 @@ class RegisterController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            // 'role' akan otomatis terisi 'user' dari default database
+            'role' => 'pelanggan', // Tambahkan ini agar otomatis jadi pelanggan
         ]);
     }
 

@@ -12,8 +12,10 @@
                 <div class="col-12 col-md-6">
                     <nav aria-label="breadcrumb" class="mb-1">
                         <ol class="breadcrumb" style="font-size: 0.85rem;">
-                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}" class="text-muted">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('admin.users.index') }}" class="text-muted">Kelola User</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}"
+                                    class="text-muted">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('admin.users.index') }}" class="text-muted">Kelola
+                                    User</a></li>
                             <li class="breadcrumb-item active text-primary" aria-current="page">Edit Pengguna</li>
                         </ol>
                     </nav>
@@ -55,7 +57,8 @@
                                     <label class="form-label">Nama Lengkap</label>
                                     <div class="input-group">
                                         <span class="input-group-text border-end-0"><i class="bi bi-person"></i></span>
-                                        <input type="text" name="name" class="form-control border-start-0" value="{{ old('name', $user->name) }}" required>
+                                        <input type="text" name="name" class="form-control border-start-0"
+                                            value="{{ old('name', $user->name) }}" required>
                                     </div>
                                 </div>
 
@@ -63,7 +66,8 @@
                                     <label class="form-label">Alamat Email</label>
                                     <div class="input-group">
                                         <span class="input-group-text border-end-0"><i class="bi bi-envelope"></i></span>
-                                        <input type="email" name="email" class="form-control border-start-0" value="{{ old('email', $user->email) }}" required>
+                                        <input type="email" name="email" class="form-control border-start-0"
+                                            value="{{ old('email', $user->email) }}" required>
                                     </div>
                                 </div>
                             </div>
@@ -78,14 +82,16 @@
                                     <label class="form-label">Password Baru</label>
                                     <div class="input-group">
                                         <span class="input-group-text border-end-0"><i class="bi bi-lock"></i></span>
-                                        <input type="password" name="password" class="form-control border-start-0" placeholder="Minimal 8 karakter">
+                                        <input type="password" name="password" class="form-control border-start-0"
+                                            placeholder="Minimal 8 karakter">
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Ulangi Password</label>
                                     <div class="input-group">
                                         <span class="input-group-text border-end-0"><i class="bi bi-shield-lock"></i></span>
-                                        <input type="password" name="password_confirmation" class="form-control border-start-0" placeholder="Ulangi password baru">
+                                        <input type="password" name="password_confirmation"
+                                            class="form-control border-start-0" placeholder="Ulangi password baru">
                                     </div>
                                 </div>
                             </div>
@@ -95,8 +101,17 @@
                                 <div class="input-group">
                                     <span class="input-group-text border-end-0"><i class="bi bi-shield-check"></i></span>
                                     <select name="role" class="form-select border-start-0" required>
-                                        <option value="user" {{ old('role', $user->role) == 'user' ? 'selected' : '' }}>User (Pelanggan / Klien)</option>
-                                        <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin (Pengelola Dashboard)</option>
+                                        {{-- Bagian Role Akses Sistem pada Edit Pengguna --}}
+                                        <select name="role" class="form-select border-start-0" required>
+                                            <option value="owner" {{ old('role', $user->role) == 'owner' ? 'selected' : '' }}>
+                                                Owner (Pemilik WO)</option>
+                                            <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>
+                                                Admin (Pengelola Dashboard)</option>
+                                            <option value="kru" {{ old('role', $user->role) == 'kru' ? 'selected' : '' }}>Kru
+                                                (Vendor)</option>
+                                            <option value="user" {{ old('role', $user->role) == 'user' ? 'selected' : '' }}>
+                                                User (Pelanggan / Klien)</option>
+                                        </select>
                                     </select>
                                 </div>
                             </div>
@@ -116,7 +131,8 @@
                 <div class="alert alert-light-primary border-0 shadow-sm p-4">
                     <h5 class="fw-bold small mb-3"><i class="bi bi-shield-lock-fill me-2"></i> Keamanan Akun</h5>
                     <p class="small mb-0">
-                        Admin memiliki akses penuh terhadap data sensitif. Pastikan perubahan dilakukan sesuai dengan otoritas yang berlaku.
+                        Admin memiliki akses penuh terhadap data sensitif. Pastikan perubahan dilakukan sesuai dengan
+                        otoritas yang berlaku.
                     </p>
                 </div>
             </div>

@@ -21,8 +21,17 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
         $request->session()->regenerate();
 
-        // Menambahkan with('swal_success') agar alert muncul di dashboard
-        return redirect()->intended(route('dashboard'))
+        // Ambil user yang login
+        $user = Auth::user();
+
+        // Logika Redirect berdasarkan Role
+        if ($user->role === 'admin') {
+            return redirect()->intended(route('admin.dashboard'))
+                ->with('swal_success', 'Selamat Datang Admin!');
+        }
+
+        // Jika user biasa, arahkan ke dashboard user
+        return redirect()->intended(route('user.dashboard'))
             ->with('swal_success', 'Selamat Datang! Anda berhasil login ke sistem SysGRA.');
     }
 

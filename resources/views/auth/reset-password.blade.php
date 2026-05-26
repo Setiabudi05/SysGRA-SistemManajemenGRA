@@ -17,12 +17,9 @@
     <link href="{{ asset('assets-admin/css/sysgra.min.css') }}" rel="stylesheet">
 
     <style>
-        body {
-            font-family: 'Nunito', sans-serif;
-        }
-
+        body { font-family: 'Nunito', sans-serif; }
         .bg-gradient-login {
-            background-image: url('{{ asset("assets-admin/img/bg.jpg") }}') !important;
+            background-image: url('{{ asset("assets-admin/img/bg.png") }}') !important;
             background-size: cover !important;
             background-position: center !important;
             background-repeat: no-repeat !important;
@@ -30,60 +27,19 @@
             background-color: rgba(50, 70, 100, 0.4) !important;
             background-blend-mode: multiply !important;
         }
-
-        .card {
-            border: none;
-            border-radius: 1.25rem;
-            overflow: hidden;
-        }
-
-        .login-form {
-            padding: 40px !important;
-        }
-
-        .login-title {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #3a3b45;
-            letter-spacing: 1px;
-        }
-
-        /* Perbaikan Kontainer Password agar Ikon Lurus */
-        .password-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .password-wrapper input {
-            padding-right: 45px !important;
-            /* Ruang untuk ikon */
-            width: 100%;
-        }
-
+        .card { border: none; border-radius: 1.25rem; overflow: hidden; }
+        .login-form { padding: 40px !important; }
+        .login-title { font-size: 1.5rem; font-weight: 800; color: #3a3b45; letter-spacing: 1px; }
+        .password-wrapper { position: relative; display: flex; align-items: center; }
+        .password-wrapper input { padding-right: 45px !important; width: 100%; }
         .toggle-password {
-            position: absolute;
-            right: 15px;
-            cursor: pointer;
-            color: #d1d3e2;
-            z-index: 10;
-            transition: color 0.2s;
-            /* Memastikan posisi vertikal tepat di tengah input saja */
-            top: 50%;
-            transform: translateY(-50%);
+            position: absolute; right: 15px; cursor: pointer; color: #d1d3e2; z-index: 10;
+            transition: color 0.2s; top: 50%; transform: translateY(-50%);
         }
-
-        .toggle-password:hover {
-            color: #435ebe;
-            /* Warna primer SysGRA */
-        }
-
+        .toggle-password:hover { color: #435ebe; }
         .btn-primary {
-            background-color: #435ebe;
-            border-color: #435ebe;
-            font-weight: 700;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
+            background-color: #435ebe; border-color: #435ebe; font-weight: 700;
+            padding: 0.75rem; border-radius: 0.5rem;
         }
     </style>
 </head>
@@ -97,7 +53,8 @@
                         <div class="login-form">
 
                             <div class="text-center pt-2 pb-3">
-                                <a href="{{ route('home') }}">
+                                {{-- PERBAIKAN: Ganti 'home' menjadi 'landing' --}}
+                                <a href="{{ route('landing') }}">
                                     <img src="{{ asset('assets-admin/img/logo.png') }}" alt="Logo" style="max-height: 70px; margin-bottom: 10px;">
                                 </a>
                                 <h2 class="login-title mb-0">SYSGRA SYSTEM</h2>
@@ -127,14 +84,12 @@
                                 @csrf
                                 <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
-                                {{-- Email (Readonly) --}}
                                 <div class="form-group mb-3">
                                     <label class="small font-weight-bold text-dark">Email Anda</label>
                                     <input type="email" class="form-control bg-light"
-                                        name="email" value="{{ old('email', $request->email) }}" required readonly>
+                                        name="email" value="{{ old('email', $request->email) }}" required readonly shadow-sm>
                                 </div>
 
-                                {{-- Password Baru - Menggunakan autocomplete="new-password" --}}
                                 <div class="form-group mb-3">
                                     <label class="small font-weight-bold text-dark">Password Baru</label>
                                     <div class="password-wrapper">
@@ -145,7 +100,6 @@
                                     </div>
                                 </div>
 
-                                {{-- Konfirmasi Password --}}
                                 <div class="form-group mb-4">
                                     <label class="small font-weight-bold text-dark">Konfirmasi Password</label>
                                     <div class="password-wrapper">
@@ -172,7 +126,6 @@
     <script src="{{ asset('assets-admin/vendor/bootstrap/js/bootstrap.bundle.min1.js') }}"></script>
 
     <script>
-        // Fungsi Toggle Password yang lebih simpel dan akurat
         function togglePass(fieldId, icon) {
             const field = document.getElementById(fieldId);
             if (field.type === 'password') {
@@ -185,5 +138,4 @@
         }
     </script>
 </body>
-
 </html>

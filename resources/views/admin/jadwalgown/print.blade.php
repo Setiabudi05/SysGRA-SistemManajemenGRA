@@ -5,108 +5,210 @@
     <meta charset="UTF-8">
     <title>Cetak Jadwal Gown</title>
     <style>
+        @page {
+            margin: 1.5cm;
+        }
+
         body {
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 12px;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
             color: #333;
+            line-height: 1.4;
         }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 5px;
-            color: #2c3e50;
+        /* Layout KOP Surat Resmi dengan Logo Monogram Teks */
+        table.kop-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
         }
 
-        p {
+        table.kop-table td {
+            border: none !important;
+            padding: 0 !important;
+        }
+
+        .logo-container {
+            width: 15%;
+            vertical-align: middle;
+        }
+
+        .monogram-logo {
+            font-size: 28pt;
+            font-weight: bold;
+            color: #d4af37;
+            line-height: 1;
+        }
+
+        .text-container {
+            width: 85%;
             text-align: center;
-            margin-top: 0;
-            font-size: 11px;
+            vertical-align: middle;
+        }
+
+        .text-container h2 {
+            margin: 0;
+            font-size: 18pt;
+            letter-spacing: 2px;
+            color: #000;
+            text-transform: uppercase;
+        }
+
+        .text-container p {
+            margin: 3px 0;
+            font-size: 9pt;
             color: #555;
         }
 
-        table {
+        .GarisKop {
+            border-bottom: 3px double #333;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        /* Judul Laporan */
+        .report-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Box Informasi Ringkas (Metadata Atas) */
+        table.info-box {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+        }
+
+        table.info-box td {
+            border: none !important;
+            padding: 4px 0 !important;
+            vertical-align: top;
+            font-size: 10pt;
+        }
+
+        /* Tabel Data Utama - Struktur Fixed Stabil */
+        table.data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 5px;
+            table-layout: fixed;
         }
 
-        th,
-        td {
-            border: 1px solid #ddd;
-            padding: 8px;
+        table.data-table th {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6 !important;
+            padding: 10px 5px !important;
+            font-size: 9pt;
             text-align: center;
-        }
-
-        th {
-            background: #3498db;
-            color: #fff;
+            text-transform: uppercase;
             font-weight: bold;
         }
 
-        tr:nth-child(even) {
-            background: #f9f9f9;
+        table.data-table td {
+            border: 1px solid #dee2e6 !important;
+            padding: 8px 5px !important;
+            font-size: 9pt;
+            vertical-align: middle;
+            word-wrap: break-word;
         }
 
-        tr:hover {
-            background: #f1f1f1;
+        /* Utility Helpers */
+        .fw-bold {
+            font-weight: bold;
         }
 
-        .no-data {
+        .text-center {
             text-align: center;
-            padding: 20px;
-            font-style: italic;
-            color: #888;
+        }
+
+        .text-left {
+            text-align: left;
         }
     </style>
 </head>
 
 <body>
-    <h2>Jadwal Gown</h2>
-    <p>
-        @if(!empty($bulan)) Bulan: {{ $bulan }} @endif
-        @if(!empty($tahun)) Tahun: {{ $tahun }} @endif
-    </p>
 
-    <table>
+    <table class="kop-table">
+        <tr>
+            <td class="logo-container">
+                <div class="monogram-logo">G</div>
+            </td>
+            <td class="text-container" style="padding-right: 60px;">
+                <h2>GRIYA RIAS ASMARA</h2>
+                <p>Alamat: Jl. Raya Brebes No. XX, Kabupaten Brebes, Jawa Tengah</p>
+                <p>Telp: 08xx-xxxx-xxxx | Email: griyariasasmara@gmail.com</p>
+            </td>
+        </tr>
+    </table>
+
+    <div class="GarisKop"></div>
+
+    <div class="report-title">JADWAL PENGGUNAAN GOWN</div>
+
+    <table class="info-box">
+        <tr>
+            <td style="width: 18%;">Periode Jadwal</td>
+            <td style="width: 2%;">:</td>
+            <td style="width: 30%;" class="fw-bold">{{ $bulan ?? 'Semua' }} {{ $tahun ?? '' }}</td>
+
+            <td style="width: 18%;">Tanggal Cetak</td>
+            <td style="width: 2%;">:</td>
+            <td style="width: 30%;">{{ date('d F Y') }}</td>
+        </tr>
+        <tr>
+            <td>Jumlah Jadwal</td>
+            <td>:</td>
+            <td class="fw-bold">{{ $jadwal->count() }} Acara</td>
+
+            <td>Cetak Oleh</td>
+            <td>:</td>
+            <td class="fw-bold" style="text-transform: uppercase;">Admin (SysGRA)</td>
+        </tr>
+    </table>
+
+    <table class="data-table">
         <thead>
             <tr>
-                <th>No</th>
-                <th>Tanggal</th>
-                <th>Bulan</th>
-                <th>Nama</th>
-                <th>Alamat</th>
-                <th>Paket</th>
-                <th>Gown</th>
+                <th style="width: 5%;">NO</th>
+                <th style="width: 16%;">TANGGAL</th>
+                <th style="width: 16%;">NAMA</th>
+                <th style="width: 22%;">ALAMAT LOKASI ACARA</th>
+                <th style="width: 18%;">PAKET LAYANAN</th>
+                <th style="width: 23%;">GOWN</th>
             </tr>
         </thead>
         <tbody>
             @forelse($jadwal as $i => $row)
                 <tr>
-                    <td>{{ $i + 1 }}</td>
-                    <td>
-                        @if($row->jadwalPengantin?->tanggal_awal && $row->jadwalPengantin?->tanggal_akhir)
-                            {{ \Carbon\Carbon::parse($row->jadwalPengantin->tanggal_awal)->format('d') }} -
-                            {{ \Carbon\Carbon::parse($row->jadwalPengantin->tanggal_akhir)->format('d') }}
-                        @elseif($row->jadwalPengantin?->tanggal_awal)
-                            {{ \Carbon\Carbon::parse($row->jadwalPengantin->tanggal_awal)->format('d') }}
-                        @else
-                            -
-                        @endif
+                    <td class="text-center fw-bold">{{ $i + 1 }}</td>
+
+                    <td class="text-center">
+                        {{ $row->tanggal_display ?? '-' }} {{ $row->bulan ?? '' }} {{ $row->tahun ?? '' }}
                     </td>
-                    <td>{{ $row->bulan ?? '-' }}</td>
-                    <td>{{ $row->jadwalPengantin->nama ?? '-' }}</td>
-                    <td>{{ $row->jadwalPengantin->alamat ?? '-' }}</td>
-                    <td>{{ $row->jadwalPengantin?->paket?->nama_paket ?? '-' }}</td>
-                    <td>{{ $row->gown ?? '-' }}</td>
+
+                    <td class="fw-bold">{{ $row->nama ?? '-' }}</td>
+                    <td class="text-left">{{ $row->alamat ?? '-' }}</td>
+                    <td class="text-left">{{ $row->paket?->nama_paket ?? '-' }}</td>
+
+                    <td class="text-center fw-bold" style="color: #2c3e50;">
+                        {{ $row->jadwalGown?->gown ?? ($row->jadwal_gown?->gown ?? 'Belum diset') }}
+                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7">Tidak ada data jadwal.</td>
+                    <td colspan="6" class="text-center" style="padding: 30px; color: #6c757d;">
+                        Data jadwal tidak ditemukan untuk periode {{ $bulan ?? '' }} {{ $tahun ?? '' }}.
+                    </td>
                 </tr>
             @endforelse
         </tbody>
     </table>
+
 </body>
 
 </html>

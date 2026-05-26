@@ -71,7 +71,6 @@
                         <tr>
                             <th class="text-center" width="5%">No</th>
                             <th>Tanggal</th>
-                            <th>Bulan</th>
                             <th>Nama</th>
                             <th>Alamat</th>
                             <th>Paket</th>
@@ -97,7 +96,7 @@
 
 <script>
 $(document).ready(function () {
-    // 1. Ambil parameter dari URL browser (untuk menangkap kiriman dari redirect Controller)
+    // 1. Ambil parameter dari URL browser
     const urlParams = new URLSearchParams(window.location.search);
     const getBulan = urlParams.get('bulan');
     const getTahun = urlParams.get('tahun');
@@ -105,7 +104,7 @@ $(document).ready(function () {
     const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
     let now = new Date();
     
-    // 2. Logic Prioritas: Parameter URL > Bulan/Tahun Sekarang
+    // 2. Logic Prioritas Filter
     if (getBulan) {
         $('#filter-bulan').val(getBulan);
     } else if (!$('#filter-bulan').val()) {
@@ -114,6 +113,8 @@ $(document).ready(function () {
 
     if (getTahun) {
         $('#filter-tahun').val(getTahun);
+    } else if (!$('#filter-tahun').val()) {
+        $('#filter-tahun').val(now.getFullYear());
     }
 
     // 3. Inisialisasi DataTable
@@ -121,9 +122,9 @@ $(document).ready(function () {
         processing: true,
         serverSide: true,
         ajax: {
-            url: "{{ route('admin.jadwalgown.data') }}",
+            // Sesuaikan route: admin.jadwalgown.data atau admin.jadwallayos.data
+            url: "{{ route('admin.jadwalgown.data') }}", 
             data: function(d) {
-                // Mengirimkan filter yang sedang terpilih di dropdown ke server
                 d.bulan = $('#filter-bulan').val();
                 d.tahun = $('#filter-tahun').val();
             }
@@ -132,29 +133,43 @@ $(document).ready(function () {
         pageLength: 10,
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false, class: 'text-center' },
-            { data: 'tanggal', name: 'tanggal' },
-            { data: 'bulan', name: 'bulan' },
-            { data: 'nama', name: 'nama', class: 'fw-bold' },
+            { 
+                data: 'tanggal_full', // Gunakan tanggal_full agar sinkron dengan Controller
+                name: 'tanggal_awal' 
+            },
+            // Kolom 'bulan' dihapus karena sudah digabung ke tanggal_full
+            { data: 'nama', name: 'nama', class: 'fw-bold text-primary' },
             { data: 'alamat', name: 'alamat' },
             { data: 'paket', name: 'paket' },
-            { data: 'gown', name: 'gown' },
+            { 
+                // Ganti 'gown' atau 'layos_detail' sesuai controller masing-masing
+                data: 'gown_detail', 
+                name: 'gown_detail' 
+            },
             { data: 'action', name: 'action', orderable:false, searchable:false, class: 'text-center' },
         ]
     });
 
+    // Reload tabel saat filter diubah
     $('#filter-bulan, #filter-tahun').change(() => table.draw());
 
+    // Fungsi Print
     $('#btn-print').click(function () {
         let url = "{{ route('admin.jadwalgown.print') }}?bulan=" + $('#filter-bulan').val() + "&tahun=" + $('#filter-tahun').val();
         window.open(url, '_blank');
     });
 });
 
-// FUNGSI HAPUS DENGAN TIMER
+// FUNGSI HAPUS (Gunakan untuk Gown/Layos)
 function hapusJadwal(id){
+    if (id === null || id === 'null') {
+        Swal.fire("Info", "Rincian belum diisi, tidak ada data untuk dihapus.", "info");
+        return;
+    }
+
     Swal.fire({
-        title: "Hapus Jadwal Gown?",
-        text: "Data jadwal busana akan dihapus permanen!",
+        title: "Apakah Anda Yakin?",
+        text: "Data rincian ini akan dihapus permanen!",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#d33",
@@ -164,6 +179,7 @@ function hapusJadwal(id){
     }).then((result)=>{
         if(result.isConfirmed){
             $.ajax({
+                // Sesuaikan URL prefix: jadwalgown atau jadwallayos
                 url: "{{ url('admin/jadwalgown/destroy') }}/" + id, 
                 type: "DELETE",
                 data: {_token: "{{ csrf_token() }}"},
@@ -173,7 +189,7 @@ function hapusJadwal(id){
                         title: res.success ? 'Berhasil!' : 'Gagal!',
                         text: res.message,
                         timer: 1500,
-                        showConfirmButton: false // Timer aktif tanpa klik OK
+                        showConfirmButton: false
                     });
 
                     if(res.success){
@@ -181,13 +197,7 @@ function hapusJadwal(id){
                     }
                 },
                 error: function(xhr) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'Terjadi kesalahan sistem.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
+                    Swal.fire("Error!", "Gagal menghapus data.", "error");
                 }
             });
         }

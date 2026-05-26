@@ -49,16 +49,21 @@
                                         <select name="jadwal_pengantin_id" id="jadwal_pengantin_id" class="form-select shadow-sm" required>
                                             <option value="">-- Pilih Jadwal --</option>
                                             @foreach ($jadwals as $jadwal)
-                                                <option value="{{ $jadwal->id }}"
-                                                    data-bulan="{{ \Carbon\Carbon::parse($jadwal->tanggal_awal)->translatedFormat('F') }}"
-                                                    data-tahun="{{ \Carbon\Carbon::parse($jadwal->tanggal_awal)->format('Y') }}"
-                                                    data-nama="{{ $jadwal->nama }}" data-alamat="{{ $jadwal->alamat }}"
-                                                    data-paket="{{ $jadwal->paket->nama_paket ?? '' }}"
-                                                    data-paket_id="{{ $jadwal->paket->id ?? '' }}">
-                                                    {{ \Carbon\Carbon::parse($jadwal->tanggal_awal)->translatedFormat('d F Y') }}
-                                                    ({{ $jadwal->nama }})
-                                                </option>
-                                            @endforeach
+    <option value="{{ $jadwal->id }}"
+        {{-- Mempertahankan auto-select jika dilempar dari pengantin_id atau dari old input --}}
+        {{ (old('jadwal_pengantin_id') == $jadwal->id || ($selectedPengantin && $selectedPengantin->id == $jadwal->id)) ? 'selected' : '' }}
+        data-bulan="{{ \Carbon\Carbon::parse($jadwal->tanggal_awal)->translatedFormat('F') }}"
+        data-tahun="{{ \Carbon\Carbon::parse($jadwal->tanggal_awal)->format('Y') }}"
+        data-nama="{{ $jadwal->nama }}" 
+        data-alamat="{{ $jadwal->alamat }}"
+        {{-- AMAN: Menggunakan ?-> agar tidak error jika relasi paket kosong --}}
+        data-paket="{{ $jadwal->paket?->nama_paket ?? 'Tanpa Paket' }}"
+        data-paket_id="{{ $jadwal->paket?->id ?? '' }}">
+        
+        {{ \Carbon\Carbon::parse($jadwal->tanggal_awal)->translatedFormat('d F Y') }}
+        ({{ $jadwal->nama }})
+    </option>
+@endforeach
                                         </select>
                                     </div>
                                 </div>

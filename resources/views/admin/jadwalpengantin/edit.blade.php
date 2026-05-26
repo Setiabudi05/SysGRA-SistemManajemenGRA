@@ -3,6 +3,9 @@
 
 @push('css')
     {{-- Memastikan jarak konten rapat ke atas dan gaya visual sinkron --}}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     <link rel="stylesheet" href="{{ asset('assets-admin/css/admin-styles.css') }}">
 @endpush
 
@@ -116,25 +119,60 @@
                                 </div>
 
                                 {{-- Section 3: Personel Tim --}}
-                                <div class="col-md-4">
-                                    <div class="form-group mb-3">
-                                        <label class="form-label fw-bold" for="asisten">Asisten MUA</label>
-                                        <input type="text" id="asisten" name="asisten" class="form-control shadow-sm"
-                                            placeholder="Nama Asisten" value="{{ old('asisten', $jadwal->asisten) }}">
+                                {{-- resources/views/admin/jadwalpengantin/edit.blade.php --}}
+
+                                {{-- BAGIAN DROPDOWN KRU --}}
+                                <div class="row">
+                                    {{-- Dropdown Khusus Asisten --}}
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">Asisten MUA (Bisa > 1)</label>
+                                        <select name="asisten[]" id="asisten-select" class="form-select select2 shadow-sm"
+                                            multiple="multiple">
+                                            @foreach($kruAsisten as $u)
+                                                @php
+                                                    $selectedAsisten = $jadwal->asisten ? explode(',', $jadwal->asisten) : [];
+                                                @endphp
+                                                <option value="{{ $u->name }}" {{ in_array($u->name, $selectedAsisten) ? 'selected' : '' }}>{{ $u->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    {{-- Dropdown Khusus Fotografer --}}
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">Fotografer (FG)</label>
+                                        <select name="fg" class="form-select shadow-sm">
+                                            <option value="">-- Pilih FG --</option>
+                                            @foreach($kruFG as $u)
+                                                <option value="{{ $u->name }}" {{ old('fg', $jadwal->fg) == $u->name ? 'selected' : '' }}>
+                                                    {{ $u->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    {{-- Dropdown Khusus Layos --}}
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">Layos / Dekorasi</label>
+                                        <select name="layos" class="form-select shadow-sm">
+                                            <option value="">-- Pilih Layos --</option>
+                                            @foreach($kruLayos as $u)
+                                                <option value="{{ $u->name }}" {{ old('layos', $jadwal->layos) == $u->name ? 'selected' : '' }}>
+                                                    {{ $u->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+
+                                <div class="col-12">
                                     <div class="form-group mb-3">
-                                        <label class="form-label fw-bold" for="fg">Fotografer (FG)</label>
-                                        <input type="text" id="fg" name="fg" class="form-control shadow-sm"
-                                            placeholder="Nama Fotografer" value="{{ old('fg', $jadwal->fg) }}">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group mb-3">
-                                        <label class="form-label fw-bold" for="layos">Layos / Dekorasi</label>
-                                        <input type="text" id="layos" name="layos" class="form-control shadow-sm"
-                                            placeholder="Tim Layos" value="{{ old('layos', $jadwal->layos) }}">
+                                        <label for="keterangan" class="form-label fw-bold">Keterangan Acara / Catatan
+                                            Khusus</label>
+                                        <textarea id="keterangan" name="keterangan" rows="3"
+                                            class="form-control shadow-sm @error('keterangan') is-invalid @enderror"
+                                            placeholder="Contoh: Akad jam 09.00 pagi, ada adat Pedang Pora, dll.">{{ old('keterangan', $jadwal->keterangan ?? '') }}</textarea>
+                                        @error('keterangan') <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                             </div>
@@ -164,10 +202,21 @@
         </div>
     </section>
 @endsection
-
 @push('js')
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>   {{-- 2. Load Select2 JS --}}
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://parsleyjs.org/dist/parsley.min.js"></script>
     <script src="{{ asset('assets/admin/static/js/pages/parsley.js') }}"></script>
+    <script>
+        $(document).ready(function () {
+            // Aktifkan Select2 khusus untuk ID asisten-select
+            $('#asisten-select').select2({
+                theme: 'bootstrap-5',
+                placeholder: "-- Pilih Asisten --",
+                allowClear: true,
+                width: '100%'
+            });
+        });
+    </script>
     @include('sweetalert::alert')
 @endpush

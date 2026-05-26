@@ -19,8 +19,8 @@ class JadwalGownController extends Controller
 
     public function data(Request $request)
     {
-        $query = JadwalGown::with(['jadwalPengantin.paket'])
-            ->whereHas('jadwalPengantin');
+        // Mengambil data utama dari Jadwal Pengantin agar otomatis terisi
+        $query = \App\Models\JadwalPengantin::with(['paket', 'jadwalGown'])->orderBy('tanggal_awal', 'asc');
 
         if ($request->filled('bulan')) {
             $query->where('bulan', $request->bulan);
@@ -31,42 +31,40 @@ class JadwalGownController extends Controller
 
         return DataTables::of($query)
             ->addIndexColumn()
-            ->addColumn('tanggal', function ($row) {
-                $awal = $row->jadwalPengantin->tanggal_awal ? Carbon::parse($row->jadwalPengantin->tanggal_awal)->format('d') : '-';
-                $akhir = $row->jadwalPengantin->tanggal_akhir ? Carbon::parse($row->jadwalPengantin->tanggal_akhir)->format('d') : null;
-                return $akhir ? "$awal-$akhir" : $awal;
+            ->addColumn('tanggal_full', function ($row) {
+                $awal = $row->tanggal_awal ? \Carbon\Carbon::parse($row->tanggal_awal)->format('d') : '-';
+                $akhir = $row->tanggal_akhir ? \Carbon\Carbon::parse($row->tanggal_akhir)->format('d') : null;
+                $bulanTahun = $row->bulan . ' ' . $row->tahun;
+                return ($akhir && $awal != $akhir) ? "$awal - $akhir $bulanTahun" : "$awal $bulanTahun";
             })
-            ->addColumn('nama', fn($row) => $row->jadwalPengantin->nama ?? '-')
-            ->addColumn('alamat', fn($row) => $row->jadwalPengantin->alamat ?? '-')
-            ->addColumn('paket', fn($row) => $row->jadwalPengantin->paket->nama_paket ?? '-')
-            ->addColumn('action', function ($row) use ($request) {
-                // Menambahkan parameter filter aktif ke URL Edit
-                $params = [
-                    'id' => $row->id,
-                    'f_bulan' => $request->bulan,
-                    'f_tahun' => $request->tahun
-                ];
-
+            ->addColumn('paket', fn($row) => $row->paket?->nama_paket ?? '-')
+            // Menampilkan rincian busana
+            ->addColumn('gown_detail', function ($row) {
+                return $row->jadwalGown->nama_gown ?? '<span class="badge bg-light-secondary text-muted">Belum diset</span>';
+            })
+            ->addColumn('action', function ($row) {
+                $gownId = $row->jadwalGown ? $row->jadwalGown->id : 'null';
                 return '
-                <div class="d-flex justify-content-center gap-2">
-                    <a href="' . route('admin.jadwalgown.edit', $params) . '" 
-                       class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
-                       <i class="bi bi-pencil-square"></i> Edit
-                    </a>
-                    <button onclick="hapusJadwal(' . $row->id . ')" 
-                            class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
-                        <i class="bi bi-trash"></i> Hapus
-                    </button>
-                </div>';
+            <div class="d-flex justify-content-center gap-2">
+                <a href="' . route('admin.jadwalgown.edit', $row->id) . '" class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
+                    <i class="bi bi-pencil-square"></i> Edit
+                </a>
+                <button onclick="hapusGown(' . $gownId . ')" class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
+                    <i class="bi bi-trash"></i> Hapus
+                </button>
+            </div>';
             })
-            ->rawColumns(['action'])
+            ->rawColumns(['gown_detail', 'action'])
             ->make(true);
     }
 
     public function create()
     {
-        // Mengambil semua data untuk dropdown (ASC agar urut dari tanggal terdekat)
-        $jadwals = JadwalPengantin::orderBy('tanggal_awal', 'asc')->get();
+        $jadwals = JadwalPengantin::where('tanggal_awal', '>=', now()->toDateString())
+            ->whereDoesntHave('jadwalGown') // Sesuaikan 'jadwalGown' dengan nama fungsi relasi di Model JadwalPengantin kamu
+            ->orderBy('tanggal_awal', 'asc')
+            ->get();
+
         return view('admin.jadwalgown.create', compact('jadwals'));
     }
 
@@ -138,28 +136,43 @@ class JadwalGownController extends Controller
      */
     public function print(Request $request)
     {
-        $query = JadwalGown::with(['jadwalPengantin.paket'])->whereHas('jadwalPengantin');
+        // KUNCI UTAMA: Ambil dari JadwalPengantin agar semua acara tetap muncul meskipun gown belum diset
+        $query = \App\Models\JadwalPengantin::with(['paket', 'jadwalGown']);
 
+        // Filter bulan dan tahun disesuaikan dengan data acara pengantin
         if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
+            $query->where('bulan', trim($request->bulan));
         }
         if ($request->filled('tahun')) {
-            $query->where('tahun', $request->tahun);
+            $query->where('tahun', trim($request->tahun));
         }
 
-        $jadwal = $query->get();
+        // Urutkan berdasarkan tanggal acara
+        $jadwal = $query->orderBy('tanggal_awal', 'asc')->get()->map(function ($item) {
+            $awal = $item->tanggal_awal ? \Carbon\Carbon::parse($item->tanggal_awal)->format('d') : '-';
+            $akhir = $item->tanggal_akhir ? \Carbon\Carbon::parse($item->tanggal_akhir)->format('d') : null;
+            $item->tanggal_display = $akhir && $akhir != $awal ? "$awal - $akhir" : $awal;
+            return $item;
+        });
+
         $bulan = $request->bulan;
         $tahun = $request->tahun;
 
-        return Pdf::loadView('admin.jadwalgown.print', compact('jadwal', 'bulan', 'tahun'))
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.jadwalgown.print', compact('jadwal', 'bulan', 'tahun'))
             ->setPaper('A4', 'portrait')
-            ->stream('jadwal-gown.pdf');
+            ->setOptions([
+                'isRemoteEnabled' => false,
+                'isHtml5ParserEnabled' => true,
+                'isFontSubsettingEnabled' => true
+            ]);
+
+        return $pdf->stream('jadwal_gown.pdf');
     }
 
     /**
      * Helper: Validasi Request.
      */
-   private function validateRequest(Request $request)
+    private function validateRequest(Request $request)
     {
         return $request->validate([
             'jadwal_pengantin_id' => 'required|exists:jadwal_pengantins,id',

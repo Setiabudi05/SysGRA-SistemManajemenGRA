@@ -95,8 +95,10 @@
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-shield-check"></i></span>
                                 <select name="role" class="form-select border-start-0 shadow-none" required>
-                                    <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>User (Pelanggan / Klien)</option>
+                                    <option value="owner" {{ old('role') == 'owner' ? 'selected' : '' }}>Owner (Pemilik WO)</option>
                                     <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin (Pengelola Dashboard)</option>
+                                    <option value="kru" {{ old('role') == 'kru' ? 'selected' : '' }}>Kru (Vendor)</option>
+                                    <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>User (Pelanggan / Klien)</option>
                                 </select>
                             </div>
                         </div>

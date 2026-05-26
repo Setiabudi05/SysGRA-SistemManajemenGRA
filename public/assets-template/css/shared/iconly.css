@@ -1,0 +1,31 @@
+@font-face {
+    font-family: 'Iconly---Bold';
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    /* Keluar dari shared, keluar dari css, masuk ke fonts */
+    src: url('../../fonts/Iconly---Bold.eot');
+    src: url('../../fonts/Iconly---Bold.eot?#iefix') format('embedded-opentype'),
+         url('../../fonts/Iconly---Bold.woff2') format('woff2'),
+         url('../../fonts/Iconly---Bold.woff') format('woff'),
+         url('../../fonts/Iconly---Bold.ttf') format('truetype'),
+         url('../../fonts/Iconly---Bold.svg#Iconly---Bold') format('svg');
+}
+
+/* Tambahkan ini untuk memastikan class i memanggil font yang benar */
+[class^="iconly-"], [class*=" iconly-"] {
+    font-family: 'Iconly---Bold' !important;
+    speak: never;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.iconly-boldShow:before { content: "\e96a"; }
+.iconly-boldProfile:before { content: "\e95e"; }
+.iconly-boldAdd-User:before { content: "\e900"; }
+.iconly-boldBookmark:before { content: "\e90b"; }

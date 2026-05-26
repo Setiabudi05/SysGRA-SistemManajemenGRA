@@ -23,4 +23,9 @@ class JadwalLayos extends Model
     {
         return $this->belongsTo(JadwalPengantin::class, 'jadwal_pengantin_id');
     }
+
+    public function jadwalPengantin()
+    {
+        return $this->belongsTo(JadwalPengantin::class, 'jadwal_pengantin_id');
+    }
 }

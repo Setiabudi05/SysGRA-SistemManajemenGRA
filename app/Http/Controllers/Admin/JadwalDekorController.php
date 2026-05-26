@@ -27,7 +27,8 @@ class JadwalDekorController extends Controller
      */
     public function data(Request $request)
     {
-        $query = JadwalDekor::with(['paket', 'jadwalPengantin']);
+        // Mengambil data master dari Jadwal Pengantin dengan urutan tanggal awal
+        $query = JadwalPengantin::with(['paket', 'jadwalDekor'])->orderBy('tanggal_awal', 'asc');
 
         if ($request->filled('bulan')) {
             $query->where('bulan', $request->bulan);
@@ -38,64 +39,78 @@ class JadwalDekorController extends Controller
 
         return DataTables::of($query)
             ->addIndexColumn()
-            ->addColumn('tanggal', function ($row) {
-                if ($row->jadwalPengantin) {
-                    $awal = $row->jadwalPengantin->tanggal_awal;
-                    $akhir = $row->jadwalPengantin->tanggal_akhir;
+            ->addColumn('tanggal_full', function ($row) {
+                // Format: "23 - 24 Mei 2026"
+                $awal = $row->tanggal_awal ? Carbon::parse($row->tanggal_awal)->format('d') : '-';
+                $akhir = $row->tanggal_akhir ? Carbon::parse($row->tanggal_akhir)->format('d') : null;
+                $bulanTahun = $row->bulan . ' ' . $row->tahun;
 
-                    if ($awal && $akhir) {
-                        return Carbon::parse($awal)->format('d') . ' - ' . Carbon::parse($akhir)->format('d');
-                    } elseif ($awal) {
-                        return Carbon::parse($awal)->format('d');
-                    }
+                if ($akhir && $awal != $akhir) {
+                    return "$awal - $akhir $bulanTahun";
                 }
-                return '-';
+                return "$awal $bulanTahun";
             })
-            ->editColumn('paket', fn($row) => $row->paket?->nama_paket ?? '-')
-            ->editColumn('foto', function ($row) {
-                return $row->foto
-                    ? '<div class="img-container shadow-sm"><img src="' . asset('storage/' . $row->foto) . '" alt="foto" width="60"></div>'
-                    : '-';
+            ->addColumn('nama', fn($row) => $row->nama)
+            ->addColumn('paket', fn($row) => $row->paket?->nama_paket ?? '-')
+            ->addColumn('foto', function ($row) {
+                if ($row->jadwalDekor && $row->jadwalDekor->foto) {
+                    return '<div class="img-container shadow-sm text-center"><img src="' . asset('storage/' . $row->jadwalDekor->foto) . '" alt="foto" width="60" class="rounded"></div>';
+                }
+                return '<div class="text-center"><span class="badge bg-light-secondary text-muted">Belum ada foto</span></div>';
             })
-            ->addColumn('action', function ($row) use ($request) {
-                // Selipkan parameter filter aktif ke URL Edit
-                $params = [
-                    'id' => $row->id,
-                    'f_bulan' => $request->bulan,
-                    'f_tahun' => $request->tahun
-                ];
+            ->addColumn('deskripsi', function ($row) {
+                return $row->jadwalDekor->deskripsi ?? '<span class="text-muted italic">Rincian belum diisi...</span>';
+            })
+            ->addColumn('action', function ($row) {
+                $editUrl = route('admin.jadwaldekor.edit', ['id' => $row->id]);
+                $dekorId = $row->jadwalDekor ? $row->jadwalDekor->id : 'null';
 
                 return '
-            <div class="d-flex justify-content-center gap-2">
-                <a href="' . route('admin.jadwaldekor.edit', $params) . '" 
-                   class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
-                   <i class="bi bi-pencil-square"></i> Edit
-                </a>
-                <button onclick="hapusJadwal(' . $row->id . ')" 
-                        class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
-                    <i class="bi bi-trash"></i> Hapus
-                </button>
-            </div>';
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="' . $editUrl . '" class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
+                        <i class="bi bi-pencil-square"></i> Edit
+                    </a>
+                    <button onclick="hapusJadwal(' . $dekorId . ')" class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
+                        <i class="bi bi-trash"></i> Hapus
+                    </button>
+                </div>';
             })
-            ->rawColumns(['action', 'foto'])
+            ->rawColumns(['action', 'foto', 'deskripsi'])
             ->make(true);
     }
 
     /**
      * Tampilkan form tambah jadwal dekorasi.
      */
-    public function create()
+    public function create(Request $request)
     {
         $pakets = Paket::all();
 
-        // Pastikan mengambil SEMUA data tanpa filter tahun
+        // Ambil ID dari tombol "Lengkapi Dekor" jika ada
+        $selectedPengantinId = $request->get('pengantin_id');
+
+        // Query cerdas untuk dropdown jadwals
         $jadwals = JadwalPengantin::with('paket')
-            ->orderBy('tanggal_awal', 'asc') // Gunakan ASC agar urutan dari yang terdekat
+            ->where(function ($query) use ($selectedPengantinId) {
+                // Kondisi A: Tampilkan yang hari ini ke depan DAN belum punya dekorasi
+                $query->where('tanggal_awal', '>=', now()->toDateString())
+                    ->whereDoesntHave('jadwalDekor'); // Sesuaikan 'jadwalDekor' dengan nama relasi di Model JadwalPengantin
+            })
+            // Kondisi B: ATAU jika dia diklik dari tombol "Lengkapi Dekor", paksa dia tetap muncul
+            ->when($selectedPengantinId, function ($query, $id) {
+                return $query->orWhere('id', $id);
+            })
+            ->orderBy('tanggal_awal', 'asc')
             ->get();
 
-        return view('admin.jadwaldekor.create', compact('pakets', 'jadwals'));
-    }
+        // Cek data pengantin pilihan untuk auto-fill bawaan kamu
+        $selectedPengantin = null;
+        if ($selectedPengantinId) {
+            $selectedPengantin = JadwalPengantin::find($selectedPengantinId);
+        }
 
+        return view('admin.jadwaldekor.create', compact('pakets', 'jadwals', 'selectedPengantin'));
+    }
     /**
      * Simpan jadwal dekorasi baru.
      */
@@ -125,11 +140,17 @@ class JadwalDekorController extends Controller
      */
     public function edit($id)
     {
-        $jadwal = JadwalDekor::with('jadwalPengantin')->findOrFail($id);
-        $pakets = Paket::all();
-        $jadwals = JadwalPengantin::with('paket')->orderBy('tanggal_awal', 'desc')->get();
+        // Cek dulu apakah $id ini milik JadwalPengantin yang belum punya dekor, atau sudah ada
+        $pengantin = JadwalPengantin::with(['paket', 'jadwalDekor'])->findOrFail($id);
 
-        return view('admin.jadwaldekor.edit', compact('jadwal', 'pakets', 'jadwals'));
+        // Jika rincian dekorasi belum ada, kita buat objek kosong agar form tetap bisa tampil
+        $jadwal = $pengantin->jadwalDekor ?? new JadwalDekor();
+
+        // Kirim data master pengantin agar form bisa auto-fill rincian nama/tanggal
+        $jadwals = JadwalPengantin::with('paket')->orderBy('tanggal_awal', 'desc')->get();
+        $pakets = Paket::all();
+
+        return view('admin.jadwaldekor.edit', compact('jadwal', 'jadwals', 'pakets', 'pengantin'));
     }
 
     /**
@@ -137,27 +158,32 @@ class JadwalDekorController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $jadwal = JadwalDekor::findOrFail($id);
         $validated = $this->validateRequest($request);
-
         $jadwalPengantin = JadwalPengantin::findOrFail($request->jadwal_pengantin_id);
         $syncData = $this->syncWithJadwalPengantin($jadwalPengantin);
+
         $data = array_merge($validated, $syncData);
 
+        // Cari data dekorasi berdasarkan pengantin_id
+        $jadwal = JadwalDekor::where('jadwal_pengantin_id', $id)->first();
+
         if ($request->hasFile('foto')) {
-            if ($jadwal->foto) {
+            if ($jadwal && $jadwal->foto) {
                 Storage::disk('public')->delete($jadwal->foto);
             }
             $data['foto'] = $request->file('foto')->store('jadwal_foto', 'public');
         }
 
-        $jadwal->update($data);
+        // Gunakan updateOrCreate untuk fleksibilitas
+        JadwalDekor::updateOrCreate(
+            ['jadwal_pengantin_id' => $id],
+            $data
+        );
 
-        // Redirect kembali menggunakan parameter 'last_filter'
         return redirect()->route('admin.jadwaldekor.index', [
             'bulan' => $request->last_bulan,
             'tahun' => $request->last_tahun
-        ])->with('swal_success', 'Jadwal berhasil diperbarui!');
+        ])->with('swal_success', 'Jadwal dekorasi berhasil diperbarui!');
     }
     /**
      * Hapus jadwal dekorasi.

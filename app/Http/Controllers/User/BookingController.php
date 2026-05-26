@@ -3,59 +3,81 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\Paket;
+use App\Models\Booking;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Session; // <-- Pastikan ini ada
+use Illuminate\Support\Facades\Auth;
 
 class BookingController extends Controller
 {
-    /**
-     * Menyimpan data booking ke SESSION (Keranjang)
-     */
-    public function store(Request $request)
-    {
-        // 1. Validasi data tetap sama
-        $validator = Validator::make($request->all(), [
-            'customer_name'   => 'required|string|max:255',
-            'whatsapp_number' => 'required|string|max:20',
-            'event_date'      => 'required|date',
-            'event_address'   => 'required|string',
-            'package_name'    => 'required|string',
-            'package_price'   => 'required|string',
-            'agreement'       => 'required',
+    public function index() {
+        $pakets = Paket::all();
+        return view('user.booking.index', compact('pakets'));
+    }
+
+    public function storeToBooking(Request $request) {
+        $request->validate([
+            'customer_name'     => 'required|string|max:255',
+            'whatsapp_number'   => 'required|string|max:255',
+            'bride_groom_name'  => 'required|string|max:255',
+            'paket_id'          => 'required|exists:pakets,id',
+            'event_date_range'  => 'required',
+            'event_address'     => 'required',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Validasi gagal. Pastikan semua data wajib diisi.'
-            ], 422);
+        try {
+            $paket = Paket::findOrFail($request->paket_id);
+            $dateInput = $request->event_date_range;
+            $eventDate = str_contains($dateInput, ' to ') ? explode(' to ', $dateInput)[0] : $dateInput;
+
+            Booking::create([
+                'customer_name'     => $request->customer_name,
+                'whatsapp_number'   => $request->whatsapp_number,
+                'bride_groom_name'  => $request->bride_groom_name,
+                'parent_name'       => $request->parent_name,
+                'facebook_name'     => $request->facebook_name,
+                'instagram_name'    => $request->instagram_name,
+                'event_address'     => $request->event_address,
+                'event_date'        => $eventDate,
+                'event_duration'    => (int) ($request->event_duration ?? 1),
+                'package_name'      => $paket->nama_paket,
+                'package_price'     => (string) $paket->harga,
+                'notes'             => $request->notes,
+                'status'            => 'draft', // Status awal masuk keranjang
+                'another_column_name' => Auth::id(), 
+            ]);
+
+            return redirect()->route('user.keranjang')->with('success_booking', 'Berhasil disimpan!');
+        } catch (\Exception $e) {
+            return back()->withErrors(['msg' => $e->getMessage()])->withInput();
         }
+    }
 
-        // --- Ini adalah logika "Add to Cart" ---
+    public function keranjang() {
+        $carts = Booking::where('another_column_name', Auth::id())
+            ->where('status', 'draft') // Filter untuk menu keranjang
+            ->orderBy('created_at', 'desc')
+            ->get();
+        return view('user.keranjang.index', compact('carts'));
+    }
 
-        // 2. Ambil semua data form, kecuali token dan agreement
-        $bookingData = $request->except('_token', 'agreement');
+    /**
+     * Mengubah status dari Draft ke Pending (Tagihan Aktif)
+     */
+    public function konfirmasi() {
+        Booking::where('another_column_name', Auth::id())
+            ->where('status', 'draft')
+            ->update(['status' => 'pending']);
+        return redirect()->route('user.pembayaran')->with('success', 'Konfirmasi berhasil! Tagihan Anda sudah aktif.');
+    }
+
+    /**
+     * Logic Otomatisasi: Digunakan saat Midtrans memberikan notifikasi sukses
+     */
+    public function markAsConfirmed($id) {
+        $booking = Booking::findOrFail($id);
+        $booking->update(['status' => 'confirmed']); // Sah menjadi pesanan terjadwal
         
-        // 3. Beri ID unik untuk item keranjang (opsional tapi bagus)
-        $bookingData['cart_item_id'] = uniqid('booking_'); 
-
-        // 4. Masukkan data booking ini ke dalam array 'cart' di Session
-        //    MENGGUNAKAN 'put' UNTUK MENGGANTI, BUKAN 'push'
-        //
-        //    Ini adalah PERBAIKAN UTAMA.
-        //    Kita bungkus $bookingData dengan [ ] agar 'cart' selalu
-        //    menjadi array yang HANYA berisi 1 item booking baru.
-        Session::put('cart', [$bookingData]);
-
-        // 5. Hitung jumlah item di keranjang (sekarang akan selalu 1)
-        $cartCount = count(Session::get('cart', []));
-
-        // 6. Kirim respons JSON baru ke JavaScript
-        return response()->json([
-            'success'     => true,
-            'message'     => 'Berhasil ditambahkan ke keranjang!',
-            'cart_count'  => $cartCount // <-- Kirim jumlah item terbaru
-        ]);
+        return redirect()->route('user.riwayat')->with('success', 'Pembayaran Terverifikasi! Pesanan Anda telah dikonfirmasi.');
     }
 }

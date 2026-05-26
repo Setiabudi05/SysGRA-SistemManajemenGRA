@@ -15,11 +15,12 @@ class JadwalPengantin extends Model
         'paket_id',
         'tanggal_awal',
         'tanggal_akhir',
-        'bulan',   // ✅ tambahkan ini
+        'bulan',
         'tahun',
-        'asisten', // kalau memang ada di tabel
-        'fg',      // kalau memang ada di tabel
-        'layos',   // kalau memang ada di tabel
+        'asisten',
+        'fg',
+        'layos',
+        'keterangan',
     ];
 
     // Relasi ke Paket
@@ -28,9 +29,27 @@ class JadwalPengantin extends Model
         return $this->belongsTo(Paket::class, 'paket_id');
     }
 
-    // Relasi ke JadwalGown
+    /**
+    /**
+     * Relasi ke model Pembayaran menggunakan kolom booking_id
+     */
+    public function pembayarans()
+    {
+        // Kita arahkan foreign key-nya ke 'booking_id'
+        return $this->hasMany(Pembayaran::class, 'booking_id');
+    }
+    public function jadwalDekor()
+    {
+        return $this->hasOne(JadwalDekor::class, 'jadwal_pengantin_id');
+    }
+
     public function jadwalGown()
     {
         return $this->hasOne(JadwalGown::class, 'jadwal_pengantin_id');
+    }
+    public function jadwalLayos()
+    {
+        // Sesuaikan foreign key jika bukan 'jadwal_pengantin_id'
+        return $this->hasOne(JadwalLayos::class, 'jadwal_pengantin_id');
     }
 }

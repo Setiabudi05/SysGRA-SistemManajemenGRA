@@ -22,7 +22,7 @@
             
             {{-- Kotak Login Utama (CARD): Ini adalah KOTAK PUTIH YANG ANDA INGINKAN. --}}
             {{-- Hapus padding (p-6) agar login.blade yang mengatur padding-nya --}}
-            <div class="w-full max-w-sm mt-6 bg-white dark:bg-gray-800 shadow-xl overflow-hidden rounded-xl">
+            <div class="w-full max-nyhw-sm mt-6 bg-white dark:bg-gray-800 shadow-xl overflow-hidden rounded-xl">
                 
                 {{-- $slot akan diisi oleh konten dari login.blade.php --}}
                 {{ $slot }} 
