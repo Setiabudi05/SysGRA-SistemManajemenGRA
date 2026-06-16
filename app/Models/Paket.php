@@ -11,9 +11,13 @@ class Paket extends Model
 
     protected $fillable = ['nama_paket', 'tahun', 'makeup', 'dekorasi', 'dokumentasi', 'harga'];
 
-     public function dekorasis()
+    public function dekorasis()
     {
         return $this->hasMany(Dekorasi::class);
     }
-
+    public function bajuPengantins()
+    {
+        return $this->hasMany(BajuPengantin::class, 'paket_id');
+    }
+    
 }

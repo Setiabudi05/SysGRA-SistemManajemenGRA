@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\Paket;
 use App\Models\Pembayaran;
 use App\Models\Pembukuan;
+use App\Models\User; // Tambahan import Model User
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -15,24 +16,92 @@ use Illuminate\Support\Facades\DB;
 
 class BookingController extends Controller
 {
+    /**
+     * Menampilkan halaman utama daftar pesanan admin
+     */
     public function index()
     {
         return view('admin.booking.index');
     }
 
+    /**
+     * Memproses data DataTables untuk halaman Manajemen Pesanan Admin
+     */
     public function data()
     {
-        $query = Booking::with('pembayarans')->latest();
+        // Ambil query murni menggunakan DB Builder
+        $query = DB::table('bookings')
+            ->select([
+                'id',
+                'customer_name',
+                'whatsapp_number',
+                'bride_groom_name',
+                'package_name',
+                'package_price',
+                'event_date',
+                'status',
+                'created_at'
+            ])
+            ->latest('created_at');
+
         return DataTables::of($query)
             ->addIndexColumn()
+            ->addColumn('id', function ($row) {
+                return $row->id;
+            })
+            ->addColumn('pengantin', function ($row) {
+                return $row->bride_groom_name;
+            })
+            ->editColumn('event_date', function ($row) {
+                if (!$row->event_date) return '-';
+                return date('Y-m-d', strtotime($row->event_date));
+            })
+            // ====================================================================
+            // STEP 1: HITUNG SISA TAGIHAN DULU (Saat package_price masih berupa ANGKA MURNI)
+            // ====================================================================
+            ->addColumn('sisa_tagihan', function ($row) {
+                // Hitung nominal uang masuk dari tabel pembayarans
+                $totalTerbayar = DB::table('pembayarans')
+                    ->where('pesanan_id', $row->id)
+                    ->where(function ($q) {
+                        $q->whereRaw('LOWER(status_pembayaran) = ?', ['success'])
+                            ->orWhereRaw('LOWER(status_pembayaran) = ?', ['lunas'])
+                            ->orWhereRaw('LOWER(status_pembayaran) = ?', ['valid'])
+                            ->orWhereRaw('LOWER(status_pembayaran) = ?', ['confirmed'])
+                            ->orWhereRaw('LOWER(status_pembayaran) = ?', ['confirmed (dp)'])
+                            ->orWhereNull('status_pembayaran');
+                    })
+                    ->sum('jumlah_bayar');
+
+                $hargaAsli = (int) $row->package_price;
+                $sudahBayar = (int) $totalTerbayar;
+
+                $sisa = $hargaAsli - $sudahBayar;
+                $sisaAman = $sisa < 0 ? 0 : $sisa;
+
+                return 'Rp ' . number_format($sisaAman, 0, ',', '.');
+            })
+            // ====================================================================
+            // STEP 2: BARU FORMAT HARGA PAKET MENJADI RUPIAH
+            // ====================================================================
+            ->editColumn('package_price', function ($row) {
+                return 'Rp ' . number_format($row->package_price, 0, ',', '.');
+            })
             ->editColumn('status', function ($row) {
+                $statusNormalized = strtoupper($row->status);
+
                 $badges = [
-                    'pending'   => 'bg-light-warning text-warning',
-                    'confirmed' => 'bg-light-primary text-primary',
-                    'completed' => 'bg-light-success text-success',
+                    'PENDING'             => 'bg-light-warning text-warning',
+                    'CONFIRMED'           => 'bg-light-primary text-primary',
+                    'MENUNGGU VERIFIKASI' => 'bg-light-info text-info',
+                    'COMPLETED'           => 'bg-light-success text-success',
+                    'SUCCESS'             => 'bg-light-success text-success',
+                    'FAILED'              => 'bg-light-danger text-danger',
                 ];
-                $label = $row->status == 'confirmed' ? 'TERKONFIRMASI' : strtoupper($row->status);
-                return '<span class="badge ' . ($badges[$row->status] ?? 'bg-secondary') . ' px-3 py-2 fw-bold">' . $label . '</span>';
+
+                $badgeClass = $badges[$statusNormalized] ?? 'bg-secondary text-white';
+
+                return '<span class="badge ' . $badgeClass . ' px-3 py-2 fw-bold">' . $statusNormalized . '</span>';
             })
             ->addColumn('action', function ($row) {
                 return '<div class="btn-group gap-2">
@@ -47,12 +116,16 @@ class BookingController extends Controller
     public function create()
     {
         $list_paket = Paket::orderBy('nama_paket', 'asc')->get();
-        return view('admin.booking.create', compact('list_paket'));
+        // PERBAIKAN: Ambil semua data user ber-role pelanggan untuk opsi dropdown select
+        $list_pelanggan = User::where('role', 'pelanggan')->orderBy('name', 'asc')->get();
+        
+        return view('admin.booking.create', compact('list_paket', 'list_pelanggan'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
+            'user_id'          => 'required|exists:users,id', // Kunci Validasi Integrasi Global
             'customer_name'    => 'required',
             'whatsapp_number'  => 'required',
             'bride_groom_name' => 'required',
@@ -66,7 +139,9 @@ class BookingController extends Controller
         $cleanDuration = (int) preg_replace('/[^0-9]/', '', $request->duration);
         $cleanPrice    = (int) preg_replace('/[^0-9]/', '', $request->package_price);
 
+        // PERBAIKAN: Menyertakan 'user_id' agar terikat otomatis sepanjang masa ke dashboard pelanggan
         $booking = Booking::create([
+            'user_id'          => $request->user_id, 
             'customer_name'    => $request->customer_name,
             'whatsapp_number'  => $request->whatsapp_number,
             'bride_groom_name' => $request->bride_groom_name,
@@ -80,11 +155,11 @@ class BookingController extends Controller
             'package_price'    => $cleanPrice,
             'add_ons'          => $request->additional_package,
             'notes'            => $request->notes,
-            'status'           => 'pending',
+            'status'           => 'PENDING',
         ]);
 
         return redirect()->route('admin.booking.show', $booking->id)
-            ->with('swal_success', 'Pesanan baru berhasil disimpan!');
+            ->with('swal_success', 'Pesanan baru berhasil disimpan dan terintegrasi otomatis dengan akun pelanggan!');
     }
 
     public function show($id)
@@ -97,7 +172,10 @@ class BookingController extends Controller
     {
         $booking = Booking::findOrFail($id);
         $list_paket = Paket::orderBy('tahun', 'desc')->get();
-        return view('admin.booking.edit', compact('booking', 'list_paket'));
+        // PERBAIKAN: Ambil data pelanggan juga untuk form edit
+        $list_pelanggan = User::where('role', 'pelanggan')->orderBy('name', 'asc')->get();
+
+        return view('admin.booking.edit', compact('booking', 'list_paket', 'list_pelanggan'));
     }
 
     public function update(Request $request, $id)
@@ -105,6 +183,7 @@ class BookingController extends Controller
         $booking = Booking::findOrFail($id);
 
         $request->validate([
+            'user_id'          => 'required|exists:users,id', // Kunci Validasi Edit
             'customer_name'    => 'required',
             'whatsapp_number'  => 'required',
             'bride_groom_name' => 'required',
@@ -118,7 +197,9 @@ class BookingController extends Controller
         $cleanDuration = (int) preg_replace('/[^0-9]/', '', $request->duration);
         $cleanPrice    = (int) preg_replace('/[^0-9]/', '', $request->package_price);
 
+        // PERBAIKAN: Menyertakan 'user_id' pas update data
         $booking->update([
+            'user_id'          => $request->user_id,
             'customer_name'    => $request->customer_name,
             'whatsapp_number'  => $request->whatsapp_number,
             'bride_groom_name' => $request->bride_groom_name,
@@ -141,26 +222,38 @@ class BookingController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $booking = Booking::findOrFail($id);
+        $statusInput = strtolower($request->status);
 
-        // LOGIKA: KONFIRMASI DP (HANYA UPDATE STATUS)
-        if ($request->status == 'confirmed') {
-            // Cukup update status menjadi confirmed karena nominal uang sudah diinput manual sebelumnya
-            $booking->update(['status' => 'confirmed']);
+        // LOGIKA: KONFIRMASI DP MANUAL (Hanya diproses jika status saat ini bener-bener masih PENDING)
+        if ($statusInput == 'confirmed') {
+            if (strtoupper($booking->status) == 'PENDING') {
+                $booking->update(['status' => 'CONFIRMED']);
+                $this->kirimWhatsApp($booking);
 
-            // Kirim WhatsApp Notifikasi konfirmasi
-            $this->kirimWhatsApp($booking);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pesanan Berhasil Dikonfirmasi Manual & WhatsApp Terkirim!'
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pesanan Berhasil Dikonfirmasi!'
+                'message' => 'Pesanan sudah berstatus Terkonfirmasi sebelumnya.'
             ]);
         }
 
-        // LOGIKA: SELESAI / PELUNASAN
-        if ($request->status == 'completed') {
-            // Menggunakan accessor total_bayar untuk mengecek pelunasan
-            $totalBayar = $booking->total_bayar;
-            $sisa = $booking->package_price - $totalBayar;
+        // LOGIKA: SELESAI / PELUNASAN (COMPLETED)
+        if ($statusInput == 'completed') {
+            $totalBayar = DB::table('pembayarans')
+                ->where('pesanan_id', $booking->id)
+                ->where(function ($q) {
+                    $q->whereRaw('LOWER(status_pembayaran) = ?', ['success'])
+                        ->orWhereRaw('LOWER(status_pembayaran) = ?', ['lunas'])
+                        ->orWhereNull('status_pembayaran');
+                })
+                ->sum('jumlah_bayar');
+
+            $sisa = (int)$booking->package_price - (int)$totalBayar;
 
             if ($sisa > 0) {
                 return response()->json([
@@ -169,18 +262,50 @@ class BookingController extends Controller
                 ], 422);
             }
 
-            $booking->update(['status' => 'completed']);
+            $booking->update(['status' => 'COMPLETED']);
             return response()->json(['success' => true, 'message' => 'Pesanan Berhasil Diselesaikan!']);
         }
 
         return response()->json(['success' => false, 'message' => 'Aksi tidak dikenali.']);
     }
 
+    /**
+     * Menghapus data pesanan/booking (SINKRON HAPUS BERUNTUN GLOBAL)
+     */
     public function destroy($id)
     {
-        $booking = Booking::findOrFail($id);
-        $booking->delete();
-        return response()->json(['success' => true, 'message' => 'Pesanan berhasil dihapus!']);
+        DB::beginTransaction();
+        try {
+            $booking = Booking::findOrFail($id);
+
+            // 1. Ambil semua ID pembayaran yang terikat dengan pesanan/booking ini
+            $pembayaranIds = DB::table('pembayarans')
+                ->where('pesanan_id', $booking->id)
+                ->pluck('id');
+
+            // 2. Bersihkan catatan di jurnal pembukuan kas berdasarkan id pembayaran tersebut
+            if ($pembayaranIds->isNotEmpty()) {
+                DB::table('pembukuans')->whereIn('pembayaran_id', $pembayaranIds)->delete();
+            }
+
+            // 3. Bumihanguskan semua riwayat cicilan terkait di tabel pembayarans
+            DB::table('pembayarans')->where('pesanan_id', $booking->id)->delete();
+
+            // 4. Hapus data utama di tabel bookings
+            $booking->delete();
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Pesanan dan seluruh riwayat pembayaran terkait berhasil dihapus permanen!'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus pesanan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function print($id)
@@ -199,9 +324,10 @@ class BookingController extends Controller
             Http::withHeaders(['Authorization' => $token])->post('https://api.fonnte.com/send', [
                 'target'  => $booking->whatsapp_number,
                 'message' => $pesan,
+                'role'    => 'pelanggan'
             ]);
         } catch (\Exception $e) {
-            // Log error jika diperlukan agar proses update status tidak berhenti karena API WA gagal
+            // Log error jika diperlukan
         }
     }
 }

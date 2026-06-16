@@ -37,8 +37,6 @@
                                     Pengantin</a></li>
                             <li class="submenu-item {{ request()->routeIs('owner.jadwaldekor.*') ? 'active' : '' }}"><a
                                     href="{{ route('owner.jadwaldekor.index') }}" class="submenu-link">Jadwal Dekor</a></li>
-                            <li class="submenu-item {{ request()->routeIs('owner.jadwallayos.*') ? 'active' : '' }}"><a
-                                    href="{{ route('owner.jadwallayos.index') }}" class="submenu-link">Jadwal Layos</a></li>
                         </ul>
                     </li>
                     <li class="sidebar-title">Keuangan & SDM</li>
@@ -104,8 +102,6 @@
                                     href="{{ route('admin.jadwaldekor.index') }}" class="submenu-link">Jadwal Dekor</a></li>
                             <li class="submenu-item {{ request()->routeIs('admin.jadwalgown.*') ? 'active' : '' }}"><a
                                     href="{{ route('admin.jadwalgown.index') }}" class="submenu-link">Jadwal Gown</a></li>
-                            <li class="submenu-item {{ request()->routeIs('admin.jadwallayos.*') ? 'active' : '' }}"><a
-                                    href="{{ route('admin.jadwallayos.index') }}" class="submenu-link">Jadwal Layos</a></li>
                         </ul>
                     </li>
                     <li class="sidebar-item {{ request()->routeIs('admin.booking.*') ? 'active' : '' }}"><a
@@ -125,13 +121,23 @@
                         <a href="{{ route('kru.dashboard') }}" class="sidebar-link"><i
                                 class="bi bi-grid-fill"></i><span>Dashboard Kru</span></a>
                     </li>
-                    <li class="sidebar-item {{ request()->routeIs('kru.jadwal.*') ? 'active' : '' }}">
+
+                    {{-- MENU JADWAL UTAMA --}}
+                    <li class="sidebar-item {{ request()->routeIs('kru.jadwal.index') ? 'active' : '' }}">
                         <a href="{{ route('kru.jadwal.index') }}" class='sidebar-link'>
                             <i class="bi bi-calendar-event"></i>
-                            <span>Jadwal</span>
+                            <span>Jadwal Tugas GRA</span>
                         </a>
                     </li>
-                    {{-- RIWAYAT TUGAS (Tugas yang sudah selesai) --}}
+
+                    <li class="sidebar-item {{ request()->routeIs('kru.jadwal.pribadi.*') ? 'active' : '' }}">
+                        <a href="{{ route('kru.jadwal.pribadi.index') }}" class='sidebar-link'>
+                            <i class="bi bi-calendar-plus"></i>
+                            <span>Jadwal Pribadi</span>
+                        </a>
+                    </li>
+
+                    {{-- RIWAYAT TUGAS --}}
                     <li class="sidebar-item {{ request()->routeIs('kru.riwayat.*') ? 'active' : '' }}">
                         <a href="{{ route('kru.riwayat.index') }}" class='sidebar-link'>
                             <i class="bi bi-clock-history"></i>

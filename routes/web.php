@@ -11,6 +11,7 @@ use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
 use App\Http\Controllers\Owner\BookingController as OwnerBookingController;
 use App\Http\Controllers\Owner\PembayaranController as OwnerPembayaranController;
 use App\Http\Controllers\Owner\LaporanPembukuanController;
+use App\Http\Controllers\Owner\ProfileController;
 use App\Http\Controllers\Owner\UserController as OwnerUserController;
 use App\Http\Controllers\Owner\JadwalPengantinController as OwnerJadwalPengantin;
 use App\Http\Controllers\Owner\JadwalDekorController as OwnerJadwalDekor;
@@ -23,7 +24,6 @@ use App\Http\Controllers\Admin\DekorasiController;
 use App\Http\Controllers\Admin\JadwalPengantinController;
 use App\Http\Controllers\Admin\JadwalDekorController;
 use App\Http\Controllers\Admin\JadwalGownController;
-use App\Http\Controllers\Admin\JadwalLayosController;
 use App\Http\Controllers\Admin\BajuPengantinController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\PembukuanController;
@@ -37,6 +37,7 @@ use App\Http\Controllers\User\ProfileController as PelangganProfile;
 use App\Http\Controllers\User\OrderController;
 use App\Http\Controllers\User\LandingController;
 use App\Http\Controllers\User\PembayaranController as PelangganBayar;
+use App\Http\Controllers\User\ChatbotController;
 
 // --- E. KRU CONTROLLERS ---
 use App\Http\Controllers\Kru\DashboardController as KruDashboardController;
@@ -60,7 +61,7 @@ Route::middleware('guest')->group(function () {
 // Redirect Beranda Berdasarkan Role
 Route::get('/', function () {
     if (Auth::check()) {
-        $role = Auth::user()->role;
+        $role = Auth::check() ? Auth::user()->role : null;
         return match ($role) {
             'owner'     => redirect()->route('owner.dashboard'),
             'admin'     => redirect()->route('admin.dashboard'),
@@ -83,46 +84,50 @@ Route::get('/home', function () {
     };
 })->name('home');
 
+
+/*
+|--------------------------------------------------------------------------
+| SPECIAL NOTIFICATION ROUTE (Universal - Bisa Diakses Semua Role)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/notification/{id}/read', [KruJadwal::class, 'readNotification'])->name('notification.read');
+    Route::post('/notification/{id}/respond', [KruDashboardController::class, 'respondNotification'])->name('notification.respond');
+
+    // PERBAIKAN UTAMA: Mendaftarkan nama rute notification.all agar layout navigasi tidak error 500
+    Route::get('/notifications/all', function () {
+        return back()->with('info', 'Riwayat log notifikasi sistem.');
+    })->name('notification.all');
+});
+
 /*
 |--------------------------------------------------------------------------
 | 2. RUTE OWNER (Prefix 'owner.') - STRATEGIS & PEMBAGIAN KRU
 |--------------------------------------------------------------------------
 */
-
 Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('owner.')->group(function () {
-
-    // 1. Dashboard
     Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
-
-    // 2. Kelola Akun Pegawai 
     Route::get('users/json', [OwnerUserController::class, 'data'])->name('users.data');
     Route::resource('users', OwnerUserController::class);
-
-    // 3. Laporan Keuangan
     Route::get('/laporan-pembukuan', [LaporanPembukuanController::class, 'index'])->name('pembukuan.index');
-    // Route untuk Cetak Laporan (Ini yang error tadi)
     Route::get('/pembukuan/print', [LaporanPembukuanController::class, 'print'])->name('pembukuan.print');
 
-    // 4. Kendali Operasional
-
-    // --- SISI OWNER: Jadwal Pengantin (Murni View, Edit Plotting, & Print) ---
     Route::prefix('jadwalpengantin')->name('jadwalpengantin.')->group(function () {
         Route::get('/', [OwnerJadwalPengantin::class, 'index'])->name('index');
         Route::get('/data', [OwnerJadwalPengantin::class, 'data'])->name('data');
         Route::get('/print', [OwnerJadwalPengantin::class, 'print'])->name('print');
-
-        // Rute Plotting Kru (Hanya ini yang boleh dimodifikasi Owner)
         Route::get('/{id}/edit', [OwnerJadwalPengantin::class, 'edit'])->name('edit');
         Route::put('/{id}/update', [OwnerJadwalPengantin::class, 'update'])->name('update');
+        Route::get('/check-kru', [OwnerJadwalPengantin::class, 'checkKruAvailability'])->name('check-kru');
+        Route::get('/check-status', [OwnerJadwalPengantin::class, 'checkKruStatus'])->name('check-status');
     });
-    // --- Jadwal Dekor ---
+
     Route::prefix('jadwaldekor')->name('jadwaldekor.')->group(function () {
         Route::get('/', [OwnerJadwalDekor::class, 'index'])->name('index');
         Route::get('/data', [OwnerJadwalDekor::class, 'data'])->name('data');
         Route::get('/print', [OwnerJadwalDekor::class, 'print'])->name('print');
     });
 
-    // --- Jadwal Layos ---
     Route::prefix('jadwallayos')->name('jadwallayos.')->group(function () {
         Route::get('/', [OwnerJadwalLayos::class, 'index'])->name('index');
         Route::get('/data', [OwnerJadwalLayos::class, 'data'])->name('data');
@@ -131,15 +136,15 @@ Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('ow
         Route::put('/{id}/update', [OwnerJadwalLayos::class, 'update'])->name('update');
         Route::delete('/{id}', [OwnerJadwalLayos::class, 'destroy'])->name('destroy');
     });
-    // --- Booking Owner (Read-Only Mode) ---
+
     Route::prefix('booking')->name('booking.')->group(function () {
         Route::get('/', [OwnerBookingController::class, 'index'])->name('index');
         Route::get('/data', [OwnerBookingController::class, 'data'])->name('data');
         Route::get('/{id}/detail', [OwnerBookingController::class, 'show'])->name('show');
-        Route::get('/print', [OwnerBookingController::class, 'print_all'])->name('print_all'); // Ganti ini
+        Route::get('/print', [OwnerBookingController::class, 'print_all'])->name('print_all');
         Route::get('/print/{id}', [OwnerBookingController::class, 'print'])->name('print');
     });
-    // --- Pembayaran Owner ---
+
     Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
         Route::get('/', [OwnerPembayaranController::class, 'index'])->name('index');
         Route::get('/data', [OwnerPembayaranController::class, 'data'])->name('data');
@@ -147,6 +152,9 @@ Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('ow
         Route::get('/{id}/nota', [OwnerPembayaranController::class, 'cetakNota'])->name('nota');
         Route::delete('/{id}', [OwnerPembayaranController::class, 'destroy'])->name('destroy');
     });
+
+    Route::get('/profile', [App\Http\Controllers\Owner\ProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profile/update', [App\Http\Controllers\Owner\ProfileController::class, 'update'])->name('profile.update');
 });
 
 /*
@@ -154,27 +162,31 @@ Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('ow
 | 3. RUTE KRU (Prefix 'kru.')
 |--------------------------------------------------------------------------
 */
-
 Route::middleware(['auth', 'verified', 'role:kru'])->prefix('kru')->name('kru.')->group(function () {
-
-    // --- DASHBOARD KRU ---
     Route::get('/dashboard', [KruDashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/data', [KruDashboardController::class, 'data'])->name('dashboard.data');
-
-    // --- PROFIL KRU ---
     Route::get('/profile', [KruProfileController::class, 'index'])->name('profile.index');
     Route::put('/profile/update', [KruProfileController::class, 'update'])->name('profile.update');
 
-    // --- JADWAL KRU ---
+    // Rute Jadwal Tugas GRA
     Route::prefix('jadwal')->name('jadwal.')->group(function () {
         Route::get('/', [KruJadwal::class, 'index'])->name('index');
         Route::get('/data', [KruJadwal::class, 'data'])->name('data');
         Route::get('/print', [KruJadwal::class, 'print'])->name('print');
     });
 
-    Route::get('/notification/{id}/read', [KruJadwal::class, 'readNotification'])->name('notification.read');
+    // Rute Jadwal Pribadi (Disini kita perbaiki agar tidak double prefix/name)
+    // Sekarang route-nya akan menjadi: kru.jadwal.pribadi.index, dsb.
+    Route::prefix('jadwal/pribadi')->name('jadwal.pribadi.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Kru\JadwalPribadiController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\Kru\JadwalPribadiController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\Kru\JadwalPribadiController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [App\Http\Controllers\Kru\JadwalPribadiController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [App\Http\Controllers\Kru\JadwalPribadiController::class, 'update'])->name('update');
+        Route::delete('/{id}', [App\Http\Controllers\Kru\JadwalPribadiController::class, 'destroy'])->name('destroy');
+        Route::get('/data', [App\Http\Controllers\Kru\JadwalPribadiController::class, 'getData'])->name('data');
+    });
 
-    // --- RIWAYAT KRU ---
     Route::prefix('riwayat')->name('riwayat.')->group(function () {
         Route::get('/', [RiwayatController::class, 'index'])->name('index');
         Route::get('/data', [RiwayatController::class, 'data'])->name('data');
@@ -185,29 +197,35 @@ Route::middleware(['auth', 'verified', 'role:kru'])->prefix('kru')->name('kru.')
         return "Halaman Detail Pekerjaan ID: " . $id;
     })->name('job.detail');
 });
-
 /*
 |--------------------------------------------------------------------------
 | 4. RUTE USER / PELANGGAN (Prefix 'user.')
 |--------------------------------------------------------------------------
 */
-
 Route::middleware(['auth', 'verified', 'role:pelanggan'])->prefix('user')->name('user.')->group(function () {
-
     Route::get('/dashboard', [App\Http\Controllers\User\DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/booking', [PelangganBooking::class, 'index'])->name('booking');
     Route::post('/booking/store', [PelangganBooking::class, 'storeToBooking'])->name('booking.store');
+
     Route::get('/keranjang', [PelangganBooking::class, 'keranjang'])->name('keranjang');
     Route::delete('/keranjang/{id}', [PelangganBooking::class, 'destroy'])->name('keranjang.destroy');
     Route::post('/keranjang/konfirmasi', [PelangganBooking::class, 'konfirmasi'])->name('keranjang.konfirmasi');
 
     Route::get('/pembayaran', [PelangganBayar::class, 'index'])->name('pembayaran');
     Route::get('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
-    Route::get('/riwayat', [OrderController::class, 'index'])->name('riwayat');
+
+    Route::get('/riwayat', [OrderController::class, 'riwayat'])->name('riwayat');
 
     Route::get('/profile', [PelangganProfile::class, 'index'])->name('profile.index');
     Route::put('/profile/update', [PelangganProfile::class, 'update'])->name('profile.update');
+    Route::post('/chatbot/send', [ChatbotController::class, 'sendMessage'])->name('chatbot.send');
+
+    // ==============================================================================
+    // PENAMBAHAN BARU: Rute Cetak PDF Mandiri Sisi Pelanggan (Gembok Aman Terbuka)
+    // ==============================================================================
+    Route::get('/booking/print/{id}', [AdminBookingController::class, 'print'])->name('booking.print');
+    Route::get('/pembayaran/nota/{id}', [AdminPembayaranController::class, 'cetakNota'])->name('pembayaran.cetakNota');
 });
 
 /*
@@ -215,18 +233,11 @@ Route::middleware(['auth', 'verified', 'role:pelanggan'])->prefix('user')->name(
 | 5. RUTE ADMIN (Prefix 'admin.') - OPERASIONAL (Admin & Owner)
 |--------------------------------------------------------------------------
 */
-
 Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')->group(function () {
-
-    // --- DASHBOARD ---
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // --- PROFIL ADMIN ---
     Route::get('/profile', [AdminProfileController::class, 'index'])->name('profile.index');
     Route::put('/profile/update', [AdminProfileController::class, 'update'])->name('profile.update');
 
-    // --- MASTER DATA ---
-    // Paket
     Route::prefix('paket')->name('paket.')->group(function () {
         Route::get('/', [PaketController::class, 'index'])->name('index');
         Route::get('/json', [PaketController::class, 'data'])->name('data');
@@ -237,9 +248,9 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::delete('/destroy/{id}', [PaketController::class, 'destroy'])->name('destroy');
     });
 
-    // Dekorasi
     Route::prefix('dekorasi')->name('dekorasi.')->group(function () {
         Route::get('/', [DekorasiController::class, 'index'])->name('index');
+        Route::get('/print', [DekorasiController::class, 'print'])->name('print');
         Route::get('/data', [DekorasiController::class, 'data'])->name('data');
         Route::get('/create', [DekorasiController::class, 'create'])->name('create');
         Route::post('/store', [DekorasiController::class, 'store'])->name('store');
@@ -248,7 +259,6 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::delete('/destroy/{id}', [DekorasiController::class, 'destroy'])->name('destroy');
     });
 
-    // Baju Pengantin
     Route::prefix('baju')->name('baju.')->group(function () {
         Route::get('/', [BajuPengantinController::class, 'index'])->name('index');
         Route::get('/data', [BajuPengantinController::class, 'data'])->name('data');
@@ -260,8 +270,6 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::get('/print', [BajuPengantinController::class, 'print'])->name('print');
     });
 
-    // --- JADWAL OPERASIONAL ---
-    // Jadwal Pengantin
     Route::prefix('jadwalpengantin')->name('jadwalpengantin.')->group(function () {
         Route::get('/', [JadwalPengantinController::class, 'index'])->name('index');
         Route::get('/data', [JadwalPengantinController::class, 'data'])->name('data');
@@ -273,7 +281,6 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::get('/print', [JadwalPengantinController::class, 'print'])->name('print');
     });
 
-    // Jadwal Dekor
     Route::prefix('jadwaldekor')->name('jadwaldekor.')->group(function () {
         Route::get('/', [JadwalDekorController::class, 'index'])->name('index');
         Route::get('/data', [JadwalDekorController::class, 'data'])->name('data');
@@ -285,7 +292,6 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::get('/print', [JadwalDekorController::class, 'print'])->name('print');
     });
 
-    // Jadwal Gown
     Route::prefix('jadwalgown')->name('jadwalgown.')->group(function () {
         Route::get('/', [JadwalGownController::class, 'index'])->name('index');
         Route::get('/data', [JadwalGownController::class, 'data'])->name('data');
@@ -297,19 +303,6 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::get('/print', [JadwalGownController::class, 'print'])->name('print');
     });
 
-    // Jadwal Layos
-    Route::prefix('jadwallayos')->name('jadwallayos.')->group(function () {
-        Route::get('/', [JadwalLayosController::class, 'index'])->name('index');
-        Route::get('/data', [JadwalLayosController::class, 'data'])->name('data');
-        Route::get('/create', [JadwalLayosController::class, 'create'])->name('create');
-        Route::post('/store', [JadwalLayosController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [JadwalLayosController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [JadwalLayosController::class, 'update'])->name('update');
-        Route::delete('/destroy/{id}', [JadwalLayosController::class, 'destroy'])->name('destroy');
-        Route::get('/print', [JadwalLayosController::class, 'print'])->name('print');
-    });
-
-    // --- KEUANGAN & PEMBUKUAN ---
     Route::prefix('pembukuan')->name('pembukuan.')->group(function () {
         Route::get('/', [PembukuanController::class, 'index'])->name('index');
         Route::get('/pemasukan-data', [PembukuanController::class, 'pemasukanData'])->name('pemasukanData');
@@ -324,8 +317,6 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::delete('/destroy/{id}', [PembukuanController::class, 'destroy'])->name('destroy');
     });
 
-    // --- MANAJEMEN TRANSAKSI ---
-    // Booking Admin
     Route::prefix('booking')->name('booking.')->group(function () {
         Route::get('/', [AdminBookingController::class, 'index'])->name('index');
         Route::get('/data', [AdminBookingController::class, 'data'])->name('data');
@@ -335,11 +326,10 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::get('/{id}/edit', [AdminBookingController::class, 'edit'])->name('edit');
         Route::put('/{id}/update', [AdminBookingController::class, 'update'])->name('update');
         Route::put('/{id}/status', [AdminBookingController::class, 'updateStatus'])->name('updateStatus');
-        Route::delete('/{id}', [AdminBookingController::class, 'destroy'])->name('destroy');
+        Route::delete('/destroy/{id}', [AdminBookingController::class, 'destroy'])->name('destroy');
         Route::get('/print/{id}', [AdminBookingController::class, 'print'])->name('print');
     });
 
-    // Pembayaran Admin
     Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
         Route::get('/', [AdminPembayaranController::class, 'index'])->name('index');
         Route::get('/data', [AdminPembayaranController::class, 'data'])->name('data');
@@ -350,3 +340,6 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::delete('/{id}', [AdminPembayaranController::class, 'destroy'])->name('destroy');
     });
 });
+
+// PERBAIKAN: Jalur Webhook Web Midtrans Terisolasi Bebas CSRF (Dipanggil diluar pembungkus auth middleware)
+Route::post('midtrans/notification', [\App\Http\Controllers\User\CheckoutController::class, 'notificationHandler'])->name('midtrans.notification');

@@ -55,9 +55,19 @@
                     <div class="card-body">
                         <div class="form-section-title"><i class="bi bi-person-plus"></i> Identitas & Acara</div>
                         <div class="row g-2 mb-3">
+                            {{-- PERBAIKAN UTAMA: Mengubah input text Nama Pemesan menjadi Dropdown Akun Pelanggan --}}
                             <div class="col-md-6">
-                                <label class="form-label">Nama Pemesan</label>
-                                <input type="text" name="customer_name" class="form-control" placeholder="Nama penginput" required>
+                                <label class="form-label text-primary">Hubungkan ke Akun Pelanggan</label>
+                                <select name="user_id" id="user_id" class="form-select" required>
+                                    <option value="">-- Pilih Akun User --</option>
+                                    @foreach($list_pelanggan as $user)
+                                        <option value="{{ $user->id }}" data-name="{{ $user->name }}">
+                                            {{ $user->name }} ({{ $user->email }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                {{-- Input hidden untuk tetap mengirimkan customer_name ke controller --}}
+                                <input type="hidden" name="customer_name" id="customer_name">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">WhatsApp / No. Telp</label>
@@ -157,6 +167,16 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
     $(document).ready(function() {
+        // Logika Sinkronisasi Dropdown User ke Input Hidden customer_name
+        $('#user_id').on('change', function() {
+            let selectedName = $(this).find(':selected').data('name');
+            if (selectedName) {
+                $('#customer_name').val(selectedName);
+            } else {
+                $('#customer_name').val('');
+            }
+        });
+
         // Logika Sinkronisasi Paket & Harga
         $('#select_paket').on('change', function() {
             let harga = $(this).find(':selected').data('harga');

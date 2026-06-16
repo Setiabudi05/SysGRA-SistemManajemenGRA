@@ -110,7 +110,6 @@
                     </div>
 
                     <div class="mt-4 pt-3 border-top d-flex justify-content-end align-items-center">
-                        {{-- Tombol Edit Tetap di Kanan --}}
                         <a href="{{ route('admin.booking.edit', $booking->id) }}" class="btn btn-warning btn-sm px-3 fw-bold shadow-sm">
                             <i class="bi bi-pencil-square"></i> Edit data
                         </a>
@@ -126,7 +125,17 @@
                     <h6 class="fw-bold mb-3 text-muted text-uppercase small">Progres Pembayaran</h6>
                     @php
                     $hargaBersih = (float) preg_replace('/[^0-9]/', '', $booking->package_price);
-                    $totalBayar = (float) $booking->total_bayar;
+                    
+                    // SINKRONISASI: Hitung total bayar real-time murni dari database pembayarans yang sukses
+                    $totalBayar = DB::table('pembayarans')
+                        ->where('pesanan_id', $booking->id)
+                        ->where(function ($q) {
+                            $q->whereRaw('LOWER(status_pembayaran) = ?', ['success'])
+                              ->orWhereRaw('LOWER(status_pembayaran) = ?', ['lunas'])
+                              ->orWhereNull('status_pembayaran');
+                        })
+                        ->sum('jumlah_bayar');
+
                     $sisaTagihan = $hargaBersih - $totalBayar;
                     $persenValue = ($hargaBersih > 0) ? ($totalBayar / $hargaBersih) * 100 : 0;
                     $persenValue = $persenValue > 100 ? 100 : round($persenValue);
@@ -152,7 +161,7 @@
                         </div>
                         <div class="d-flex justify-content-between text-danger fw-bold small border-top pt-2">
                             <span>Sisa Tagihan</span>
-                            <span>Rp {{ number_format($sisaTagihan, 0, ',', '.') }}</span>
+                            <span>Rp {{ number_format($sisaTagihan < 0 ? 0 : $sisaTagihan, 0, ',', '.') }}</span>
                         </div>
                     </div>
                     <div class="d-grid gap-2">
@@ -167,20 +176,28 @@
                 <div class="card-body">
                     <h6 class="fw-bold mb-3 text-muted text-uppercase small">Update Status Pesanan</h6>
                     <div class="d-grid gap-2">
-                        @if($booking->total_bayar >= 2000000)
-                        <button onclick="updateStatus('confirmed')" class="btn btn-primary w-100 shadow-sm"
-                            {{ $booking->status == 'confirmed' ? 'disabled' : '' }}>
-                            <i class="bi bi-check2-circle"></i> {{ $booking->status == 'confirmed' ? 'Sudah Dikonfirmasi' : 'Konfirmasi DP' }}
-                        </button>
+                        
+                        {{-- SOLUSI AMAN: Conditional Rendering Berdasarkan State Status Kapital --}}
+                        @if(strtoupper($booking->status) == 'PENDING')
+                            <button onclick="updateStatus('confirmed')" class="btn btn-primary w-100 shadow-sm">
+                                <i class="bi bi-check2-circle"></i> Konfirmasi Pemesanan (DP)
+                            </button>
+                        @elseif(strtoupper($booking->status) == 'CONFIRMED')
+                            <button class="btn btn-light-success text-success w-100 fw-bold border-1 border-success" disabled style="background-color: #e8f5e9;">
+                                <i class="bi bi-shield-check"></i> TERKONFIRMASI (DP OK)
+                            </button>
                         @else
-                        <button class="btn btn-secondary w-100" disabled>Konfirmasi DP (Belum Ada DP)</button>
-                        <small class="text-danger d-block mt-1 text-center">Input DP minimal Rp 2.000.000 di menu Pembayaran dulu.</small>
+                            <button class="btn btn-light-secondary text-muted w-100 fw-bold" disabled>
+                                <i class="bi bi-lock-fill"></i> ACARA SELESAI (COMPLETED)
+                            </button>
                         @endif
+
                         <button onclick="updateStatus('completed')" class="btn btn-success shadow-sm"
-                            {{ $sisaTagihan > 0 ? 'disabled' : '' }}>
+                            {{ $sisaTagihan > 0 || strtoupper($booking->status) == 'COMPLETED' ? 'disabled' : '' }}>
                             <i class="bi bi-patch-check"></i> Selesaikan Pesanan (Lunas)
                         </button>
                     </div>
+
                     @if($sisaTagihan > 0)
                     <div class="alert alert-warning mt-3 mb-0 py-2 border-0 shadow-none text-center" style="font-size: 0.75rem;">
                         <i class="bi bi-info-circle me-1"></i> Tombol <b>Selesaikan</b> aktif jika sisa tagihan Rp 0.
@@ -197,7 +214,8 @@
 <script>
     function updateStatus(val) {
         Swal.fire({
-            title: 'Update Status?',
+            title: 'Update Status Pesanan?',
+            text: "Status akan diubah menjadi " + val.toUpperCase(),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#435ebe',
@@ -215,6 +233,7 @@
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil',
+                            text: res.message,
                             timer: 1500,
                             showConfirmButton: false
                         }).then(() => location.reload());

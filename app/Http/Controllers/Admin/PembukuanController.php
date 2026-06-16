@@ -7,8 +7,7 @@ use App\Models\Pembukuan;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
-
-
+use Carbon\Carbon;
 
 class PembukuanController extends Controller
 {
@@ -17,125 +16,42 @@ class PembukuanController extends Controller
     {
         $tanggal = $request->input('tanggal', now()->toDateString());
 
-        $totalPemasukan = Pembukuan::whereDate('tanggal', $tanggal)
-            ->where('tipe', 'pemasukan')
-            ->sum('nominal');
-
-        $totalPengeluaran = Pembukuan::whereDate('tanggal', $tanggal)
-            ->where('tipe', 'pengeluaran')
-            ->sum('nominal');
+        $totalPemasukan = Pembukuan::whereDate('tanggal', $tanggal)->where('tipe', 'pemasukan')->sum('nominal');
+        $totalPengeluaran = Pembukuan::whereDate('tanggal', $tanggal)->where('tipe', 'pengeluaran')->sum('nominal');
 
         $saldo = $totalPemasukan - $totalPengeluaran;
 
-        return view('admin.pembukuan.index', compact(
-            'tanggal',
-            'totalPemasukan',
-            'totalPengeluaran',
-            'saldo'
-        ));
+        return view('admin.pembukuan.index', compact('tanggal', 'totalPemasukan', 'totalPengeluaran', 'saldo'));
     }
 
-    // DataTables Pemasukan
-    public function pemasukanData(Request $request)
+    // Logic umum untuk DataTables
+    private function getDataTable($tipe, $tanggal)
     {
-        $tanggal = $request->input('tanggal', now()->toDateString());
-
         $query = Pembukuan::whereDate('tanggal', $tanggal)
-            ->where('tipe', 'pemasukan')
+            ->where('tipe', $tipe)
             ->orderBy('created_at', 'desc');
 
         return DataTables::of($query)
             ->addIndexColumn()
-            ->editColumn('customer', fn($row) => $row->customer ?? '-')
             ->editColumn('nominal', fn($row) => 'Rp ' . number_format($row->nominal, 0, ',', '.'))
             ->addColumn('action', function ($row) use ($tanggal) {
-                // Menambahkan parameter tanggal aktif ke URL Edit
                 $editUrl = route('admin.pembukuan.edit', ['id' => $row->id, 'f_tanggal' => $tanggal]);
-
                 return '
                 <div class="d-flex justify-content-center gap-2">
-                    <a href="' . $editUrl . '" class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
-                       <i class="bi bi-pencil-square"></i> Edit
-                    </a>
-                    <button onclick="hapusPembukuan(' . $row->id . ')" class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
-                        <i class="bi bi-trash"></i> Hapus
-                    </button>
+                    <a href="'.$editUrl.'" class="btn btn-warning btn-sm fw-bold"><i class="bi bi-pencil-square"></i></a>
+                    <button onclick="hapusPembukuan('.$row->id.')" class="btn btn-danger btn-sm fw-bold"><i class="bi bi-trash"></i></button>
                 </div>';
             })
             ->rawColumns(['action'])
             ->make(true);
     }
 
-    // DataTables Pengeluaran
-    public function pengeluaranData(Request $request)
-    {
-        // Mengambil tanggal dari filter, jika tidak ada gunakan tanggal hari ini
-        $tanggal = $request->input('tanggal', now()->toDateString());
-
-        $query = Pembukuan::whereDate('tanggal', $tanggal)
-            ->where('tipe', 'pengeluaran')
-            ->orderBy('created_at', 'desc');
-
-        return DataTables::of($query)
-            ->addIndexColumn()
-            ->editColumn('nominal', fn($row) => 'Rp ' . number_format($row->nominal, 0, ',', '.'))
-            ->addColumn('action', function ($row) use ($tanggal) {
-                // Menambahkan parameter 'f_tanggal' agar filter tetap terjaga setelah edit
-                $editUrl = route('admin.pembukuan.edit', [
-                    'id' => $row->id,
-                    'f_tanggal' => $tanggal
-                ]);
-
-                return '
-            <div class="d-flex justify-content-center gap-2">
-                <a href="' . $editUrl . '" 
-                   class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
-                   <i class="bi bi-pencil-square"></i> Edit
-                </a>
-                <button onclick="hapusPembukuan(' . $row->id . ')" 
-                        class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
-                    <i class="bi bi-trash"></i> Hapus
-                </button>
-            </div>';
-            })
-            ->rawColumns(['action'])
-            ->make(true);
-    }
-
-    // Ambil saldo (Ajax)
-    public function getSaldo(Request $request)
-    {
-        $tanggal = $request->input('tanggal', now()->toDateString());
-
-        $totalPemasukan = Pembukuan::whereDate('tanggal', $tanggal)
-            ->where('tipe', 'pemasukan')
-            ->sum('nominal');
-
-        $totalPengeluaran = Pembukuan::whereDate('tanggal', $tanggal)
-            ->where('tipe', 'pengeluaran')
-            ->sum('nominal');
-
-        $saldo = $totalPemasukan - $totalPengeluaran;
-
-        return response()->json([
-            'pemasukan' => $totalPemasukan,
-            'pengeluaran' => $totalPengeluaran,
-            'saldo' => $saldo
-        ]);
-    }
+    public function pemasukanData(Request $request) { return $this->getDataTable('pemasukan', $request->input('tanggal', now()->toDateString())); }
+    public function pengeluaranData(Request $request) { return $this->getDataTable('pengeluaran', $request->input('tanggal', now()->toDateString())); }
 
     // Form Tambah
-    public function createPemasukan()
-    {
-        $tipe = 'pemasukan';
-        return view('admin.pembukuan.create', compact('tipe'));
-    }
-
-    public function createPengeluaran()
-    {
-        $tipe = 'pengeluaran';
-        return view('admin.pembukuan.create', compact('tipe'));
-    }
+    public function createPemasukan() { return view('admin.pembukuan.create', ['tipe' => 'pemasukan']); }
+    public function createPengeluaran() { return view('admin.pembukuan.create', ['tipe' => 'pengeluaran']); }
 
     // Simpan data
     public function store(Request $request)
@@ -150,16 +66,16 @@ class PembukuanController extends Controller
 
         Pembukuan::create($validated);
 
-        // Redirect kembali ke tanggal yang baru diinput
         return redirect()->route('admin.pembukuan.index', ['tanggal' => $request->tanggal])
             ->with('success', ucfirst($request->tipe) . ' berhasil ditambahkan!');
     }
 
-    // Form edit
-    public function edit($id)
+    // Edit
+    public function edit($id, Request $request)
     {
         $pembukuan = Pembukuan::findOrFail($id);
-        return view('admin.pembukuan.edit', compact('pembukuan'));
+        $tanggalAsal = $request->input('f_tanggal', $pembukuan->tanggal);
+        return view('admin.pembukuan.edit', compact('pembukuan', 'tanggalAsal'));
     }
 
     // Update
@@ -176,10 +92,7 @@ class PembukuanController extends Controller
         $data = Pembukuan::findOrFail($id);
         $data->update($validated);
 
-        // Ambil tanggal asal dari hidden input 'last_tanggal'
-        $targetTanggal = $request->input('last_tanggal', $request->tanggal);
-
-        return redirect()->route('admin.pembukuan.index', ['tanggal' => $targetTanggal])
+        return redirect()->route('admin.pembukuan.index', ['tanggal' => $request->input('last_tanggal', $request->tanggal)])
             ->with('success', 'Data berhasil diperbarui');
     }
 
@@ -187,47 +100,29 @@ class PembukuanController extends Controller
     public function destroy($id)
     {
         try {
-            $data = Pembukuan::findOrFail($id);
-            $data->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Data transaksi keuangan berhasil dihapus.'
-            ]);
+            Pembukuan::findOrFail($id)->delete();
+            return response()->json(['success' => true, 'message' => 'Data berhasil dihapus.']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menghapus data: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
-    // ✅ Cetak Laporan PDF
+
+    // Print PDF
     public function print(Request $request)
     {
-        // Menggunakan helper Carbon::parse untuk keamanan tambahan
-        try {
-            $tanggal = $request->input('tanggal') ? \Carbon\Carbon::parse($request->input('tanggal'))->toDateString() : now()->toDateString();
-        } catch (\Exception $e) {
-            $tanggal = now()->toDateString();
-        }
-
+        $tanggal = Carbon::parse($request->input('tanggal', now()->toDateString()))->toDateString();
         $pemasukan = Pembukuan::whereDate('tanggal', $tanggal)->where('tipe', 'pemasukan')->get();
         $pengeluaran = Pembukuan::whereDate('tanggal', $tanggal)->where('tipe', 'pengeluaran')->get();
 
-        $totalPemasukan = $pemasukan->sum('nominal');
-        $totalPengeluaran = $pengeluaran->sum('nominal');
-        $saldo = $totalPemasukan - $totalPengeluaran;
+        $data = [
+            'tanggal' => $tanggal,
+            'pemasukan' => $pemasukan,
+            'pengeluaran' => $pengeluaran,
+            'totalPemasukan' => $pemasukan->sum('nominal'),
+            'totalPengeluaran' => $pengeluaran->sum('nominal'),
+            'saldo' => $pemasukan->sum('nominal') - $pengeluaran->sum('nominal')
+        ];
 
-        $pdf = PDF::loadView('admin.pembukuan.print', compact(
-            'tanggal',
-            'pemasukan',
-            'pengeluaran',
-            'totalPemasukan',
-            'totalPengeluaran',
-            'saldo'
-        ))->setPaper('A4', 'portrait');
-
-        // MENGGUNAKAN STREAM: Agar identik dengan Cetak Nota
-        return $pdf->stream("Laporan_Pembukuan_{$tanggal}.pdf");
+        return PDF::loadView('admin.pembukuan.print', $data)->setPaper('A4', 'portrait')->stream();
     }
 }

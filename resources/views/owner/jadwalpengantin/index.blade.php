@@ -64,11 +64,12 @@
                                 <th class="text-center" width="5%">No</th>
                                 <th>Tanggal</th>
                                 <th>Nama Pengantin</th>
+                                <th>Paket</th>
                                 <th>Alamat</th>
                                 <th>Asisten</th>
                                 <th>FG</th>
                                 <th>Layos</th>
-                                <th>Keterangan</th> {{-- Tambahan Kolom Biar Ga Kosong --}}
+                                <th>Catatan</th> {{-- Tambahan Kolom Biar Ga Kosong --}}
                                 <th class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -102,6 +103,7 @@
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
                     { data: 'tanggal_full', name: 'tanggal_awal' },
                     { data: 'nama', name: 'nama', class: 'fw-bold text-primary' },
+                    { data: 'nama_paket', name: 'nama_paket' },
                     { data: 'alamat', name: 'alamat' },
                     { data: 'asisten', name: 'asisten' },
                     { data: 'fg', name: 'fg' },

@@ -23,19 +23,33 @@ class JadwalPengantinController extends Controller
     /**
      * Menandai notifikasi sebagai sudah dibaca
      */
-    public function readNotification($id)
+
+    public function readNotification(Request $request, $id)
     {
-        $user = Auth::user();
+    // KUNCI: Beri tahu VS Code kalau ini adalah Model User resmi
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
 
-        if ($user instanceof \App\Models\User) {
-            $notification = $user->notifications()->where('id', $id)->first();
+        // Jalankan pencarian notifikasi dari variabel $user
+        $notification = $user->notifications()->findOrFail($id);
 
-            if ($notification) {
-                $notification->markAsRead();
-                return redirect($notification->data['link'] ?? route('kru.jadwal.index'));
-            }
+        // Tandai sudah dibaca
+        $notification->markAsRead();
+
+        // 3. Cari tahu acara ini diplot untuk bulan dan tahun apa
+        // Kita ambil jadwal_id yang dikirim dari request URL atau properti database
+        $jadwalId = $request->get('jadwal_id');
+        $jadwal = JadwalPengantin::find($jadwalId);
+
+        if ($jadwal) {
+            // Alihkan ke halaman JADWAL KRU dengan membawa filter bulan & tahun penugasan tersebut
+            return redirect()->route('kru.jadwal.index', [
+                'bulan' => $jadwal->bulan,
+                'tahun' => $jadwal->tahun
+            ])->with('swal_success', 'Menampilkan penugasan baru untuk bulan ' . $jadwal->bulan);
         }
 
+        // Jika data jadwal tidak ditemukan, default balik ke dashboard saja
         return redirect()->route('kru.jadwal.index');
     }
 
@@ -93,10 +107,18 @@ class JadwalPengantinController extends Controller
             ->addIndexColumn()
             ->addColumn('tanggal_custom', function ($row) {
                 $bulanIndo = [
-                    'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
-                    'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
-                    'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September',
-                    'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
+                    'January' => 'Januari',
+                    'February' => 'Februari',
+                    'March' => 'Maret',
+                    'April' => 'April',
+                    'May' => 'Mei',
+                    'June' => 'Juni',
+                    'July' => 'Juli',
+                    'August' => 'Agustus',
+                    'September' => 'September',
+                    'October' => 'Oktober',
+                    'November' => 'November',
+                    'December' => 'Desember'
                 ];
                 $bulan = $bulanIndo[$row->bulan] ?? $row->bulan;
                 $tglText = $this->formatTanggal($row);

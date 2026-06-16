@@ -6,9 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SysGRA | @yield('title')</title>
 
-    {{-- Fonts --}}
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    {{-- Murni Menggunakan Google Fonts Resmi --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     {{-- CSS Template Mazer --}}
     <link rel="stylesheet" href="{{ asset('assets-template/css/main/app.css') }}">
@@ -21,9 +22,100 @@
     {{-- Master CSS User --}}
     <link rel="stylesheet" href="{{ asset('assets-user/css/style-user.css') }}">
     
+    {{-- Icons Set --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="shortcut icon" href="{{ asset('assets-admin/img/logo.png') }}" type="image/x-icon">
 
+    <style>
+        /* PENGATURAN FONT GLOBAL */
+        body, html, h1, h2, h3, h4, h5, h6, span, p, table, th, td, button, input {
+            font-family: 'Nunito', sans-serif !important;
+        }
+
+        /* PERBAIKAN NAVIGASI UTAMA: Main Navbar Horizontal */
+        .main-navbar {
+            background-color: #435ebe !important;
+            padding: 0 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .main-navbar .container {
+            padding: 0 15px !important;
+        }
+
+        .main-navbar ul {
+            padding-left: 0 !important;
+            margin-bottom: 0 !important;
+            list-style: none;
+            display: flex !important;
+            flex-direction: row;
+        }
+
+        .main-navbar .menu-item {
+            position: relative;
+        }
+
+        .main-navbar .menu-item .menu-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 600 !important;
+            font-size: 0.9rem !important;
+            padding: 14px 20px !important;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .main-navbar .menu-item .menu-link:hover {
+            color: #fff !important;
+            background-color: rgba(255, 255, 255, 0.12) !important;
+        }
+
+        .main-navbar .menu-item.active {
+            background-color: rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .main-navbar .menu-item.active .menu-link {
+            color: #fff !important;
+            font-weight: 700 !important;
+        }
+
+        .main-navbar .menu-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #ffca28;
+        }
+
+        .main-navbar .menu-link i {
+            font-size: 1.1rem !important;
+            line-height: 0 !important;
+        }
+
+        /* RESPONSIVE MOBILE VIEW (NAVBAR VERTICAL CONVERSION) */
+        @media (max-width: 1199.98px) {
+            .main-navbar ul {
+                flex-direction: column !important;
+                display: none !important;
+                background-color: #435ebe;
+                padding: 10px 0 !important;
+            }
+            .main-navbar.active ul {
+                display: flex !important;
+            }
+            .main-navbar .menu-item .menu-link {
+                padding: 12px 20px !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            .main-navbar .menu-item.active::after {
+                display: none;
+            }
+        }
+    </style>
     @stack('css')
 </head>
 
@@ -31,17 +123,17 @@
     <div id="app">
         <div id="main" class="layout-horizontal">
             <header class="mb-3">
-                {{-- Bagian Atas: Logo (Kiri) & User Profil (Kanan) sejajar --}}
+                {{-- TOPBAR: Logo & User Dropdown Section --}}
                 <div class="header-top">
                     <div class="container d-flex justify-content-between align-items-center">
-                        {{-- LOGO DI SISI KIRI --}}
+                        {{-- SISI KIRI: BRANDING LOGO --}}
                         <div class="logo">
                             <a href="{{ route('user.dashboard') }}">
-                                <img src="{{ asset('assets-admin/img/logo.png') }}" alt="Logo SysGRA">
+                                <img src="{{ asset('assets-admin/img/logo.png') }}" alt="Logo SysGRA" style="height: 40px;">
                             </a>
                         </div>
 
-                        {{-- GROUP KANAN: PROFIL & BURGER --}}
+                        {{-- SISI KANAN: PROFIL DROPDOWN & BURGER MOBILE --}}
                         <div class="header-top-right d-flex align-items-center">
                             <div class="dropdown">
                                 <a href="#" id="topbarUserDropdown"
@@ -73,7 +165,7 @@
                                 </ul>
                             </div>
                             
-                            {{-- Burger Menu Mobile --}}
+                            {{-- Burger Toggle Button for Mobile Devices --}}
                             <a href="#" class="burger-btn d-block d-xl-none ms-4" id="mobileMenuToggle">
                                 <i class="bi bi-justify fs-2"></i>
                             </a>
@@ -81,7 +173,7 @@
                     </div>
                 </div>
 
-                {{-- Navigasi Utama --}}
+                {{-- NAVBAR HORIZONTAL: Menu Utama Pelanggan --}}
                 <nav class="main-navbar" id="mainNavbar">
                     <div class="container">
                         <ul class="d-flex align-items-center">
@@ -115,10 +207,12 @@
                 </nav>
             </header>
 
+            {{-- MAIN VIEW SLOT ENGINE CONTENT --}}
             <div class="content-wrapper container">
                 @yield('content')
             </div>
 
+            {{-- APPLICATION FOOTER AREA --}}
             <footer>
                 <div class="container text-start small text-muted">
                     <div class="footer clearfix mb-0">
@@ -134,9 +228,11 @@
         </div>
     </div>
 
+    {{-- JavaScript Core Vendors Template Mazer --}}
     <script src="{{ asset('assets-template/js/bootstrap.js') }}"></script>
     <script src="{{ asset('assets-template/js/app.js') }}"></script>
 
+    {{-- Interactive Navbar Toggle Script for Mobile Responsive --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const toggleBtn = document.getElementById('mobileMenuToggle');

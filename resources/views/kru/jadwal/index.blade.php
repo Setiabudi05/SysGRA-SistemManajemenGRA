@@ -118,6 +118,20 @@
 
     <script>
         $(document).ready(function () {
+            // === KUNCI UTAMA: Tangkap parameter bulan & tahun dari URL (bawaan redirect klik notifikasi) ===
+            const urlParams = new URLSearchParams(window.location.search);
+            const paramBulan = urlParams.get('bulan');
+            const paramTahun = urlParams.get('tahun');
+
+            // Jika parameter ditemukan, paksa value dropdown select mengikuti nilainya sebelum tabel dirender
+            if (paramBulan) {
+                $('#filter-bulan').val(paramBulan);
+            }
+            if (paramTahun) {
+                $('#filter-tahun').val(paramTahun);
+            }
+
+            // Inisialisasi DataTable Jadwal Kru
             let table = $('#jadwal-table').DataTable({
                 processing: true,
                 serverSide: true,
@@ -125,6 +139,7 @@
                 ajax: {
                     url: "{{ route('kru.jadwal.data') }}",
                     data: function (d) {
+                        // Mengirimkan nilai filter bulan & tahun yang aktif ke server side controller
                         d.bulan = $('#filter-bulan').val();
                         d.tahun = $('#filter-tahun').val();
                     }
@@ -136,7 +151,7 @@
                     { data: 'alamat', name: 'alamat' },
                     { data: 'nama_paket', name: 'nama_paket' },
                     { data: 'asisten', name: 'asisten' },
-                    { data: 'fg', name: 'fg' }, // Tambah Baris Ini
+                    { data: 'fg', name: 'fg' },
                     {
                         data: 'aksi',
                         name: 'aksi',
@@ -154,10 +169,12 @@
                 }
             });
 
+            // Pemicu redraw tabel saat dropdown diubah manual oleh kru
             $('#filter-bulan, #filter-tahun').change(function () {
                 table.draw();
             });
 
+            // Fitur cetak pdf sesuai filter
             $(document).on('click', '#btn-print', function () {
                 const url = "{{ route('kru.jadwal.print') }}?bulan=" + $('#filter-bulan').val() + "&tahun=" + $('#filter-tahun').val();
                 window.open(url, '_blank');

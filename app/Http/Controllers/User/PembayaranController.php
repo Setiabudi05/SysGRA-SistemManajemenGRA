@@ -10,11 +10,19 @@ class PembayaranController extends Controller
 {
     public function index()
     {
-        // Mengambil riwayat booking milik user yang login
-        $payments = Booking::where('another_column_name', Auth::id())
+        // PERBAIKAN MUTLAK: Mengubah 'another_column_name' menjadi 'user_id' agar mengunci data Naila
+        $bookings = Booking::where('user_id', Auth::id())
+                    ->whereIn('status', [
+                        'pending', 'PENDING', 
+                        'confirmed', 'CONFIRMED', 
+                        'success', 'SUCCESS', 
+                        'terkonfirmasi', 'TERKONFIRMASI',
+                        'failed', 'FAILED'
+                    ]) 
                     ->orderBy('updated_at', 'desc')
                     ->get();
 
-        return view('user.pembayaran.index', compact('payments'));
+        // Melempar variabel 'bookings' secara aman ke view pelanggan
+        return view('user.pembayaran.index', compact('bookings'));
     }
 }

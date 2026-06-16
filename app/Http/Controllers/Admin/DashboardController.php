@@ -3,54 +3,49 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Paket;
 use App\Models\Dekorasi;
+use App\Models\Booking;
 use App\Models\JadwalPengantin;
-use App\Models\User;
-use App\Models\Pembukuan;
-use App\Models\Booking; // Tambahkan ini agar tidak perlu menulis alamat lengkap
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // Peringatan "Simplified" hilang karena kita langsung panggil nama Modelnya
+        // 1. Data Statistik (Total Angka)
         $totalPaket = Paket::count();
         $totalDekorasi = Dekorasi::count(); 
-        $totalPelanggan = Booking::distinct('customer_name')->count();
+        $totalPelanggan = Booking::distinct('bride_groom_name')->count();
         $totalBooking = Booking::count();
 
-        // Statistik Finansial
-        $netIncome = Pembukuan::where('tipe', 'pemasukan')->sum('nominal') -
-                     Pembukuan::where('tipe', 'pengeluaran')->sum('nominal');
+        // 2. Data untuk Tabel Booking
+        $allBookings = Booking::latest()->get();
 
-        // Sisa tagihan
-        $pendingPayment = Booking::all()->sum('sisa_tagihan');
+        // 3. Data Jadwal Operasional Mendatang (Bulan berjalan)
+        $currentMonth = Carbon::now()->format('m');
+        $currentYear = Carbon::now()->format('Y');
 
-        // Aktivitas terbaru
-        $recentBookings = Booking::latest()->take(5)->get();
+        $upcomingSchedules = JadwalPengantin::whereMonth('tanggal_awal', $currentMonth)
+            ->whereYear('tanggal_awal', $currentYear)
+            ->orderBy('tanggal_awal', 'asc')
+            ->get();
 
+        // 4. Data untuk Donut Chart
+        $statusCounts = Booking::select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        // Mengirimkan semua variabel ke view admin.dashboard
         return view('admin.dashboard', compact(
-            'totalPaket',
-            'totalDekorasi',
-            'totalPelanggan',
-            'totalBooking',
-            'netIncome',
-            'pendingPayment',
-            'recentBookings'
+            'totalPaket', 
+            'totalDekorasi', 
+            'totalPelanggan', 
+            'totalBooking', 
+            'allBookings', 
+            'upcomingSchedules', 
+            'statusCounts'
         ));
-    }
-
-    private function getBulanIndo($month)
-    {
-        $map = [
-            'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
-            'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
-            'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September',
-            'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
-        ];
-        return $map[$month] ?? $month;
     }
 }

@@ -1,5 +1,6 @@
 {{-- ================= NAVBAR (NAVIGATION) ================= --}}
-<nav class="navbar navbar-expand navbar-light" style="background: transparent !important; box-shadow: none !important; min-height: 70px;">
+<nav class="navbar navbar-expand navbar-light"
+    style="background: transparent !important; box-shadow: none !important; min-height: 70px;">
     <div class="container-fluid px-4">
         <div class="d-flex align-items-center">
             <a href="#" class="burger-btn d-block d-xl-none me-3">
@@ -16,38 +17,60 @@
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                 @if(in_array(Auth::user()->role, ['owner', 'admin', 'kru']))
                     <li class="nav-item dropdown me-3">
-                        <a class="nav-link active dropdown-toggle text-gray-600" href="#" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                        <a class="nav-link active dropdown-toggle text-gray-600" href="#" data-bs-toggle="dropdown"
+                            data-bs-display="static" aria-expanded="false">
                             <i class='bi bi-bell fs-4'></i>
                             @if(auth()->user()->unreadNotifications->count() > 0)
-                                <span class="badge bg-danger" style="position: absolute; top: 10px; right: 8px; font-size: 0.6rem; padding: 0.25em 0.45em;">
+                                <span class="badge bg-danger"
+                                    style="position: absolute; top: 10px; right: 8px; font-size: 0.6rem; padding: 0.25em 0.45em;">
                                     {{ auth()->user()->unreadNotifications->count() }}
                                 </span>
                             @endif
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="min-width: 300px; margin-top: 15px;">
-                            <li><h6 class="dropdown-header">Notifikasi Terbaru</h6></li>
-                            
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0"
+                            style="min-width: 300px; margin-top: 15px;">
+                            <li>
+                                <h6 class="dropdown-header">Notifikasi Terbaru</h6>
+                            </li>
+
                             @forelse(auth()->user()->unreadNotifications as $notification)
                                 <li>
-                                    {{-- PERBAIKAN: Mengarahkan ke route read agar angka merah hilang --}}
-                                    <a class="dropdown-item d-flex align-items-start py-3" 
-                                       href="{{ route('kru.notification.read', $notification->id) }}">
+                                    {{-- PERBAIKAN: Tambahkan query string ?jadwal_id= dari database JSON agar melompat ke
+                                    halaman JADWAL yang tepat --}}
+                                    @php
+                                        // Cari data jadwal_id dari data json notifikasi
+                                        $jadwalIdParam = '';
+                                        if (isset($notification->data['link'])) {
+                                            // Ekstrak ID dari URL bawaan jika ada
+                                            $jadwalIdParam = basename(parse_url($notification->data['link'], PHP_URL_PATH));
+                                        }
+                                    @endphp
+                                    {{-- PERBAIKAN: Ubah 'kru.notification.read' menjadi 'notification.read' --}}
+                                    <a class="dropdown-item d-flex align-items-start py-3"
+                                        href="{{ route('notification.read', $notification->id) }}?jadwal_id={{ $jadwalIdParam }}">
                                         <div class="avatar bg-light-primary me-3">
                                             <i class="bi {{ $notification->data['icon'] ?? 'bi-bell' }} text-primary"></i>
                                         </div>
                                         <div>
                                             <h6 class="mb-1 text-sm">{{ $notification->data['judul'] ?? 'Info Baru' }}</h6>
                                             <p class="mb-0 text-xs text-muted">{{ $notification->data['pesan'] }}</p>
-                                            <small class="text-xs text-secondary">{{ $notification->created_at->diffForHumans() }}</small>
+                                            <small
+                                                class="text-xs text-secondary">{{ $notification->created_at->diffForHumans() }}</small>
                                         </div>
                                     </a>
                                 </li>
                             @empty
-                                <li><p class="dropdown-item text-center text-muted py-3 mb-0">Tidak ada notifikasi baru</p></li>
+                                <li>
+                                    <p class="dropdown-item text-center text-muted py-3 mb-0">Tidak ada notifikasi baru</p>
+                                </li>
                             @endforelse
-                            
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-center text-sm text-primary fw-bold" href="#">Lihat Semua Notifikasi</a></li>
+
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            {{-- PERBAIKAN: Cukup panggil rute universal yang baru --}}
+                            <li><a class="dropdown-item text-center text-sm text-primary fw-bold"
+                                    href="{{ route('notification.all') }}">Lihat Semua Notifikasi</a></li>
                         </ul>
                     </li>
                 @endif
@@ -59,43 +82,54 @@
                         <div class="user-name text-end me-3">
                             <h6 class="mb-0 fw-bold">{{ Auth::user()->name }}</h6>
                             <p class="mb-0 text-xs text-muted">
-                                @if(Auth::user()->role == 'owner') Owner 
-                                @elseif(Auth::user()->role == 'admin') Administrator 
+                                @if(Auth::user()->role == 'owner') Owner
+                                @elseif(Auth::user()->role == 'admin') Administrator
                                 @elseif(Auth::user()->role == 'kru')
                                     @php
                                         $name = Auth::user()->name;
-                                        $checkJob = \App\Models\JadwalPengantin::where('bulan', ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][(int)date('m')-1])
-                                                    ->where('tahun', date('Y'))
-                                                    ->where(function($q) use ($name) {
-                                                        $q->where('fg', $name)->orWhere('asisten', 'like', "%$name%")->orWhere('layos', $name);
-                                                    })->first();
-                                        if($checkJob) {
-                                            if($checkJob->fg == $name) echo "Fotografer";
-                                            elseif(str_contains($checkJob->asisten, $name)) echo "Asisten";
-                                            elseif($checkJob->layos == $name) echo "Kru Layos";
-                                            else echo "Kru Lapangan";
-                                        } else { echo "Kru Lapangan"; }
+                                        $checkJob = \App\Models\JadwalPengantin::where('bulan', ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][(int) date('m') - 1])
+                                            ->where('tahun', date('Y'))
+                                            ->where(function ($q) use ($name) {
+                                                $q->where('fg', $name)->orWhere('asisten', 'like', "%$name%")->orWhere('layos', $name);
+                                            })->first();
+                                        if ($checkJob) {
+                                            if ($checkJob->fg == $name)
+                                                echo "Fotografer";
+                                            elseif (str_contains($checkJob->asisten, $name))
+                                                echo "Asisten";
+                                            elseif ($checkJob->layos == $name)
+                                                echo "Kru Layos";
+                                            else
+                                                echo "Kru Lapangan";
+                                        } else {
+                                            echo "Kru Lapangan";
+                                        }
                                     @endphp
                                 @else Pelanggan @endif
                             </p>
                         </div>
                         <div class="avatar avatar-md border">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background={{ Auth::user()->role == 'owner' ? 'ffc107' : '435ebe' }}&color=fff">
+                            <img
+                                src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background={{ Auth::user()->role == 'owner' ? 'ffc107' : '435ebe' }}&color=fff">
                         </div>
                     </div>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">
                     <li>
                         @php
-                            $profileRoute = match(Auth::user()->role) {
+                            $profileRoute = match (Auth::user()->role) {
+                                'owner' => route('owner.profile.index'), 
                                 'admin' => route('admin.profile.index'),
-                                'kru'   => route('kru.profile.index'),
+                                'kru' => route('kru.profile.index'),
                                 default => route('user.profile.index'),
                             };
                         @endphp
-                        <a class="dropdown-item" href="{{ $profileRoute }}"><i class="bi bi-person me-2"></i> Profil Saya</a>
+                        <a class="dropdown-item" href="{{ $profileRoute }}"><i class="bi bi-person me-2"></i> Profil
+                            Saya</a>
                     </li>
-                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
                     <li>
                         <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="confirmLogout()">
                             <i class="bi bi-power me-2"></i> Logout
@@ -112,24 +146,24 @@
 </form>
 
 @push('js')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    function confirmLogout() {
-        Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: "Sesi Anda akan berakhir dan Anda harus login kembali.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#435ebe',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Ya, Logout!',
-            cancelButtonText: 'Batal',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                document.getElementById('logout-form').submit();
-            }
-        })
-    }
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmLogout() {
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Sesi Anda akan berakhir dan Anda harus login kembali.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#435ebe',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Logout!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('logout-form').submit();
+                }
+            })
+        }
+    </script>
 @endpush

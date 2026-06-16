@@ -11,7 +11,6 @@
                 <div class="col-12 col-lg-4 mb-4">
                     <div class="card border-0 shadow-sm h-100 mb-0" style="border-radius: 20px; background: white;">
                         <div class="card-body p-4 d-flex flex-column align-items-center justify-content-center text-center">
-                            {{-- Avatar Lingkaran Rapi --}}
                             <div class="avatar-wrapper mb-3">
                                 <div class="avatar-circle">
                                     <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=435ee0&color=fff&size=128" alt="Face">
@@ -28,10 +27,16 @@
                                         <i class="bi bi-envelope me-2 text-primary"></i>{{ $user->email }}
                                     </p>
                                 </div>
-                                <div class="mb-0">
-                                    <label class="info-label-sm text-muted mb-1 text-uppercase">WhatsApp</label>
+                                <div class="mb-3">
+                                    <label class="info-label-sm text-muted mb-1 text-uppercase">WhatsApp / No. HP</label>
                                     <p class="fw-bold text-dark mb-0">
-                                        <i class="bi bi-whatsapp me-2 text-success"></i>{{ $user->whatsapp ?? '-' }}
+                                        <i class="bi bi-whatsapp me-2 text-success"></i>{{ $user->phone ?? '-' }}
+                                    </p>
+                                </div>
+                                <div class="mb-0">
+                                    <label class="info-label-sm text-muted mb-1 text-uppercase">Alamat Rumah</label>
+                                    <p class="fw-bold text-dark mb-0 small text-secondary">
+                                        <i class="bi bi-geo-alt me-2 text-danger"></i>{{ $user->address ?? '-' }}
                                     </p>
                                 </div>
                             </div>
@@ -73,7 +78,7 @@
                                         <label class="info-label-sm">Nomor WhatsApp</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-light border-end-0"><i class="bi bi-whatsapp"></i></span>
-                                            <input type="number" name="whatsapp" class="form-control bg-light" value="{{ old('whatsapp', $user->whatsapp) }}" placeholder="08xxxxxxxxxx">
+                                            <input type="number" name="phone" class="form-control bg-light" value="{{ old('phone', $user->phone) }}" placeholder="08xxxxxxxxxx">
                                         </div>
                                     </div>
                                     <div class="col-md-12">
@@ -94,7 +99,6 @@
                                     </div>
                                 </div>
 
-                                {{-- NAVIGASI TOMBOL: Kembali (Kiri) & Simpan (Kanan) --}}
                                 <div class="mt-4 pt-3 d-flex justify-content-between border-top">
                                     <a href="{{ url('user/dashboard') }}" class="btn btn-light-secondary rounded-pill px-4 fw-bold">
                                         <i class="bi bi-arrow-left me-1"></i> Kembali
@@ -115,18 +119,13 @@
 
 @push('css')
 <style>
-    /* Lingkaran Avatar */
     .avatar-wrapper { padding: 4px; border: 3px solid #435ee0; border-radius: 50%; display: inline-block; }
     .avatar-circle { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
     .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
-
-    /* Typography & Input */
     .info-label-sm { font-weight: 800; font-size: 0.68rem; letter-spacing: 0.5px; color: #6c757d; display: block; margin-bottom: 4px; }
     .text-dark { color: #252d3a !important; }
     .extra-small { font-size: 0.65rem; }
     .form-control:focus { border-color: #435ee0; box-shadow: none !important; }
-
-    /* Tombol Style */
     .btn-light-secondary { background-color: #f2f4f6; color: #4b4b4b; border: none; }
     .btn-light-secondary:hover { background-color: #e2e5e8; }
 </style>

@@ -1,5 +1,5 @@
 @extends('layouts.master')
-@section('title', 'Histori Pembayaran - ' . $jadwal->nama)
+@section('title', 'Histori Pembayaran - ' . ($booking->bride_groom_name ?? 'Detail'))
 
 @push('css')
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.bootstrap5.min.css">
@@ -19,7 +19,7 @@
                     </ol>
                 </nav>
                 <h3 class="fw-bold mb-0">Histori Pembayaran</h3>
-                <p class="text-muted mb-0 small">Rincian cicilan untuk pengantin: <strong>{{ $jadwal->nama }}</strong></p>
+                <p class="text-muted mb-0 small">Rincian cicilan untuk pengantin: <strong>{{ $booking->bride_groom_name }}</strong></p>
             </div>
             <div class="col-12 col-md-6 order-md-2 order-first d-flex justify-content-md-end mb-3">
                 <a href="{{ route('owner.pembayaran.index') }}" class="btn btn-secondary shadow-sm px-3 fw-bold">
@@ -33,7 +33,7 @@
 
 <section class="section">
     <div class="row">
-        {{-- Sisi Kiri: Widget Ringkasan --}}
+        {{-- Sisi Kiri: Widget Ringkasan Tagihan --}}
         <div class="col-12 col-lg-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-4">
@@ -71,13 +71,11 @@
             </div>
         </div>
 
-        {{-- Sisi Kanan: Tabel Histori --}}
+        {{-- Sisi Kanan: Log Transaksi Cicilan --}}
         <div class="col-12 col-lg-8">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
                     <h5 class="card-title mb-0">Log Transaksi Cicilan</h5>
-                    {{-- Wadah Custom Search Box --}}
-                    <div id="search-container"></div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -92,16 +90,16 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($jadwal->pembayarans as $index => $bayar)
+                                @foreach($booking->pembayarans as $index => $bayar)
                                 <tr>
                                     <td class="text-center text-muted">{{ $index + 1 }}</td>
-                                    <td class="fw-bold">{{ \Carbon\Carbon::parse($bayar->tanggal_bayar)->translatedFormat('d F Y') }}</td>
+                                    <td class="fw-bold">{{ \Carbon\Carbon::parse($bayar->created_at)->translatedFormat('d F Y') }}</td>
                                     <td>
                                         <span class="badge bg-light-secondary text-secondary">
                                             {{ strtoupper($bayar->metode ?? 'Transfer') }}
                                         </span>
                                     </td>
-                                    <td class="text-end fw-bold text-dark">Rp {{ number_format($bayar->nominal, 0, ',', '.') }}</td>
+                                    <td class="text-end fw-bold text-dark">Rp {{ number_format($bayar->jumlah_bayar, 0, ',', '.') }}</td>
                                     <td class="text-center">
                                         <a href="{{ route('owner.pembayaran.nota', $bayar->id) }}" class="btn btn-sm btn-outline-info shadow-sm" target="_blank">
                                             <i class="bi bi-printer"></i>
@@ -123,45 +121,16 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdn.datatables.net/2.0.7/js/dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/2.0.7/js/dataTables.bootstrap5.min.js"></script>
-
 <script>
     $(document).ready(function() {
-        let table = $('#table-histori').DataTable({
+        $('#table-histori').DataTable({
             "pagingType": "full_numbers",
-            "language": {
-                "search": "Cari Transaksi:",
-                "searchPlaceholder": "...",
-                "info": "Showing _START_ to _END_ of _TOTAL_ entries",
-                "paginate": {
-                    "first": "«",
-                    "last": "»",
-                    "next": "›",
-                    "previous": "‹"
-                }
-            },
-            // Custom DOM: t(table), i(info), p(pagination)
-            // Search (f) sengaja dibuang dari DOM karena kita pindahkan manual ke header
-            "dom": "<'row'<'col-sm-12'tr>>" +
-                   "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
             "pageLength": 5,
             "ordering": true,
             "order": [[1, "desc"]],
-            "initComplete": function() {
-                // Buat Search Box secara manual agar bisa ditaruh di header card
-                let api = this.api();
-                let filterHtml = $(`
-                    <div class="dataTables_filter">
-                        <label>Cari Transaksi: 
-                            <input type="search" class="form-control form-control-sm" placeholder="...">
-                        </label>
-                    </div>
-                `);
-
-                filterHtml.find('input').on('keyup', function() {
-                    api.search(this.value).draw();
-                });
-
-                $('#search-container').append(filterHtml);
+            "language": {
+                "search": "Cari Transaksi:",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data"
             }
         });
     });

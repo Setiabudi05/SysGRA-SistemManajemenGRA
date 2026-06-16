@@ -45,9 +45,19 @@
                     <div class="card-body">
                         <div class="form-section-title"><i class="bi bi-person-badge"></i> Identitas & Acara</div>
                         <div class="row g-2 mb-2">
+                            {{-- PERBAIKAN UTAMA: Mengubah input text Nama Pemesan menjadi Dropdown Akun Pelanggan --}}
                             <div class="col-md-6">
-                                <label class="form-label">Nama Pemesan</label>
-                                <input type="text" name="customer_name" class="form-control" value="{{ $booking->customer_name }}" required>
+                                <label class="form-label text-primary">Hubungkan ke Akun Pelanggan</label>
+                                <select name="user_id" id="user_id" class="form-select" required>
+                                    <option value="">-- Pilih Akun User --</option>
+                                    @foreach($list_pelanggan as $user)
+                                        <option value="{{ $user->id }}" data-name="{{ $user->name }}" {{ $booking->user_id == $user->id ? 'selected' : '' }}>
+                                            {{ $user->name }} ({{ $user->email }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                {{-- Input hidden untuk tetap mengirimkan customer_name secara dinamis --}}
+                                <input type="hidden" name="customer_name" id="customer_name" value="{{ $booking->customer_name }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">WhatsApp / No. Telp</label>
@@ -67,7 +77,6 @@
                             <div class="col-md-6">
                                 <label class="form-label">Durasi Acara</label>
                                 <select name="duration" class="form-select" required>
-                                    {{-- Menggunakan angka agar tidak error Data Truncated --}}
                                     <option value="1" {{ $booking->event_duration == 1 ? 'selected' : '' }}>1 Hari (Sehari)</option>
                                     <option value="2" {{ $booking->event_duration == 2 ? 'selected' : '' }}>2 Hari (Dua Hari)</option>
                                 </select>
@@ -107,7 +116,6 @@
                             <select name="package_name" id="select_paket" class="form-select" required>
                                 <option value="">-- Pilih Paket --</option>
                                 @foreach($list_paket as $p)
-                                    {{-- Menitipkan harga di atribut data-harga untuk otomatisasi --}}
                                     <option value="{{ $p->nama_paket }}" 
                                             data-harga="{{ $p->harga }}"
                                             {{ $booking->package_name == $p->nama_paket ? 'selected' : '' }}>
@@ -121,7 +129,6 @@
                             <label class="form-label">Harga Paket Utama</label>
                             <div class="input-group">
                                 <span class="input-group-text fw-bold">Rp</span>
-                                {{-- Readonly untuk menjaga konsistensi keuangan --}}
                                 <input type="text" name="package_price" id="package_price" 
                                        class="form-control" 
                                        value="{{ number_format($booking->package_price, 0, ',', '.') }}" 
@@ -157,15 +164,21 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
     $(document).ready(function() {
-        /**
-         * Logika Sinkronisasi Paket & Harga mengikuti alur Jadwal Dekor
-         */
+        // Logika Sinkronisasi Dropdown User ke Input Hidden customer_name saat diubah
+        $('#user_id').on('change', function() {
+            let selectedName = $(this).find(':selected').data('name');
+            if (selectedName) {
+                $('#customer_name').val(selectedName);
+            } else {
+                $('#customer_name').val('');
+            }
+        });
+
+        // Logika Sinkronisasi Paket & Harga
         $('#select_paket').on('change', function() {
-            // Ambil atribut data-harga dari paket yang dipilih
             let harga = $(this).find(':selected').data('harga');
             
             if (harga && harga > 0) {
-                // Format angka ke ribuan (Contoh: 15.000.000)
                 let formatted = new Intl.NumberFormat('id-ID').format(harga);
                 $('#package_price').val(formatted);
             } else {

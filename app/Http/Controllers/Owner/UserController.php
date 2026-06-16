@@ -22,17 +22,46 @@ class UserController extends Controller
     }
 
     /**
+     * Ambil data untuk DataTables (Disertai Filter Kategori Dropdown).
+     */
+    /**
      * Ambil data untuk DataTables.
      */
-    public function data()
+   public function data(Request $request)
     {
         $users = User::query();
 
+        // 1. Filter Dropdown Kategori Akun
+        if ($request->filled('category')) {
+            if ($request->category == 'karyawan') {
+                $users->whereIn('role', ['ADMIN', 'KRU']);
+            } elseif ($request->category == 'pelanggan') {
+                $users->where('role', 'PELANGGAN');
+            }
+        }
+
+        // Ambil data selain Owner dan urutkan A-Z berdasarkan nama
+        $users->where('role', '!=', 'OWNER')->orderBy('name', 'asc');
+
         return DataTables::of($users)
             ->addIndexColumn()
+            
+            // Kolom Role (Bawaan database, otomatis bisa dicari)
             ->editColumn('role', function ($user) {
                 return strtoupper($user->role);
             })
+            
+            // Kolom Jabatan (Kolom kustom)
+            ->addColumn('jabatan', function ($user) {
+                return $user->jabatan ? strtoupper($user->jabatan) : '-';
+            })
+            
+            // KUNCI UTAMA: Logika agar kolom Jabatan yang kustom bisa dicari lewat input Search
+            ->filterColumn('jabatan', function($query, $keyword) {
+                $sql = "users.jabatan LIKE ?";
+                $query->whereRaw($sql, ["%{$keyword}%"]);
+            })
+            
             ->addColumn('action', function ($user) {
                 return '
                 <div class="d-flex justify-content-center gap-2">
@@ -124,6 +153,7 @@ class UserController extends Controller
 
         return redirect()->route('owner.users.index')->with('swal_success', 'User berhasil diperbarui!');
     }
+
     /**
      * Hapus user.
      */

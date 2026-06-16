@@ -34,9 +34,9 @@
                         </div>
                     @else
                         @foreach($carts as $cart)
-                            <div class="p-4 mb-3 border rounded-4">
+                            <div class="p-4 mb-3 border rounded-4 bg-white shadow-xs">
                                 <div class="row align-items-center">
-                                    <div class="col-md-7">
+                                    <div class="col-md-7 text-start">
                                         <span class="badge bg-light-primary text-primary mb-2 text-uppercase fw-bold" style="font-size: 0.6rem;">
                                             DRAFT
                                         </span>
@@ -57,20 +57,18 @@
                                     </div>
 
                                     <div class="col-md-5 text-md-end mt-3 mt-md-0">
-                                        <div class="d-inline-block">
-                                            <p class="fw-bold text-dark h5 mb-2">
-                                                Rp {{ number_format((int) $cart->package_price, 0, ',', '.') }}
-                                            </p>
+                                        <p class="fw-bold text-dark h5 mb-3">
+                                            Rp {{ number_format((int) $cart->package_price, 0, ',', '.') }}
+                                        </p>
 
-                                            <form action="{{ route('user.keranjang.destroy', $cart->id) }}" method="POST">
-                                                @csrf 
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm rounded-pill px-4 shadow-sm w-100" 
-                                                    onclick="return confirm('Batalkan booking ini?')">
-                                                    <i class="bi bi-trash me-1"></i> Batalkan
-                                                </button>
-                                            </form>
-                                        </div>
+                                        {{-- PERBAIKAN FORM: Form diisolasi ketat di sini agar tidak memicu auto-submit elemen lain --}}
+                                        <form action="{{ route('user.keranjang.destroy', $cart->id) }}" method="POST" onsubmit="return confirm('Batalkan booking ini?')">
+                                            @csrf 
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger btn-sm rounded-pill px-4 shadow-sm">
+                                                <i class="bi bi-trash me-1"></i> Batalkan
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -85,66 +83,63 @@
                                         </div>
                                         <div class="modal-body p-4">
                                             <div class="row g-3">
-                                                {{-- Section 1: Data Acara --}}
                                                 <div class="col-12 text-start">
                                                     <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">1. Informasi Layanan & Waktu</h6>
                                                 </div>
                                                 <div class="col-md-6 text-start">
-                                                    <label class="info-label-sm">Paket Pernikahan</label>
+                                                    <label class="info-label-sm fw-bold text-secondary">Paket Pernikahan</label>
                                                     <input type="text" class="form-control form-control-sm bg-light fw-bold" value="{{ $cart->package_name }}" readonly>
                                                 </div>
                                                 <div class="col-md-6 text-start">
-                                                    <label class="info-label-sm">Tanggal Pelaksanaan</label>
+                                                    <label class="info-label-sm fw-bold text-secondary">Tanggal Pelaksanaan</label>
                                                     <input type="text" class="form-control form-control-sm bg-light" value="{{ date('d F Y', strtotime($cart->event_date)) }}" readonly>
                                                 </div>
                                                 <div class="col-12 text-start">
-                                                    <label class="info-label-sm">Alamat Lokasi Acara</label>
+                                                    <label class="info-label-sm fw-bold text-secondary">Alamat Lokasi Acara</label>
                                                     <textarea class="form-control form-control-sm bg-light" rows="2" readonly>{{ $cart->event_address }}</textarea>
                                                 </div>
 
-                                                {{-- Section 2: Data Pelanggan --}}
                                                 <div class="col-12 mt-4 text-start">
                                                     <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">2. Identitas Pelanggan & Pengantin</h6>
                                                 </div>
                                                 <div class="col-md-6 text-start">
-                                                    <label class="info-label-sm">Nama Pemesan</label>
+                                                    <label class="info-label-sm fw-bold text-secondary">Nama Pemesan</label>
                                                     <input type="text" class="form-control form-control-sm bg-light" value="{{ $cart->customer_name }}" readonly>
                                                 </div>
                                                 <div class="col-md-6 text-start">
-                                                    <label class="info-label-sm">WhatsApp</label>
+                                                    <label class="info-label-sm fw-bold text-secondary">WhatsApp</label>
                                                     <input type="text" class="form-control form-control-sm bg-light text-primary fw-bold" value="{{ $cart->whatsapp_number }}" readonly>
                                                 </div>
                                                 <div class="col-md-6 text-start">
-                                                    <label class="info-label-sm">Nama Pengantin</label>
+                                                    <label class="info-label-sm fw-bold text-secondary">Nama Pengantin</label>
                                                     <input type="text" class="form-control form-control-sm bg-light" value="{{ $cart->bride_groom_name }}" readonly>
                                                 </div>
                                                 <div class="col-md-6 text-start">
-                                                    <label class="info-label-sm">Nama Orang Tua</label>
+                                                    <label class="info-label-sm fw-bold text-secondary">Nama Orang Tua</label>
                                                     <input type="text" class="form-control form-control-sm bg-light" value="{{ $cart->parent_name ?? '-' }}" readonly>
                                                 </div>
 
-                                                {{-- Section 3: Media Sosial & Catatan --}}
                                                 <div class="col-md-4 text-start">
-                                                    <label class="info-label-sm">Instagram</label>
+                                                    <label class="info-label-sm fw-bold text-secondary">Instagram</label>
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text bg-light"><i class="bi bi-instagram"></i></span>
                                                         <input type="text" class="form-control bg-light" value="{{ $cart->instagram_name ?? '-' }}" readonly>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-4 text-start">
-                                                    <label class="info-label-sm">Facebook</label>
+                                                    <label class="info-label-sm fw-bold text-secondary">Facebook</label>
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text bg-light"><i class="bi bi-facebook"></i></span>
                                                         <input type="text" class="form-control bg-light" value="{{ $cart->facebook_name ?? '-' }}" readonly>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-4 text-start">
-                                                    <label class="info-label-sm">Durasi</label>
+                                                    <label class="info-label-sm fw-bold text-secondary">Durasi</label>
                                                     <input type="text" class="form-control form-control-sm bg-light" value="{{ $cart->event_duration }} Hari" readonly>
                                                 </div>
                                                 <div class="col-12 text-start">
-                                                    <label class="info-label-sm text-warning">Catatan Khusus</label>
-                                                    <div class="p-2 border rounded bg-light-warning small italic">
+                                                    <label class="info-label-sm text-warning fw-bold">Catatan Khusus</label>
+                                                    <div class="p-2 border rounded bg-light small text-dark">
                                                         {{ $cart->notes ?? 'Tidak ada catatan tambahan.' }}
                                                     </div>
                                                 </div>
@@ -174,8 +169,8 @@
                 <div class="card-body p-4 text-start">
                     <h5 class="fw-bold mb-4 title-text"><i class="bi bi-receipt me-2 text-primary"></i>Ringkasan Tagihan</h5>
                     <div class="d-flex justify-content-between mb-4 small">
-                        <span class="text-muted text-dark">Total Tagihan</span>
-                        <span class="fw-bold text-dark h5 mb-0">Rp {{ number_format($carts->sum('package_price'), 0, ',', '.') }}</span>
+                        <span class="text-muted text-dark fw-bold">Total Tagihan</span>
+                        <span class="fw-bold text-primary h5 mb-0">Rp {{ number_format($carts->sum('package_price'), 0, ',', '.') }}</span>
                     </div>
                     <hr class="opacity-25 my-4">
 
@@ -209,7 +204,4 @@
         });
     @endif
 </script>
-@endpush
-
-@push('css')
 @endpush

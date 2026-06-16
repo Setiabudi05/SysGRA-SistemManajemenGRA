@@ -14,18 +14,28 @@ class DekorasiController extends Controller
     /**
      * Tampilkan halaman daftar dekorasi
      */
+
     public function index()
     {
-        return view('admin.dekorasi.index');
+        $pakets = Paket::all(); // Mengambil seluruh paket untuk isi dropdown filter
+        return view('admin.dekorasi.index', compact('pakets'));
     }
 
     /**
      * Ambil data untuk DataTables
      */
-    public function data()
+    /**
+     * Ambil data untuk DataTables dengan penanganan filter paket dan pencarian nama paket
+     */
+    public function data(Request $request)
     {
-        // Mengambil relasi paket untuk menghindari N+1 query
+        // Gunakan eager loading 'paket'
         $query = Dekorasi::with('paket');
+
+        // Logika filter dropdown paket
+        if ($request->filled('paket_id')) {
+            $query->where('paket_id', $request->paket_id);
+        }
 
         return DataTables::of($query)
             ->addIndexColumn()
@@ -45,7 +55,7 @@ class DekorasiController extends Controller
                     </button>
                 </div>';
             })
-            ->rawColumns(['action', 'foto'])
+            ->rawColumns(['action'])
             ->make(true);
     }
 
@@ -139,5 +149,44 @@ class DekorasiController extends Controller
             'success' => true,
             'message' => 'Dekorasi berhasil dihapus.'
         ]);
+    }
+
+    /**
+     * Cetak katalog visual data dekorasi pernikahan (PDF)
+     */
+    /**
+     * Cetak katalog visual data dekorasi pernikahan berdasarkan filter indeks
+     */
+    /**
+     * Cetak katalog visual data dekorasi pernikahan berdasarkan urutan dekorasi terbanyak
+     */
+    public function print(Request $request)
+    {
+        // 1. Ambil paket, hitung jumlah dekorasinya, dan urutkan dari yang terbanyak (descending)
+        $queryPaket = Paket::withCount('dekorasis') // Menghitung otomatis jumlah dekorasi per paket
+            ->with(['dekorasis' => function ($query) {
+                $query->latest();
+            }])
+            ->orderBy('dekorasis_count', 'desc'); // KUNCI UTAMA: Urutkan dari dekorasi terbanyak!
+
+        // 2. Sinkronisasi filter: Jika indeks depan disaring per paket, cetak paket yang dipilih saja
+        if ($request->filled('paket_id')) {
+            $queryPaket->where('id', $request->paket_id);
+        }
+
+        $dataPaket = $queryPaket->get();
+
+        // 3. Generate lembar PDF DomPDF murni
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.dekorasi.print', [
+            'dataPaket' => $dataPaket
+        ])
+            ->setPaper('A4', 'portrait')
+            ->setOptions([
+                'isRemoteEnabled' => false,
+                'isHtml5ParserEnabled' => true,
+                'isFontSubsettingEnabled' => true
+            ]);
+
+        return $pdf->stream('katalog_dekorasi_wedding.pdf');
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\JadwalPengantin;
+use App\Models\User;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
 
@@ -26,9 +27,18 @@ class DashboardController extends Controller
         $today = Carbon::today()->toDateString();
         $tahunSekarang = date('Y');
         $listBulanIndo = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
         $bulanSekarangIndo = $listBulanIndo[(int)date('m')];
 
@@ -37,11 +47,11 @@ class DashboardController extends Controller
             ->where('tahun', $tahunSekarang)
             ->where(function ($q) use ($namaKru, $namaDepan) {
                 $q->where('fg', 'LIKE', '%' . $namaDepan . '%')
-                  ->orWhere('asisten', 'LIKE', '%' . $namaDepan . '%')
-                  ->orWhere('layos', 'LIKE', '%' . $namaDepan . '%')
-                  ->orWhere('fg', 'LIKE', '%' . $namaKru . '%')
-                  ->orWhere('asisten', 'LIKE', '%' . $namaKru . '%')
-                  ->orWhere('layos', 'LIKE', '%' . $namaKru . '%');
+                    ->orWhere('asisten', 'LIKE', '%' . $namaDepan . '%')
+                    ->orWhere('layos', 'LIKE', '%' . $namaDepan . '%')
+                    ->orWhere('fg', 'LIKE', '%' . $namaKru . '%')
+                    ->orWhere('asisten', 'LIKE', '%' . $namaKru . '%')
+                    ->orWhere('layos', 'LIKE', '%' . $namaKru . '%');
             });
 
         // 3. HITUNG STATISTIK (CARD)
@@ -77,9 +87,18 @@ class DashboardController extends Controller
         $namaDepan = explode(' ', $namaKru)[0];
 
         $bulanSekarang = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ][(int)date('m')];
 
         $tahunSekarang = date('Y');
@@ -90,11 +109,11 @@ class DashboardController extends Controller
             ->where('tahun', $tahunSekarang)
             ->where(function ($q) use ($namaKru, $namaDepan) {
                 $q->where('fg', 'LIKE', '%' . $namaDepan . '%')
-                  ->orWhere('asisten', 'LIKE', '%' . $namaDepan . '%')
-                  ->orWhere('layos', 'LIKE', '%' . $namaDepan . '%')
-                  ->orWhere('fg', 'LIKE', '%' . $namaKru . '%')
-                  ->orWhere('asisten', 'LIKE', '%' . $namaKru . '%')
-                  ->orWhere('layos', 'LIKE', '%' . $namaKru . '%');
+                    ->orWhere('asisten', 'LIKE', '%' . $namaDepan . '%')
+                    ->orWhere('layos', 'LIKE', '%' . $namaDepan . '%')
+                    ->orWhere('fg', 'LIKE', '%' . $namaKru . '%')
+                    ->orWhere('asisten', 'LIKE', '%' . $namaKru . '%')
+                    ->orWhere('layos', 'LIKE', '%' . $namaKru . '%');
             });
 
         return DataTables::of($query)
@@ -121,5 +140,57 @@ class DashboardController extends Controller
                 return $row->paket?->nama_paket ?? '-';
             })
             ->make(true);
+    }
+    public function allNotifications()
+    {
+    // KUNCI: Ambil user lalu beri tahu VS Code kalau ini adalah Model User resmi
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
+        // Sekarang panggil dari variabel $user, garis merah dijamin hilang!
+        $allNotif = $user->notifications()->orderBy('created_at', 'desc')->paginate(10);
+
+        return view('kru.notification.all', compact('allNotif'));
+    }
+
+    public function respondNotification(Request $request, $id)
+    {
+        /** @var \App\Models\User $currentUser */
+        $currentUser = auth()->user();
+
+        // 1. Cari notifikasi milik kru
+        $notification = $currentUser->notifications()->findOrFail($id);
+        $data = $notification->data;
+
+        // 2. Ambil keputusan dari tombol (bisa / tidak_bisa)
+        $jawaban = $request->input('jawaban');
+        $alasan = $request->input('alasan', '');
+
+        $data['status_konfirmasi'] = $jawaban;
+        $data['alasan'] = $alasan;
+
+        // Update data JSON notifikasi si kru di database
+        $notification->data = $data;
+        $notification->markAsRead(); // Otomatis tandai sudah dibaca
+        $notification->save();
+
+        // 3. KIRIM NOTIFIKASI BALIK KE OWNER & ADMIN
+        $statusTeks = $jawaban == 'bisa' ? 'BISA HADIR ✅' : 'BERHALANGAN HADIR ❌';
+        $alasanTeks = $alasan ? " (Alasan: $alasan)" : "";
+
+        $payloadOwner = [
+            'judul' => '📢 Konfirmasi Tugas Kru!',
+            'pesan' => "Kru {$currentUser->name} menyatakan {$statusTeks} untuk tugasnya{$alasanTeks}.",
+            'icon'  => $jawaban == 'bisa' ? 'bi-check-circle-fill' : 'bi-x-circle-fill',
+            'link'  => route('owner.jadwalpengantin.index') // Jika diklik, owner masuk ke jadwal
+        ];
+
+        // Cari user yang rolenya owner dan admin
+        $penerimaNotif = User::whereIn('role', ['owner', 'admin'])->get();
+        foreach ($penerimaNotif as $penerima) {
+            $penerima->notify(new \App\Notifications\SistemNotifikasi($payloadOwner));
+        }
+
+        return response()->json(['success' => true, 'message' => 'Konfirmasi berhasil dikirim ke Owner!']);
     }
 }

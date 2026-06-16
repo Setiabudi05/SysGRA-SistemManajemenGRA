@@ -11,36 +11,31 @@ class LaporanPembukuanController extends Controller
 {
     public function index(Request $request)
     {
-        // Ambil filter tanggal (default hari ini)
-        $startDate = $request->get('start_date', date('Y-m-d'));
-        $endDate = $request->get('end_date', date('Y-m-d'));
+        // Mengambil tanggal dari input, default-nya hari ini
+        $tanggalDipilih = $request->get('tanggal', date('Y-m-d'));
 
-        // Data untuk Card Ringkasan
-        $pemasukan = Pembukuan::where('tipe', 'pemasukan')
-            ->whereBetween('tanggal', [$startDate, $endDate])
-            ->sum('nominal');
+        // Pemasukan harian
+        $listPemasukan = Pembukuan::where('tipe', 'pemasukan')
+            ->whereDate('tanggal', $tanggalDipilih)
+            ->get();
 
-        $pengeluaran = Pembukuan::where('tipe', 'pengeluaran')
-            ->whereBetween('tanggal', [$startDate, $endDate])
-            ->sum('nominal');
+        // Pengeluaran harian
+        $listPengeluaran = Pembukuan::where('tipe', 'pengeluaran')
+            ->whereDate('tanggal', $tanggalDipilih)
+            ->get();
 
+        // Hitung total untuk card ringkasan
+        $pemasukan = $listPemasukan->sum('nominal');
+        $pengeluaran = $listPengeluaran->sum('nominal');
         $saldo = $pemasukan - $pengeluaran;
 
-        // Data untuk Tabel Rincian
-        $listPemasukan = Pembukuan::where('tipe', 'pemasukan')
-            ->whereBetween('tanggal', [$startDate, $endDate])
-            ->orderBy('tanggal', 'desc')
-            ->get();
-
-        $listPengeluaran = Pembukuan::where('tipe', 'pengeluaran')
-            ->whereBetween('tanggal', [$startDate, $endDate])
-            ->orderBy('tanggal', 'desc')
-            ->get();
-
         return view('owner.pembukuan.index', compact(
-            'pemasukan', 'pengeluaran', 'saldo', 
-            'startDate', 'endDate', 
-            'listPemasukan', 'listPengeluaran'
+            'listPemasukan',
+            'listPengeluaran',
+            'pemasukan',
+            'pengeluaran',
+            'saldo',
+            'tanggalDipilih'
         ));
     }
 
@@ -56,7 +51,7 @@ class LaporanPembukuanController extends Controller
         $dataPengeluaran = Pembukuan::where('tipe', 'pengeluaran')
             ->whereBetween('tanggal', [$start, $end])
             ->get();
-        
+
         $totalMasuk = $dataPemasukan->sum('nominal');
         $totalKeluar = $dataPengeluaran->sum('nominal');
 

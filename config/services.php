@@ -42,4 +42,13 @@ return [
         'redirect'      => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    /* 🌟 KONFIGURASI API CHATBOT AI (SYSGRA) 🌟 */
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+    ],
+
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
+
 ];

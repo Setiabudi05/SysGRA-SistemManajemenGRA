@@ -192,7 +192,7 @@
                     <div class="card-body">
                         <h6 class="fw-bold text-primary mb-3">Tugas Selanjutnya</h6>
                         @if($nextJob)
-                                <div class="p-3 bg-light rounded border">
+                                <div>
                                     <div class="fw-bold h6 text-dark">{{ $nextJob->nama }}</div>
                                             <div class="text-muted small mb-2">
                                     <i class="bi bi-calendar3 me-2"></i>

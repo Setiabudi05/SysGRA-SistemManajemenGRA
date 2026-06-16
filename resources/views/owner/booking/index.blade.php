@@ -101,19 +101,17 @@
                         d.tahun = $('#filter-tahun').val();
                     }
                 },
+                // Di dalam script DataTables
                 columns: [
-    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
-    { 
-        data: 'tanggal_full', 
-        name: 'tanggal_awal', // Kita arahkan pengurutan database ke kolom asli 'tanggal_awal'
-        orderable: true 
-    },
-    { data: 'nama', name: 'nama', class: 'fw-bold text-primary' },
+                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
+                    { data: 'tanggal_full', name: 'event_date' },
+                    { data: 'nama', name: 'bride_groom_name' }, // Harus 'nama' sesuai Controller
                     { data: 'paket.nama_paket', name: 'paket.nama_paket', defaultContent: '-' },
                     {
                         data: 'harga_paket',
+                        name: 'paket.harga',
                         render: function (data) {
-                            return 'Rp ' + parseInt(data).toLocaleString('id-ID');
+                            return 'Rp ' + parseInt(data || 0).toLocaleString('id-ID');
                         }
                     },
                     { data: 'status', name: 'status', class: 'text-center' },

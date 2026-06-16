@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Booking;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -9,7 +10,16 @@ class JadwalPengantin extends Model
 {
     use HasFactory;
 
+    /**
+     * Nama tabel yang diasosiasikan dengan model (Opsional).
+     * Jika nama tabel di database adalah 'jadwal_pengantins', 
+     * Laravel akan mengenalinya secara otomatis tanpa perlu deklarasi ini.
+     */
+    protected $table = 'jadwal_pengantins';
+
     protected $fillable = [
+        'pesanan_id',
+        'is_manual', // Tambahkan ini
         'nama',
         'alamat',
         'paket_id',
@@ -20,24 +30,34 @@ class JadwalPengantin extends Model
         'asisten',
         'fg',
         'layos',
-        'keterangan',
+        'keterangan'
     ];
 
-    // Relasi ke Paket
+    /**
+     * Relasi ke model Paket
+     */
     public function paket()
     {
         return $this->belongsTo(Paket::class, 'paket_id');
     }
 
     /**
+     * Relasi ke model Booking (Pesanan)
+     */
+    public function pesanan()
+    {
+        return $this->belongsTo(Booking::class, 'pesanan_id', 'id');
+    }
     /**
      * Relasi ke model Pembayaran menggunakan kolom booking_id
      */
+    // app/Models/JadwalPengantin.php
     public function pembayarans()
     {
-        // Kita arahkan foreign key-nya ke 'booking_id'
-        return $this->hasMany(Pembayaran::class, 'booking_id');
+        // 'pesanan_id' sesuai dengan nama kolom di tabel pembayarans
+        return $this->hasMany(Pembayaran::class, 'pesanan_id', 'id');
     }
+
     public function jadwalDekor()
     {
         return $this->hasOne(JadwalDekor::class, 'jadwal_pengantin_id');
@@ -47,9 +67,9 @@ class JadwalPengantin extends Model
     {
         return $this->hasOne(JadwalGown::class, 'jadwal_pengantin_id');
     }
+
     public function jadwalLayos()
     {
-        // Sesuaikan foreign key jika bukan 'jadwal_pengantin_id'
         return $this->hasOne(JadwalLayos::class, 'jadwal_pengantin_id');
     }
 }

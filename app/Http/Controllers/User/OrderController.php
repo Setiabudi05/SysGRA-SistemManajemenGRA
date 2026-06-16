@@ -3,43 +3,39 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\Booking; // Pastikan Model Booking sudah ada sesuai projek SysGRA
-use Illuminate\Http\Request;
+use App\Models\Booking;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-    public function index()
+    /**
+     * Menampilkan riwayat pesanan aktif & completed beserta rincian lembar cicilannya
+     */
+    public function riwayat()
     {
-        // Mengambil histori pesanan user yang sedang login
-        $pesanan = Booking::where('user_id', Auth::id())
-                          ->orderBy('created_at', 'desc')
-                          ->get();
+        // Tarik data booking milik user beserta semua data riwayat cicilannya
+        $historyBookings = Booking::with(['pembayarans' => function($query) {
+                $query->where('status_pembayaran', 'LIKE', '%success%')
+                      ->orWhere('status_pembayaran', 'LIKE', '%lunas%')
+                      ->orWhere('status_pembayaran', 'LIKE', '%confirmed%') // Tambah pelacak status pembayaran confirmed
+                      ->orWhereNull('status_pembayaran')
+                      ->orderBy('created_at', 'asc');
+            }])
+            // PERBAIKAN 1: Ganti 'another_column_name' menjadi 'user_id' agar mengunci ID akun Naila
+            ->where('user_id', Auth::id())
+            // PERBAIKAN 2: Masukkan 'CONFIRMED' dan 'confirmed' agar pesanan yang baru masuk/DP langsung terdeteksi di halaman riwayat
+            ->whereIn('status', ['completed', 'COMPLETED', 'success', 'SUCCESS', 'confirmed', 'CONFIRMED'])
+            ->orderBy('event_date', 'desc')
+            ->get();
 
-        return view('user.pesanan', compact('pesanan'));
-    }
+        // Hitung total akumulasi uang masuk secara bersih
+        $historyBookings->map(function ($booking) {
+            $booking->total_terbayar = $booking->pembayarans->sum('jumlah_bayar');
+            return $booking;
+        });
 
-    public function uploadBukti(Request $request, $id)
-    {
-        // Validasi file foto bukti transfer
-        $request->validate([
-            'bukti_bayar' => 'required|image|mimes:jpg,png,jpeg|max:2048'
-        ]);
-        
-        $booking = Booking::findOrFail($id);
-
-        if ($request->hasFile('bukti_bayar')) {
-            // Simpan file ke folder public/bukti_transfer
-            $path = $request->file('bukti_bayar')->store('bukti_transfer', 'public');
-            
-            // Update status pesanan di database
-            $booking->update([
-                'bukti_pembayaran' => $path,
-                'status' => 'Menunggu Konfirmasi'
-            ]);
-        }
-
-        return back()->with('success', 'Bukti bayar berhasil diunggah! Mohon tunggu konfirmasi admin.');
+        // Diarahkan ke view riwayat index milik user
+        return view('user.riwayat.index', compact('historyBookings'));
     }
 }
