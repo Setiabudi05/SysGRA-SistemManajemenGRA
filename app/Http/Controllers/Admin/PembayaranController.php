@@ -60,64 +60,60 @@ class PembayaranController extends Controller
     /**
      * Memproses data DataTables untuk ringkasan pembayaran
      */
+    /**
+     * Memproses data DataTables untuk ringkasan pembayaran
+     * FIX: Menggunakan with() agar Booking tanpa pembayaran tetap muncul (Status PENDING)
+     */
     public function data(Request $request)
     {
-        $query = Booking::has('pembayarans')
-            ->with(['paket', 'pembayarans'])
-            ->latest();
+        // 1. Ambil data dengan eager loading, lalu ubah ke collection dengan ->get()
+        $bookings = Booking::with(['paket', 'pembayarans', 'addOns'])->get();
 
-        if ($request->has('bulan') && !empty($request->bulan)) {
-            $query->whereMonth('event_date', $request->bulan);
-        }
-        if ($request->has('tahun') && !empty($request->tahun)) {
-            $query->whereYear('event_date', $request->tahun);
-        }
+        // 2. Terapkan filter Anda PERSIS (akan diproses di memori)
+        $filteredData = $bookings->filter(function ($row) use ($request) {
+            $harga = $row->total_harga; // Menggunakan accessor total_harga
+            $total = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
+            $sisa = $harga - $total;
 
-        return DataTables::of($query)
+            // Logika Status
+            $status = ($sisa <= 0 && $total > 0) ? 'LUNAS' : (strtoupper($row->status) == 'CONFIRMED' ? 'CONFIRMED' : 'PENDING');
+
+            if ($request->filled('status') && $status !== $request->status) {
+                return false;
+            }
+
+            if ($request->filled('tgl') && \Carbon\Carbon::parse($row->event_date)->format('Y-m-d') !== $request->tgl) {
+                return false;
+            }
+
+            return true;
+        });
+
+        // 3. Masukkan collection yang sudah terfilter ke DataTables
+        return DataTables::of($filteredData)
             ->addIndexColumn()
-            ->addColumn('tanggal_acara', function ($row) {
-                return \Carbon\Carbon::parse($row->event_date)->format('d M Y');
-            })
-            ->addColumn('pengantin', function ($row) {
-                return $row->bride_groom_name;
-            })
+            ->addColumn('tanggal_acara', fn($row) => Carbon::parse($row->event_date)->format('d M Y'))
+            ->addColumn('pengantin', fn($row) => $row->bride_groom_name)
             ->addColumn('total_bayar', function ($row) {
-                $total_terbayar = $row->pembayarans
-                    ->whereIn('status_pembayaran', ['success', 'lunas', null])
-                    ->sum('jumlah_bayar');
-                return 'Rp ' . number_format($total_terbayar, 0, ',', '.');
+                $total = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
+                return 'Rp ' . number_format($total, 0, ',', '.');
             })
             ->addColumn('sisa', function ($row) {
-                $hargaPaket = $row->paket->harga ?? 0;
-                $total_terbayar = $row->pembayarans
-                    ->whereIn('status_pembayaran', ['success', 'lunas', null])
-                    ->sum('jumlah_bayar');
-                $sisa = $hargaPaket - $total_terbayar;
-                return 'Rp ' . number_format(max(0, $sisa), 0, ',', '.');
+                $harga = $row->total_harga;
+                $total = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
+                return 'Rp ' . number_format(max(0, $harga - $total), 0, ',', '.');
             })
             ->addColumn('status', function ($row) {
-                $hargaPaket = $row->paket->harga ?? 0;
-                $total_terbayar = $row->pembayarans
-                    ->whereIn('status_pembayaran', ['success', 'lunas', null])
-                    ->sum('jumlah_bayar');
-                $sisa = $hargaPaket - $total_terbayar;
+                $harga = $row->total_harga;
+                $total = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
+                $sisa = $harga - $total;
+                $status = ($sisa <= 0 && $total > 0) ? 'LUNAS' : (strtoupper($row->status) == 'CONFIRMED' ? 'CONFIRMED' : 'PENDING');
 
-                // Logika Status Dinamis
-                if ($sisa <= 0) {
-                    return '<span class="badge bg-primary px-3 py-2 fw-bold">LUNAS</span>';
-                } elseif (strtoupper($row->status) == 'CONFIRMED') {
-                    return '<span class="badge bg-success px-3 py-2 fw-bold">CONFIRMED</span>';
-                } else {
-                    return '<span class="badge bg-warning text-dark px-3 py-2 fw-bold">PENDING</span>';
-                }
+                if ($status == 'LUNAS') return '<span class="badge bg-primary px-3 py-2 fw-bold">LUNAS</span>';
+                if ($status == 'CONFIRMED') return '<span class="badge bg-success px-3 py-2 fw-bold">CONFIRMED</span>';
+                return '<span class="badge bg-warning text-dark px-3 py-2 fw-bold">PENDING</span>';
             })
-            ->addColumn('action', function ($row) {
-                return '<div class="btn-group gap-2">
-                <a href="' . route('admin.pembayaran.histori', $row->id) . '" class="btn btn-sm btn-info text-white shadow-sm">
-                    <i class="bi bi-eye"></i> Detail
-                </a>
-            </div>';
-            })
+            ->addColumn('action', fn($row) => '<div class="btn-group gap-1"><a href="' . route('admin.pembayaran.histori', $row->id) . '" class="btn btn-sm btn-info text-white shadow-sm"><i class="bi bi-eye"></i></a></div>')
             ->rawColumns(['status', 'action'])
             ->make(true);
     }
@@ -137,7 +133,7 @@ class PembayaranController extends Controller
             $nominal = (int) preg_replace('/[^0-9]/', '', $request->jumlah_bayar);
             $booking = Booking::findOrFail($request->pesanan_id);
 
-            // VALIDASI CONSTRAINT-BASED SCHEDULING (CBS) REVISI DOSEN
+            // VALIDASI CONSTRAINT-BASED SCHEDULING (CBS) 
             $maxQuotaPerDay = 6;
             $totalJobOnDay = Booking::whereIn('status', ['terkonfirmasi', 'CONFIRMED', 'LUNAS', 'success', 'completed'])
                 ->where('event_date', $booking->event_date)
@@ -183,6 +179,44 @@ class PembayaranController extends Controller
             DB::rollBack();
             return back()->withErrors(['pesanan_id' => 'Sistem gagal memproses: ' . $e->getMessage()])->withInput();
         }
+    }
+
+    /**
+     * Handler untuk notifikasi otomatis dari Midtrans
+     */
+    public function notificationHandler(Request $request)
+    {
+        $serverKey = config('midtrans.server_key');
+        // Verifikasi tanda tangan (Signature Key) untuk keamanan
+        $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
+
+        if ($hashed !== $request->signature_key) {
+            return response()->json(['message' => 'Invalid Signature'], 403);
+        }
+
+        // Ambil data pembayaran
+        $pembayaran = Pembayaran::find($request->order_id);
+
+        if ($request->transaction_status == 'capture' || $request->transaction_status == 'settlement') {
+            // 1. Update status pembayaran menjadi success
+            $pembayaran->update(['status_pembayaran' => 'success']);
+
+            // 2. Update status booking menjadi CONFIRMED
+            $booking = Booking::findOrFail($pembayaran->pesanan_id);
+            $booking->update(['status' => 'CONFIRMED']);
+
+            // 3. Masukkan ke Pembukuan secara otomatis
+            Pembukuan::create([
+                'tanggal' => now(),
+                'tipe' => 'pemasukan',
+                'customer' => $booking->bride_groom_name,
+                'keterangan' => 'Pembayaran Otomatis Midtrans - Order: ' . $request->order_id,
+                'nominal' => $request->gross_amount,
+                'pembayaran_id' => $pembayaran->id
+            ]);
+        }
+
+        return response()->json(['message' => 'OK']);
     }
 
     /**

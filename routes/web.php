@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\JadwalPengantinController;
 use App\Http\Controllers\Admin\JadwalDekorController;
 use App\Http\Controllers\Admin\JadwalGownController;
 use App\Http\Controllers\Admin\BajuPengantinController;
+use App\Http\Controllers\Admin\AddOnController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\PembukuanController;
 use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController;
@@ -128,15 +129,6 @@ Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('ow
         Route::get('/print', [OwnerJadwalDekor::class, 'print'])->name('print');
     });
 
-    Route::prefix('jadwallayos')->name('jadwallayos.')->group(function () {
-        Route::get('/', [OwnerJadwalLayos::class, 'index'])->name('index');
-        Route::get('/data', [OwnerJadwalLayos::class, 'data'])->name('data');
-        Route::get('/print', [OwnerJadwalLayos::class, 'print'])->name('print');
-        Route::get('/{id}/edit', [OwnerJadwalLayos::class, 'edit'])->name('edit');
-        Route::put('/{id}/update', [OwnerJadwalLayos::class, 'update'])->name('update');
-        Route::delete('/{id}', [OwnerJadwalLayos::class, 'destroy'])->name('destroy');
-    });
-
     Route::prefix('booking')->name('booking.')->group(function () {
         Route::get('/', [OwnerBookingController::class, 'index'])->name('index');
         Route::get('/data', [OwnerBookingController::class, 'data'])->name('data');
@@ -149,7 +141,8 @@ Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('ow
         Route::get('/', [OwnerPembayaranController::class, 'index'])->name('index');
         Route::get('/data', [OwnerPembayaranController::class, 'data'])->name('data');
         Route::get('/{id}/histori', [OwnerPembayaranController::class, 'histori'])->name('histori');
-        Route::get('/{id}/nota', [OwnerPembayaranController::class, 'cetakNota'])->name('nota');
+        // GUNAKAN RUTE INI:
+        Route::get('/nota/{pembayaran_id}', [OwnerPembayaranController::class, 'cetakNota'])->name('nota');
         Route::delete('/{id}', [OwnerPembayaranController::class, 'destroy'])->name('destroy');
     });
 
@@ -211,23 +204,26 @@ Route::middleware(['auth', 'verified', 'role:pelanggan'])->prefix('user')->name(
     Route::get('/keranjang', [PelangganBooking::class, 'keranjang'])->name('keranjang');
     Route::delete('/keranjang/{id}', [PelangganBooking::class, 'destroy'])->name('keranjang.destroy');
     Route::post('/keranjang/konfirmasi', [PelangganBooking::class, 'konfirmasi'])->name('keranjang.konfirmasi');
+    Route::get('/keranjang/detail/{id}', [PelangganBooking::class, 'show'])->name('keranjang.show');
 
+    // ==============================================================================
+    // RUTE PEMBAYARAN & UPLOAD BUKTI (Sisi Pelanggan)
+    // ==============================================================================
     Route::get('/pembayaran', [PelangganBayar::class, 'index'])->name('pembayaran');
+    Route::post('/pembayaran/upload-bukti/{id}', [PelangganBayar::class, 'uploadBukti'])->name('pembayaran.upload-bukti');
     Route::get('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
 
     Route::get('/riwayat', [OrderController::class, 'riwayat'])->name('riwayat');
 
     Route::get('/profile', [PelangganProfile::class, 'index'])->name('profile.index');
     Route::put('/profile/update', [PelangganProfile::class, 'update'])->name('profile.update');
-    Route::post('/chatbot/send', [ChatbotController::class, 'sendMessage'])->name('chatbot.send');
 
     // ==============================================================================
-    // PENAMBAHAN BARU: Rute Cetak PDF Mandiri Sisi Pelanggan (Gembok Aman Terbuka)
+    // RUTE CETAK PDF MANDIRI (Sisi Pelanggan)
     // ==============================================================================
     Route::get('/booking/print/{id}', [AdminBookingController::class, 'print'])->name('booking.print');
     Route::get('/pembayaran/nota/{id}', [AdminPembayaranController::class, 'cetakNota'])->name('pembayaran.cetakNota');
 });
-
 /*
 |--------------------------------------------------------------------------
 | 5. RUTE ADMIN (Prefix 'admin.') - OPERASIONAL (Admin & Owner)
@@ -268,6 +264,17 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::put('/update/{id}', [BajuPengantinController::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [BajuPengantinController::class, 'destroy'])->name('destroy');
         Route::get('/print', [BajuPengantinController::class, 'print'])->name('print');
+    });
+
+    // RUTE ADD-ONS (TAMBAHAN)
+    Route::prefix('addons')->name('addons.')->group(function () {
+        Route::get('/', [AddOnController::class, 'index'])->name('index');
+        Route::get('/data', [AddOnController::class, 'data'])->name('data');
+        Route::get('/create', [AddOnController::class, 'create'])->name('create');
+        Route::post('/store', [AddOnController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [AddOnController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [AddOnController::class, 'update'])->name('update');
+        Route::delete('/destroy/{id}', [AddOnController::class, 'destroy'])->name('destroy');
     });
 
     Route::prefix('jadwalpengantin')->name('jadwalpengantin.')->group(function () {
@@ -338,6 +345,7 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
         Route::get('/{id}/histori', [AdminPembayaranController::class, 'histori'])->name('histori');
         Route::get('/{id}/nota', [AdminPembayaranController::class, 'cetakNota'])->name('nota');
         Route::delete('/{id}', [AdminPembayaranController::class, 'destroy'])->name('destroy');
+        Route::post('/upload-bukti/{id}', [AdminPembayaranController::class, 'uploadBukti'])->name('upload-bukti');
     });
 });
 

@@ -24,27 +24,24 @@
     {{-- KONTEN UTAMA --}}
     <div class="page-content">
         @forelse($historyBookings as $hb)
-            {{-- BLOCK CARDS INDUK ACARA PER KONTRAK --}}
             <div class="card shadow-sm border-0 mb-4 bg-white overflow-hidden" style="border-radius: 12px;">
-                {{-- ATAS CARD: STATUS UTAMA --}}
                 @php
                     $isCompletedStatus = in_array(strtoupper($hb->status), ['COMPLETED', 'SUCCESS']);
                 @endphp
                 <div class="card-header {{ $isCompletedStatus ? 'bg-success bg-opacity-10' : 'bg-warning bg-opacity-10' }} py-3 border-0 d-flex justify-content-between align-items-center"
-                    style="{{ $isCompletedStatus ? 'background-color: #e8f5e9 !important;' : 'background-color: #fff3cd !important;' }}">
+                     style="{{ $isCompletedStatus ? 'background-color: #e8f5e9 !important;' : 'background-color: #fff3cd !important;' }}">
                     <span class="fw-bold {{ $isCompletedStatus ? 'text-success' : 'text-warning' }}" style="font-size: 0.9rem;">
                         <i class="{{ $isCompletedStatus ? 'bi bi-patch-check-fill' : 'bi bi-hourglass-split' }} me-1"></i>
                         ID TRANSAKSI: #GRA-{{ $hb->id }}
                         ({{ $isCompletedStatus ? 'ACARA SELESAI' : 'PESANAN AKTIF / BELUM LUNAS' }})
                     </span>
                     <a href="{{ route('user.booking.print', $hb->id) }}" target="_blank"
-                        class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3 shadow-sm">
-                        <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download Kontrak
+                       class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3 shadow-sm">
+                        <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download Format Booking
                     </a>
                 </div>
 
                 <div class="card-body p-4">
-                    {{-- INFO DATA PENGANTIN --}}
                     <div class="row g-3 mb-4 pb-3 border-bottom border-light">
                         <div class="col-md-3">
                             <small class="text-muted text-uppercase d-block fw-bold mb-1" style="font-size: 0.7rem;">Nama Pengantin</small>
@@ -53,7 +50,19 @@
                         <div class="col-md-3">
                             <small class="text-muted text-uppercase d-block fw-bold mb-1" style="font-size: 0.7rem;">Paket Pernikahan</small>
                             <span class="fw-bold text-primary d-block">{{ $hb->package_name }}</span>
-                            <span class="text-secondary fw-semibold small">Rp {{ number_format((float) $hb->package_price, 0, ',', '.') }}</span>
+                            <span class="text-secondary fw-semibold small">Rp {{ number_format((float) $hb->total_harga, 0, ',', '.') }}</span>
+                            
+                            {{-- Menampilkan daftar Add-ons --}}
+                            @if($hb->addOns->isNotEmpty())
+                                <div class="mt-2">
+                                    <small class="text-muted text-uppercase d-block fw-bold" style="font-size: 0.65rem;">Add-ons:</small>
+                                    <ul class="list-unstyled mb-0 mt-1">
+                                        @foreach($hb->addOns as $add)
+                                            <li class="small text-dark fw-bold"><i class="bi bi-plus-circle text-primary me-1" style="font-size: 0.7rem;"></i>{{ $add->nama_item }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
                         </div>
                         <div class="col-md-3">
                             <small class="text-muted text-uppercase d-block fw-bold mb-1" style="font-size: 0.7rem;">Tanggal & Lokasi</small>
@@ -62,14 +71,14 @@
                         </div>
                         <div class="col-md-3 text-md-end">
                             <small class="text-muted text-uppercase d-block fw-bold mb-1" style="font-size: 0.7rem;">Status Keuangan</small>
-                            @php $isLunas = ((float) $hb->total_terbayar >= (float) $hb->package_price); @endphp
+                            @php $isLunas = ((float) $hb->total_terbayar >= (float) $hb->total_harga); @endphp
                             <span class="badge {{ $isLunas ? 'bg-success' : 'bg-danger' }} px-3 py-2 fw-bold rounded-pill shadow-sm">
                                 {{ $isLunas ? 'TERBAYAR LUNAS' : 'BELUM LUNAS' }}
                             </span>
                         </div>
                     </div>
 
-                    {{-- TABEL HISTORI --}}
+                    {{-- TABEL HISTORI PEMBAYARAN --}}
                     <div class="table-responsive rounded-3 border">
                         <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
                             <thead class="table-light text-secondary">
@@ -101,7 +110,6 @@
                 </div>
             </div>
         @empty
-            {{-- ESTETIC EMPTY STATE --}}
             <div class="card shadow-sm border-0 bg-white py-5 text-center" style="border-radius: 15px; min-height: 400px; display: flex; align-items: center; justify-content: center;">
                 <div class="card-body py-5">
                     <div class="mb-4">

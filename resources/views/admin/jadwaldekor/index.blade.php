@@ -14,7 +14,8 @@
                 <div class="col-12 col-md-7">
                     <nav aria-label="breadcrumb" class="mb-1">
                         <ol class="breadcrumb" style="font-size: 0.85rem;">
-                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}" class="text-muted">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}"
+                                    class="text-muted">Dashboard</a></li>
                             <li class="breadcrumb-item active text-primary" aria-current="page">Jadwal Dekorasi</li>
                         </ol>
                     </nav>
@@ -40,31 +41,34 @@
             <div class="card-header bg-transparent border-0 pb-0">
                 <div class="d-flex flex-wrap align-items-center gap-3">
                     <h5 class="card-title mb-0 me-auto">Log Visual Dekorasi</h5>
-                    
-                    {{-- Filter Bulan --}}
+
                     <div class="d-flex align-items-center gap-2">
-                        <span class="filter-group text-muted">Bulan:</span>
+                        <span class="filter-label text-muted">Tanggal:</span>
+                        <input type="date" id="filter-tanggal" class="form-control form-control-sm shadow-sm"
+                            style="width: 150px;">
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="filter-label text-muted">Bulan:</span>
                         <select id="filter-bulan" class="form-select form-select-sm shadow-sm">
                             <option value="">Semua</option>
-                            @foreach (['Januari','Februari','Maret','April','Mei','Juni',
-                                       'Juli','Agustus','September','Oktober','November','Desember'] as $i => $b)
-                                <option value="{{ $b }}">{{ $b }}</option>
+                            @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $i => $b)
+                                <option value="{{ $b }}" {{ $i + 1 == date('n') ? 'selected' : '' }}>{{ $b }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    {{-- Filter Tahun --}}
                     <div class="d-flex align-items-center gap-2">
-                        <span class="filter-group text-muted">Tahun:</span>
+                        <span class="filter-label text-muted">Tahun:</span>
                         <select id="filter-tahun" class="form-select form-select-sm shadow-sm">
                             <option value="">Semua</option>
                             @for ($y = date('Y'); $y <= date('Y') + 5; $y++)
-                                <option value="{{ $y }}">{{ $y }}</option>
+                                <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
                             @endfor
                         </select>
                     </div>
                 </div>
-            </div>
+            </div>s
 
             <div class="card-body">
                 <div class="table-responsive">
@@ -97,65 +101,68 @@
 
     <script>
         $(document).ready(function () {
-    // 1. Definisikan Nama Bulan dan Waktu Sekarang
-    const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-    let now = new Date();
+            // 1. Definisikan Nama Bulan dan Waktu Sekarang
+            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            let now = new Date();
 
-    // 2. Ambil parameter dari URL browser (kiriman redirect dari Controller)
-    const urlParams = new URLSearchParams(window.location.search);
-    const getBulan = urlParams.get('bulan');
-    const getTahun = urlParams.get('tahun');
+            // 2. Ambil parameter dari URL browser (kiriman redirect dari Controller)
+            const urlParams = new URLSearchParams(window.location.search);
+            const getBulan = urlParams.get('bulan');
+            const getTahun = urlParams.get('tahun');
 
-    /**
-     * LOGIKA PRIORITAS FILTER:
-     * 1. Jika ada parameter di URL (habis Edit/Tambah), gunakan itu.
-     * 2. Jika baru buka fitur (URL bersih), set otomatis ke bulan & tahun sekarang.
-     */
-    if (getBulan) {
-        $('#filter-bulan').val(getBulan);
-    } else {
-        // Otomatis pilih bulan sekarang jika URL bersih
-        $('#filter-bulan').val(monthNames[now.getMonth()]);
-    }
+            /**
+             * LOGIKA PRIORITAS FILTER:
+             * 1. Jika ada parameter di URL (habis Edit/Tambah), gunakan itu.
+             * 2. Jika baru buka fitur (URL bersih), set otomatis ke bulan & tahun sekarang.
+             */
+            if (getBulan) {
+                $('#filter-bulan').val(getBulan);
+            } else {
+                // Otomatis pilih bulan sekarang jika URL bersih
+                $('#filter-bulan').val(monthNames[now.getMonth()]);
+            }
 
-    if (getTahun) {
-        $('#filter-tahun').val(getTahun);
-    } else {
-        // Otomatis pilih tahun sekarang jika URL bersih
-        $('#filter-tahun').val(now.getFullYear());
-    }
+            if (getTahun) {
+                $('#filter-tahun').val(getTahun);
+            } else {
+                // Otomatis pilih tahun sekarang jika URL bersih
+                $('#filter-tahun').val(now.getFullYear());
+            }
 
-    // 3. Inisialisasi DataTable
-    let table = $('#jadwal-table').DataTable({
-            processing: true,
-            serverSide: true,
-            ajax: {
-                url: "{{ route('admin.jadwaldekor.data') }}",
-                data: function (d) {
-                    d.bulan = $('#filter-bulan').val();
-                    d.tahun = $('#filter-tahun').val();
-                }
-            },
-            columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
-                { data: 'tanggal_full', name: 'tanggal_awal' }, // Menggunakan kolom gabungan
-                { data: 'nama', name: 'nama', class: 'fw-bold' },
-                { data: 'alamat', name: 'alamat' },
-                { data: 'paket', name: 'paket' },
-                { data: 'foto', name: 'foto', orderable: false, searchable: false, class: 'text-center' },
-                { data: 'deskripsi', name: 'deskripsi' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-center' }
-            ]
+            // 3. Inisialisasi DataTable
+            let table = $('#jadwal-table').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: "{{ route('admin.jadwaldekor.data') }}",
+                    data: function (d) {
+                        d.tanggal = $('#filter-tanggal').val();
+                        d.bulan = $('#filter-bulan').val();
+                        d.tahun = $('#filter-tahun').val();
+                    }
+                },
+                columns: [
+                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
+                    { data: 'tanggal_full', name: 'tanggal_awal' }, // Menggunakan kolom gabungan
+                    { data: 'nama', name: 'nama', class: 'fw-bold' },
+                    { data: 'alamat', name: 'alamat' },
+                    { data: 'paket', name: 'paket' },
+                    { data: 'foto', name: 'foto', orderable: false, searchable: false, class: 'text-center' },
+                    { data: 'deskripsi', name: 'deskripsi' },
+                    { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-center' }
+                ]
+            });
+
+            $('#filter-bulan, #filter-tahun, #filter-tanggal').on('change', function () {
+                table.draw();
+            });
+
+            // Fungsi Print Laporan
+            $('#btn-print').on('click', function () {
+                let url = "{{ route('admin.jadwaldekor.print') }}?bulan=" + $('#filter-bulan').val() + "&tahun=" + $('#filter-tahun').val();
+                window.open(url, "_blank");
+            });
         });
-
-        $('#filter-bulan, #filter-tahun').change(function () { table.draw(); });
-
-    // Fungsi Print Laporan
-    $('#btn-print').on('click', function () {
-        let url = "{{ route('admin.jadwaldekor.print') }}?bulan=" + $('#filter-bulan').val() + "&tahun=" + $('#filter-tahun').val();
-        window.open(url, "_blank");
-    });
-});
 
         // FUNGSI HAPUS DENGAN TIMER
         function hapusJadwal(id) {
@@ -171,7 +178,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ url('admin/jadwaldekor/destroy') }}/" + id, 
+                        url: "{{ url('admin/jadwaldekor/destroy') }}/" + id,
                         type: "DELETE",
                         data: { _token: "{{ csrf_token() }}" },
                         success: function (res) {
@@ -182,12 +189,12 @@
                                 timer: 1500,
                                 showConfirmButton: false // Hilangkan tombol OK agar timer bekerja
                             });
-                            
+
                             if (res.success) {
                                 $('#jadwal-table').DataTable().ajax.reload(null, false);
                             }
                         },
-                        error: function() {
+                        error: function () {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error!',
@@ -204,16 +211,16 @@
 
     {{-- SweetAlert Notifikasi untuk Redirect Create/Edit --}}
     @if(session('swal_success'))
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: "{{ session('swal_success') }}",
-                timer: 1500,
-                showConfirmButton: false // Timer aktif tanpa klik OK
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: "{{ session('swal_success') }}",
+                    timer: 1500,
+                    showConfirmButton: false // Timer aktif tanpa klik OK
+                });
             });
-        });
-    </script>
+        </script>
     @endif
 @endpush

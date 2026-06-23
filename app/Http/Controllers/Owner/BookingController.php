@@ -27,19 +27,11 @@ class BookingController extends Controller
         $query = Booking::with(['paket'])
             ->orderBy('event_date', 'asc');
 
-        // Filter bulan (berdasarkan event_date)
-        if ($request->filled('bulan')) {
-            $monthMap = [
-                'Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4, 
-                'Mei' => 5, 'Juni' => 6, 'Juli' => 7, 'Agustus' => 8, 
-                'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
-            ];
-            $query->whereMonth('event_date', $monthMap[$request->bulan]);
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
-
-        // Filter tahun
-        if ($request->filled('tahun')) {
-            $query->whereYear('event_date', $request->tahun);
+        if ($request->filled('tgl_acara')) {
+            $query->whereDate('event_date', $request->tgl_acara);
         }
 
         return DataTables::of($query)
@@ -64,11 +56,11 @@ class BookingController extends Controller
                     'CONFIRMED' => 'success',
                     'COMPLETED' => 'primary'
                 ][$status] ?? 'secondary';
-                
-                return '<span class="badge bg-'.$color.' px-3 py-2 fw-bold">'.$status.'</span>';
+
+                return '<span class="badge bg-' . $color . ' px-3 py-2 fw-bold">' . $status . '</span>';
             })
             ->addColumn('action', function ($row) {
-                return '<a href="'.route('owner.booking.show', $row->id).'" class="btn btn-info btn-sm shadow-sm">
+                return '<a href="' . route('owner.booking.show', $row->id) . '" class="btn btn-info btn-sm shadow-sm">
                             <i class="bi bi-eye"></i>
                         </a>';
             })
@@ -83,7 +75,7 @@ class BookingController extends Controller
     {
         // Mengambil data Booking dengan relasi paket dan pembayaran
         $booking = Booking::with(['paket', 'pembayarans'])->findOrFail($id);
-        
+
         $totalHarga = $booking->paket->harga ?? 0;
         $totalBayar = $booking->pembayarans
             ->whereIn('status_pembayaran', ['success', 'lunas', null])

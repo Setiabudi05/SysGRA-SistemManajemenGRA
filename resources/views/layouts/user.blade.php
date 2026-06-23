@@ -9,26 +9,41 @@
     {{-- Murni Menggunakan Google Fonts Resmi --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     {{-- CSS Template Mazer --}}
     <link rel="stylesheet" href="{{ asset('assets-template/css/main/app.css') }}">
     <link rel="stylesheet" href="{{ asset('assets-template/css/main/app-dark.css') }}">
     <link rel="stylesheet" href="{{ asset('assets-template/css/shared/iconly.css') }}">
-    
+
     {{-- Flatpickr CSS --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    
+
     {{-- Master CSS User --}}
     <link rel="stylesheet" href="{{ asset('assets-user/css/style-user.css') }}">
-    
+
     {{-- Icons Set --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="shortcut icon" href="{{ asset('assets-admin/img/logo.png') }}" type="image/x-icon">
 
     <style>
         /* PENGATURAN FONT GLOBAL */
-        body, html, h1, h2, h3, h4, h5, h6, span, p, table, th, td, button, input {
+        body,
+        html,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        span,
+        p,
+        table,
+        th,
+        td,
+        button,
+        input {
             font-family: 'Nunito', sans-serif !important;
         }
 
@@ -104,13 +119,16 @@
                 background-color: #435ebe;
                 padding: 10px 0 !important;
             }
+
             .main-navbar.active ul {
                 display: flex !important;
             }
+
             .main-navbar .menu-item .menu-link {
                 padding: 12px 20px !important;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             }
+
             .main-navbar .menu-item.active::after {
                 display: none;
             }
@@ -156,11 +174,9 @@
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <a class="dropdown-item text-danger" href="{{ route('logout') }}"
-                                            onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="confirmLogout()">
                                             <i class="bi bi-box-arrow-right me-2"></i> Logout
                                         </a>
-                                        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
                                     </li>
                                 </ul>
                             </div>
@@ -228,16 +244,20 @@
         </div>
     </div>
 
+    {{-- Form Logout Tersembunyi --}}
+    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
+
     {{-- JavaScript Core Vendors Template Mazer --}}
     <script src="{{ asset('assets-template/js/bootstrap.js') }}"></script>
     <script src="{{ asset('assets-template/js/app.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    {{-- Interactive Navbar Toggle Script for Mobile Responsive --}}
+    {{-- Script Tambahan --}}
     <script>
+        // Navbar Toggle
         document.addEventListener('DOMContentLoaded', function() {
             const toggleBtn = document.getElementById('mobileMenuToggle');
             const navbar = document.getElementById('mainNavbar');
-
             if(toggleBtn && navbar) {
                 toggleBtn.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -245,6 +265,25 @@
                 });
             }
         });
+
+        // SweetAlert Logout
+        function confirmLogout() {
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Sesi Anda akan berakhir dan Anda harus login kembali.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#435ebe',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Logout!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('logout-form').submit();
+                }
+            })
+        }
     </script>
 
     @stack('js')

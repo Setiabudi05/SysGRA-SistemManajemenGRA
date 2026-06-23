@@ -96,12 +96,18 @@ class JadwalPengantinController extends Controller
                     ->orWhere('layos', 'LIKE', '%' . $namaKru . '%');
             });
 
-        if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
+        if ($request->filled('tanggal')) {
+            $query->whereDate('tanggal_awal', $request->tanggal);
+        } else {
+            // Hanya gunakan bulan & tahun jika tanggal tidak dipilih
+            if ($request->filled('bulan')) {
+                $query->where('bulan', $request->bulan);
+            }
+            if ($request->filled('tahun')) {
+                $query->where('tahun', $request->tahun);
+            }
         }
-        if ($request->filled('tahun')) {
-            $query->where('tahun', $request->tahun);
-        }
+
 
         return DataTables::of($query)
             ->addIndexColumn()

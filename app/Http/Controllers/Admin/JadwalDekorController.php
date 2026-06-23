@@ -30,11 +30,17 @@ class JadwalDekorController extends Controller
         // Mengambil data master dari Jadwal Pengantin dengan urutan tanggal awal
         $query = JadwalPengantin::with(['paket', 'jadwalDekor'])->orderBy('tanggal_awal', 'asc');
 
-        if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
-        }
-        if ($request->filled('tahun')) {
-            $query->where('tahun', $request->tahun);
+        // Prioritaskan filter tanggal spesifik
+        if ($request->filled('tanggal')) {
+            $query->whereDate('tanggal_awal', $request->tanggal);
+        } else {
+            // Hanya gunakan bulan & tahun jika tanggal tidak dipilih
+            if ($request->filled('bulan')) {
+                $query->where('bulan', $request->bulan);
+            }
+            if ($request->filled('tahun')) {
+                $query->where('tahun', $request->tahun);
+            }
         }
 
         return DataTables::of($query)

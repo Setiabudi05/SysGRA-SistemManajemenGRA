@@ -7,12 +7,14 @@ use App\Models\Booking;
 use App\Models\Paket;
 use App\Models\Pembayaran;
 use App\Models\Pembukuan;
-use App\Models\User; // Tambahan import Model User
+use App\Models\User;
+use App\Models\AddOn;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class BookingController extends Controller
 {
@@ -27,121 +29,97 @@ class BookingController extends Controller
     /**
      * Memproses data DataTables untuk halaman Manajemen Pesanan Admin
      */
-    public function data()
+    public function data(Request $request)
     {
-        // Ambil query murni menggunakan DB Builder
+        // 1. Gunakan subquery untuk menghitung total harga (Paket + Add-ons)
+        // agar sisa_tagihan di tabel pesanan selalu akurat & sinkron
         $query = DB::table('bookings')
             ->select([
-                'id',
-                'customer_name',
-                'whatsapp_number',
-                'bride_groom_name',
-                'package_name',
-                'package_price',
-                'event_date',
-                'status',
-                'created_at'
+                'bookings.id',
+                'bookings.customer_name',
+                'bookings.whatsapp_number',
+                'bookings.bride_groom_name',
+                'bookings.package_name',
+                'bookings.package_price',
+                'bookings.event_date',
+                'bookings.status',
+                // Menghitung total harga: Harga Paket + Total Harga Add-ons
+                DB::raw('(SELECT package_price + IFNULL(SUM(add_ons.harga), 0) 
+                      FROM add_ons_booking 
+                      LEFT JOIN add_ons ON add_ons.id = add_ons_booking.add_on_id 
+                      WHERE add_ons_booking.booking_id = bookings.id) as total_tagihan_final')
             ])
-            ->latest('created_at');
+            ->latest('bookings.created_at');
+
+        if ($request->filled('status')) {
+            $query->where('bookings.status', $request->status);
+        }
+        if ($request->filled('tgl_acara')) {
+            $query->whereDate('bookings.event_date', $request->tgl_acara);
+        }
 
         return DataTables::of($query)
             ->addIndexColumn()
-            ->addColumn('id', function ($row) {
-                return $row->id;
-            })
-            ->addColumn('pengantin', function ($row) {
-                return $row->bride_groom_name;
-            })
             ->editColumn('event_date', function ($row) {
-                if (!$row->event_date) return '-';
-                return date('Y-m-d', strtotime($row->event_date));
+                return $row->event_date ? Carbon::parse($row->event_date)->translatedFormat('d F Y') : '-';
             })
-            // ====================================================================
-            // STEP 1: HITUNG SISA TAGIHAN DULU (Saat package_price masih berupa ANGKA MURNI)
-            // ====================================================================
+            // Kolom Sisa Tagihan dengan Add-ons
             ->addColumn('sisa_tagihan', function ($row) {
-                // Hitung nominal uang masuk dari tabel pembayarans
-                $totalTerbayar = DB::table('pembayarans')
+                $terbayar = DB::table('pembayarans')
                     ->where('pesanan_id', $row->id)
-                    ->where(function ($q) {
-                        $q->whereRaw('LOWER(status_pembayaran) = ?', ['success'])
-                            ->orWhereRaw('LOWER(status_pembayaran) = ?', ['lunas'])
-                            ->orWhereRaw('LOWER(status_pembayaran) = ?', ['valid'])
-                            ->orWhereRaw('LOWER(status_pembayaran) = ?', ['confirmed'])
-                            ->orWhereRaw('LOWER(status_pembayaran) = ?', ['confirmed (dp)'])
-                            ->orWhereNull('status_pembayaran');
-                    })
+                    ->whereIn('status_pembayaran', ['success', 'lunas', null])
                     ->sum('jumlah_bayar');
 
-                $hargaAsli = (int) $row->package_price;
-                $sudahBayar = (int) $totalTerbayar;
-
-                $sisa = $hargaAsli - $sudahBayar;
-                $sisaAman = $sisa < 0 ? 0 : $sisa;
-
-                return 'Rp ' . number_format($sisaAman, 0, ',', '.');
+                // Menggunakan 'total_tagihan_final' dari subquery
+                $sisa = (int)$row->total_tagihan_final - (int)$terbayar;
+                return 'Rp ' . number_format(max(0, $sisa), 0, ',', '.');
             })
-            // ====================================================================
-            // STEP 2: BARU FORMAT HARGA PAKET MENJADI RUPIAH
-            // ====================================================================
-            ->editColumn('package_price', function ($row) {
-                return 'Rp ' . number_format($row->package_price, 0, ',', '.');
-            })
+            // Mengedit tampilan harga paket agar sesuai total final
+            ->editColumn('package_price', fn($row) => 'Rp ' . number_format($row->total_tagihan_final, 0, ',', '.'))
             ->editColumn('status', function ($row) {
-                $statusNormalized = strtoupper($row->status);
-
-                $badges = [
-                    'PENDING'             => 'bg-light-warning text-warning',
-                    'CONFIRMED'           => 'bg-light-primary text-primary',
-                    'MENUNGGU VERIFIKASI' => 'bg-light-info text-info',
-                    'COMPLETED'           => 'bg-light-success text-success',
-                    'SUCCESS'             => 'bg-light-success text-success',
-                    'FAILED'              => 'bg-light-danger text-danger',
-                ];
-
-                $badgeClass = $badges[$statusNormalized] ?? 'bg-secondary text-white';
-
-                return '<span class="badge ' . $badgeClass . ' px-3 py-2 fw-bold">' . $statusNormalized . '</span>';
+                $class = ['PENDING' => 'bg-light-warning text-warning', 'CONFIRMED' => 'bg-light-primary text-primary', 'COMPLETED' => 'bg-light-success text-success', 'DRAFT' => 'bg-secondary text-white'][strtoupper($row->status)] ?? 'bg-secondary';
+                return '<span class="badge ' . $class . ' px-3 py-2 fw-bold">' . strtoupper($row->status) . '</span>';
             })
             ->addColumn('action', function ($row) {
                 return '<div class="btn-group gap-2">
-                            <a href="' . route('admin.booking.show', $row->id) . '" class="btn btn-sm btn-info text-white shadow-sm"><i class="bi bi-eye"></i></a>
-                            <button type="button" class="btn btn-sm btn-outline-danger shadow-sm" onclick="hapusBooking(' . $row->id . ')"><i class="bi bi-trash"></i></button>
-                        </div>';
+                        <a href="' . route('admin.booking.show', $row->id) . '" class="btn btn-sm btn-info text-white"><i class="bi bi-eye"></i></a>
+                        <button class="btn btn-sm btn-outline-danger" onclick="hapusBooking(' . $row->id . ')"><i class="bi bi-trash"></i></button>
+                    </div>';
             })
             ->rawColumns(['status', 'action'])
             ->make(true);
     }
-
     public function create()
     {
         $list_paket = Paket::orderBy('nama_paket', 'asc')->get();
-        // PERBAIKAN: Ambil semua data user ber-role pelanggan untuk opsi dropdown select
         $list_pelanggan = User::where('role', 'pelanggan')->orderBy('name', 'asc')->get();
-        
-        return view('admin.booking.create', compact('list_paket', 'list_pelanggan'));
+
+        // TAMBAHKAN BARIS INI: Ambil semua data add-ons
+        $list_addons = AddOn::orderBy('nama_item', 'asc')->get();
+
+        // KIRIMKAN $list_addons KE VIEW
+        return view('admin.booking.create', compact('list_paket', 'list_pelanggan', 'list_addons'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'user_id'          => 'required|exists:users,id', // Kunci Validasi Integrasi Global
+            'user_id'          => 'required|exists:users,id',
             'customer_name'    => 'required',
             'whatsapp_number'  => 'required',
             'bride_groom_name' => 'required',
             'event_date'       => 'required|date',
-            'duration'         => 'required',
+            'event_duration'   => 'required',
             'package_name'     => 'required',
-            'package_price'    => 'required',
+            'total_harga'      => 'required', // Pastikan name di blade sesuai
             'event_address'    => 'required',
         ]);
 
-        $cleanDuration = (int) preg_replace('/[^0-9]/', '', $request->duration);
-        $cleanPrice    = (int) preg_replace('/[^0-9]/', '', $request->package_price);
+        $cleanPrice = (int) str_replace('.', '', $request->total_harga);
 
-        // PERBAIKAN: Menyertakan 'user_id' agar terikat otomatis sepanjang masa ke dashboard pelanggan
+        // Simpan Booking
         $booking = Booking::create([
-            'user_id'          => $request->user_id, 
+            'user_id'          => $request->user_id,
             'customer_name'    => $request->customer_name,
             'whatsapp_number'  => $request->whatsapp_number,
             'bride_groom_name' => $request->bride_groom_name,
@@ -149,19 +127,22 @@ class BookingController extends Controller
             'facebook_name'    => $request->fb_name,
             'instagram_name'   => $request->ig_name,
             'event_date'       => $request->event_date,
-            'event_duration'   => $cleanDuration,
+            'event_duration'   => $request->event_duration,
             'event_address'    => $request->event_address,
             'package_name'     => $request->package_name,
             'package_price'    => $cleanPrice,
-            'add_ons'          => $request->additional_package,
             'notes'            => $request->notes,
             'status'           => 'PENDING',
         ]);
 
-        return redirect()->route('admin.booking.show', $booking->id)
-            ->with('swal_success', 'Pesanan baru berhasil disimpan dan terintegrasi otomatis dengan akun pelanggan!');
-    }
+        // Sinkronisasi Add-ons (tabel pivot)
+        if ($request->has('add_ons')) {
+            $booking->addOns()->sync($request->add_ons);
+        }
 
+        return redirect()->route('admin.booking.show', $booking->id)
+            ->with('swal_success', 'Pesanan berhasil dibuat!');
+    }
     public function show($id)
     {
         $booking = Booking::findOrFail($id);
@@ -171,11 +152,14 @@ class BookingController extends Controller
     public function edit($id)
     {
         $booking = Booking::findOrFail($id);
-        $list_paket = Paket::orderBy('tahun', 'desc')->get();
-        // PERBAIKAN: Ambil data pelanggan juga untuk form edit
+        $list_paket = Paket::orderBy('nama_paket', 'asc')->get();
         $list_pelanggan = User::where('role', 'pelanggan')->orderBy('name', 'asc')->get();
 
-        return view('admin.booking.edit', compact('booking', 'list_paket', 'list_pelanggan'));
+        // TAMBAHKAN BARIS INI: Ambil semua data add-ons
+        $list_addons = \App\Models\AddOn::orderBy('nama_item', 'asc')->get();
+
+        // Tambahkan 'list_addons' ke dalam compact
+        return view('admin.booking.edit', compact('booking', 'list_paket', 'list_pelanggan', 'list_addons'));
     }
 
     public function update(Request $request, $id)
@@ -183,21 +167,19 @@ class BookingController extends Controller
         $booking = Booking::findOrFail($id);
 
         $request->validate([
-            'user_id'          => 'required|exists:users,id', // Kunci Validasi Edit
+            'user_id'          => 'required|exists:users,id',
             'customer_name'    => 'required',
             'whatsapp_number'  => 'required',
             'bride_groom_name' => 'required',
             'event_date'       => 'required',
-            'duration'         => 'required',
+            'event_duration'   => 'required',
             'package_name'     => 'required',
-            'package_price'    => 'required',
+            'total_harga'      => 'required',
             'event_address'    => 'required',
         ]);
 
-        $cleanDuration = (int) preg_replace('/[^0-9]/', '', $request->duration);
-        $cleanPrice    = (int) preg_replace('/[^0-9]/', '', $request->package_price);
+        $cleanPrice = (int) str_replace('.', '', $request->total_harga);
 
-        // PERBAIKAN: Menyertakan 'user_id' pas update data
         $booking->update([
             'user_id'          => $request->user_id,
             'customer_name'    => $request->customer_name,
@@ -207,18 +189,24 @@ class BookingController extends Controller
             'facebook_name'    => $request->fb_name,
             'instagram_name'   => $request->ig_name,
             'event_date'       => $request->event_date,
-            'event_duration'   => $cleanDuration,
+            'event_duration'   => $request->event_duration,
             'event_address'    => $request->event_address,
             'package_name'     => $request->package_name,
             'package_price'    => $cleanPrice,
-            'add_ons'          => $request->additional_package,
             'notes'            => $request->notes,
         ]);
+
+        // Sinkronisasi Add-ons (Update relasi pivot)
+        if ($request->has('add_ons')) {
+            $booking->addOns()->sync($request->add_ons);
+        } else {
+            // Jika tidak ada yang dipilih, hapus semua add-ons lama
+            $booking->addOns()->detach();
+        }
 
         return redirect()->route('admin.booking.show', $id)
             ->with('swal_success', 'Data pesanan berhasil diperbarui!');
     }
-
     public function updateStatus(Request $request, $id)
     {
         $booking = Booking::findOrFail($id);

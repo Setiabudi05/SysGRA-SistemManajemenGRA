@@ -42,6 +42,12 @@
                     <h5 class="card-title mb-0 me-auto">Log Jadwal</h5>
 
                     <div class="d-flex align-items-center gap-2">
+                        <span class="filter-label text-muted">Tanggal:</span>
+                        <input type="date" id="filter-tanggal" class="form-control form-control-sm shadow-sm"
+                            style="width: 150px;">
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
                         <span class="filter-label text-muted">Bulan:</span>
                         <select id="filter-bulan" class="form-select form-select-sm shadow-sm">
                             <option value="">Semua</option>
@@ -108,6 +114,7 @@
                     data: function (d) {
                         d.bulan = $('#filter-bulan').val();
                         d.tahun = $('#filter-tahun').val();
+                        d.tanggal = $('#filter-tanggal').val(); // Kirim ke server
                     }
                 },
                 columns: [
@@ -119,13 +126,15 @@
                     { data: 'asisten', name: 'asisten' },
                     { data: 'fg', name: 'fg' },
                     { data: 'layos', name: 'layos' },
-                    { data: 'keterangan_text', name: 'keterangan' }, // Kolom baru
+                    { data: 'keterangan_text', name: 'keterangan' },
                     { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-center' }
                 ]
             });
 
-            $('#filter-bulan, #filter-tahun').change(function () { table.draw(); });
-
+            // Update table saat filter berubah
+            $('#filter-bulan, #filter-tahun, #filter-tanggal').on('change', function () {
+                table.draw();
+            });
             $('#btn-print').on('click', function (e) {
                 e.preventDefault();
                 let url = "{{ route('admin.jadwalpengantin.print') }}?bulan=" + $('#filter-bulan').val() + "&tahun=" + $('#filter-tahun').val();
@@ -163,20 +172,20 @@
                 }
             });
         }
-        
+
     </script>
-     @if(session('swal_success'))
-    <script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Berhasil!',
-            text: "{{ session('swal_success') }}",
-            timer: 2500,
-            showConfirmButton: false,
-            customClass: {
-                popup: 'swal-custom-popup'
-            }
-        });
-    </script>
+    @if(session('swal_success'))
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: "{{ session('swal_success') }}",
+                timer: 2500,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'swal-custom-popup'
+                }
+            });
+        </script>
     @endif
 @endpush

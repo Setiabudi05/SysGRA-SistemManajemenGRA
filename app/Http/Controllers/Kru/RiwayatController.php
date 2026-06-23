@@ -67,11 +67,16 @@ class RiwayatController extends Controller
             ->where('tanggal_awal', '<', $today)
             ->orderBy('tanggal_awal', 'asc'); // KUNCI 1: Ubah dari desc menjadi asc di sini
 
-        if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
-        }
-        if ($request->filled('tahun')) {
-            $query->where('tahun', $request->tahun);
+        if ($request->filled('tanggal')) {
+            $query->whereDate('tanggal_awal', $request->tanggal);
+        } else {
+            // Hanya gunakan bulan & tahun jika tanggal tidak dipilih
+            if ($request->filled('bulan')) {
+                $query->where('bulan', $request->bulan);
+            }
+            if ($request->filled('tahun')) {
+                $query->where('tahun', $request->tahun);
+            }
         }
         return DataTables::of($query)
             ->addIndexColumn()

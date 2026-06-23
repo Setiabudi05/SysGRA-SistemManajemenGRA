@@ -11,29 +11,47 @@ use Carbon\Carbon;
 
 class JadwalPribadiController extends Controller
 {
-    public function index() { return view('kru.jadwal.pribadi.index'); }
-
-    public function getData()
+    public function index()
     {
-        $data = Jadwal::where('user_id', Auth::id())->orderBy('event_date', 'asc')->get();
-        return DataTables::of($data)
-            ->addIndexColumn()
-            // Format tanggal jadi "27 Juli 2026"
-            ->editColumn('event_date', function($row) {
-                return Carbon::parse($row->event_date)->translatedFormat('d F Y');
+        return view('kru.jadwal.pribadi.index');
+    }
+
+    public function getData(Request $request)
+    {
+        $query = Jadwal::where('user_id', Auth::id());
+
+        // Filter
+        if ($request->filled('tanggal')) {
+            $query->whereDate('event_date', $request->tanggal);
+        } else {
+            if ($request->filled('bulan')) {
+                $bulanMap = ['Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4, 'Mei' => 5, 'Juni' => 6, 'Juli' => 7, 'Agustus' => 8, 'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12];
+                $query->whereMonth('event_date', $bulanMap[$request->bulan]);
+            }
+            if ($request->filled('tahun')) {
+                $query->whereYear('event_date', $request->tahun);
+            }
+        }
+
+        return DataTables::of($query->orderBy('event_date', 'asc'))
+            ->addIndexColumn() // Wajib untuk 'DT_RowIndex'
+            ->editColumn('event_date', fn($row) => Carbon::parse($row->event_date)->translatedFormat('d F Y'))
+            ->addColumn('aksi', function ($row) {
+                return '<a href="' . route('kru.jadwal.pribadi.edit', $row->id) . '" class="btn btn-sm btn-warning">Edit</a>
+                    <form action="' . route('kru.jadwal.pribadi.destroy', $row->id) . '" method="POST" class="d-inline">
+                        ' . csrf_field() . method_field("DELETE") . '
+                        <button class="btn btn-sm btn-danger" onclick="return confirm(\'Yakin hapus?\')">Hapus</button>
+                    </form>';
             })
-            ->addColumn('aksi', function($row){
-                return '<a href="'.route('kru.jadwal.pribadi.edit', $row->id).'" class="btn btn-sm btn-warning">Edit</a>
-                        <form action="'.route('kru.jadwal.pribadi.destroy', $row->id).'" method="POST" class="d-inline">
-                            '.csrf_field().method_field("DELETE").'
-                            <button class="btn btn-sm btn-danger" onclick="return confirm(\'Yakin hapus?\')">Hapus</button>
-                        </form>';
-            })
-            ->rawColumns(['aksi'])
+            ->rawColumns(['aksi', 'tipe']) // Pastikan 'tipe' ada di sini jika pakai badge
             ->make(true);
     }
 
-    public function create() { return view('kru.jadwal.pribadi.create'); }
+
+    public function create()
+    {
+        return view('kru.jadwal.pribadi.create');
+    }
 
     public function store(Request $request)
     {

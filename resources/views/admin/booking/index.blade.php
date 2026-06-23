@@ -35,6 +35,24 @@
 
     <section class="section">
         <div class="card border-0 shadow-sm">
+            <div class="card-header border-0 pt-3 bg-transparent">
+                <div class="d-flex justify-content-end align-items-center gap-2">
+                    <select id="filter-status" class="form-select form-select-sm shadow-sm" style="width: 140px;">
+                        <option value="">Status...</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="CONFIRMED">Confirmed</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="DRAFT">Draft</option>
+                    </select>
+
+                    <input type="date" id="tgl-acara" class="form-control form-control-sm shadow-sm" style="width: 140px;"
+                        title="Pilih Tanggal">
+
+                    <button id="btn-reset" class="btn btn-sm btn-secondary shadow-sm" title="Reset Filter">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle bookings-table" style="width:100%">
@@ -66,106 +84,54 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        // Deklarasikan variabel table secara global agar bisa dibaca di dalam fungsi hapusBooking
         let table;
-
         $(document).ready(function () {
+            // Inisialisasi DataTable
             table = $('.bookings-table').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('admin.booking.data') }}",
-                lengthMenu: [
-                    [3, 5, 10, 25],
-                    [3, 5, 10, 25]
-                ],
-                pageLength: 5,
-                columns: [
-                    {
-                        data: 'DT_RowIndex',
-                        name: 'DT_RowIndex',
-                        orderable: false,
-                        searchable: false,
-                        class: 'text-center'
-                    },
-                    {
-                        data: 'whatsapp_number',
-                        name: 'whatsapp_number'
-                    },
-                    {
-                        data: 'pengantin',
-                        name: 'bride_groom_name',
-                        class: 'fw-bold text-primary'
-                    },
-                    {
-                        data: 'event_date',
-                        name: 'event_date',
-                        render: function (data) {
-                            if (!data || data === '-') return '-';
-                            let dateParts = data.split('-');
-                            if (dateParts.length === 3) {
-                                let dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-                                return dateObj.toLocaleDateString('id-ID', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric'
-                                });
-                            }
-                            return data;
-                        }
-                    },
-                    {
-                        data: 'package_name',
-                        name: 'package_name'
-                    },
-                    {
-                        data: 'package_price',
-                        name: 'package_price',
-                        render: function (data) {
-                            return `<div class="price-align text-dark">${data}</div>`;
-                        }
-                    },
-                    {
-                        data: 'sisa_tagihan',
-                        name: 'sisa_tagihan',
-                        render: function (data) {
-                            let colorClass = (data === 'Rp 0' || data === 'Rp 00') ? 'text-success fw-bold' : 'text-danger fw-bold';
-                            return `<div class="price-align ${colorClass}">${data}</div>`;
-                        }
-                    },
-                    {
-                        data: 'status',
-                        name: 'status',
-                        class: 'text-center'
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false,
-                        class: 'text-center'
+                ajax: {
+                    url: "{{ route('admin.booking.data') }}",
+                    data: function (d) {
+                        d.status = $('#filter-status').val();
+                        d.tgl_acara = $('#tgl-acara').val();
                     }
+                },
+                columns: [
+                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
+                    { data: 'whatsapp_number', name: 'whatsapp_number' },
+                    { data: 'bride_groom_name', name: 'bride_groom_name', class: 'fw-bold text-primary' },
+                    { data: 'event_date', name: 'event_date' },
+                    { data: 'package_name', name: 'package_name' },
+                    { data: 'package_price', name: 'package_price' },
+                    { data: 'sisa_tagihan', name: 'sisa_tagihan' },
+                    { data: 'status', name: 'status', class: 'text-center' },
+                    { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-center' }
                 ],
-                order: [
-                    [3, 'desc']
-                ],
+                order: [[3, 'desc']],
                 language: {
-                    search: "Search:",
-                    lengthMenu: "_MENU_ &nbsp; entries per page",
-                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
-                    paginate: {
-                        next: '<i class="bi bi-chevron-right"></i>',
-                        previous: '<i class="bi bi-chevron-left"></i>'
-                    },
-                    emptyTable: "Belum ada riwayat pesanan yang tercatat"
+                    emptyTable: "Belum ada pesanan yang tercatat"
                 }
+            });
+
+            // Event Trigger: Filter otomatis saat ada perubahan
+            $('#filter-status, #tgl-acara').on('change', function () {
+                table.draw();
+            });
+
+            // Event Trigger: Reset Filter
+            $('#btn-reset').on('click', function () {
+                $('#filter-status').val('');
+                $('#tgl-acara').val('');
+                table.draw();
             });
         });
 
-        // FUNGSI HAPUS BOOKING AMAN (Anti-Mental & Menggunakan Variabel Global Instance)
+        // Fungsi Hapus Pesanan
         function hapusBooking(id) {
             Swal.fire({
                 title: "Hapus Pesanan?",
-                text: "Data pesanan dan riwayat terkait akan dihapus permanen!",
+                text: "Data pesanan akan dihapus permanen!",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#d33",
@@ -175,12 +141,9 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        // Tambahkan kata /destroy/ di tengah jalurnya
                         url: "{{ url('admin/booking/destroy') }}/" + id,
                         type: "DELETE",
-                        data: {
-                            _token: "{{ csrf_token() }}"
-                        },
+                        data: { _token: "{{ csrf_token() }}" },
                         success: function (res) {
                             Swal.fire({
                                 icon: res.success ? 'success' : 'error',
@@ -189,35 +152,24 @@
                                 timer: 1500,
                                 showConfirmButton: false
                             });
-
-                            // Gunakan reload via pointer instance DataTables global agar reaktif instan
-                            if (res.success && table) {
-                                table.ajax.reload(null, false);
-                            }
-                        },
-                        error: function (xhr) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal Sistem!',
-                                text: 'Terjadi kegagalan komunikasi token CSRF atau endpoint Route.'
-                            });
+                            if (res.success) table.ajax.reload(null, false);
                         }
                     });
                 }
             });
         }
     </script>
-@endpush
 
-{{-- URUTAN BENAR: Taruh session flash message di luar block stack @push script --}}
-@if(session('swal_success'))
-    <script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Berhasil!',
-            text: "{{ session('swal_success') }}",
-            timer: 2500,
-            showConfirmButton: false
-        });
-    </script>
-@endif
+    {{-- Notifikasi Sukses Redirect --}}
+    @if(session('swal_success'))
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: "{{ session('swal_success') }}",
+                timer: 1500,
+                showConfirmButton: false
+            });
+        </script>
+    @endif
+@endpush

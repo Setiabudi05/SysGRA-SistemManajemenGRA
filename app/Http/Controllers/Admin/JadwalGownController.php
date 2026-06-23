@@ -22,13 +22,18 @@ class JadwalGownController extends Controller
         // Mengambil data utama dari Jadwal Pengantin agar otomatis terisi
         $query = \App\Models\JadwalPengantin::with(['paket', 'jadwalGown'])->orderBy('tanggal_awal', 'asc');
 
-        if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
+        // Prioritaskan filter tanggal spesifik
+        if ($request->filled('tanggal')) {
+            $query->whereDate('tanggal_awal', $request->tanggal);
+        } else {
+            // Hanya gunakan bulan & tahun jika tanggal tidak dipilih
+            if ($request->filled('bulan')) {
+                $query->where('bulan', $request->bulan);
+            }
+            if ($request->filled('tahun')) {
+                $query->where('tahun', $request->tahun);
+            }
         }
-        if ($request->filled('tahun')) {
-            $query->where('tahun', $request->tahun);
-        }
-
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('tanggal_full', function ($row) {

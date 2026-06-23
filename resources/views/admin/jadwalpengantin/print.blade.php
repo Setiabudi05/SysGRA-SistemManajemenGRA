@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <title>Cetak Jadwal Pengantin</title>
@@ -32,7 +33,7 @@
         .kop-logo-side {
             width: 70px;
         }
-        
+
         .kop-text-side {
             text-align: center;
         }
@@ -42,14 +43,21 @@
             border-collapse: collapse;
             margin: 0 auto;
         }
+
         .pixel-logo td {
             width: 8px !important;
             height: 8px !important;
             padding: 0 !important;
             border: none !important;
         }
-        .bg-dark { background-color: #2c3e50 !important; }
-        .bg-gold { background-color: #d4af37 !important; }
+
+        .bg-dark {
+            background-color: #2c3e50 !important;
+        }
+
+        .bg-gold {
+            background-color: #d4af37 !important;
+        }
 
         .kop-text-side h2 {
             margin: 0;
@@ -122,11 +130,20 @@
             vertical-align: middle;
         }
 
-        .fw-bold { font-weight: bold; }
-        .text-center { text-align: center; }
-        .text-left { text-align: left; }
+        .fw-bold {
+            font-weight: bold;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-left {
+            text-align: left;
+        }
     </style>
 </head>
+
 <body>
 
     {{-- KOP SURAT SYMETRICAL CENTER --}}
@@ -135,29 +152,49 @@
             <td class="kop-logo-side">
                 <table class="pixel-logo">
                     <tr>
-                        <td class="bg-gold"></td><td class="bg-gold"></td><td class="bg-gold"></td><td class="bg-gold"></td><td class="bg-gold"></td>
+                        <td class="bg-gold"></td>
+                        <td class="bg-gold"></td>
+                        <td class="bg-gold"></td>
+                        <td class="bg-gold"></td>
+                        <td class="bg-gold"></td>
                     </tr>
                     <tr>
-                        <td class="bg-gold"></td><td></td><td></td><td></td><td></td>
+                        <td class="bg-gold"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                     </tr>
                     <tr>
-                        <td class="bg-gold"></td><td></td><td class="bg-dark"></td><td class="bg-dark"></td><td class="bg-dark"></td>
+                        <td class="bg-gold"></td>
+                        <td></td>
+                        <td class="bg-dark"></td>
+                        <td class="bg-dark"></td>
+                        <td class="bg-dark"></td>
                     </tr>
                     <tr>
-                        <td class="bg-gold"></td><td></td><td></td><td></td><td class="bg-dark"></td>
+                        <td class="bg-gold"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td class="bg-dark"></td>
                     </tr>
                     <tr>
-                        <td class="bg-gold"></td><td class="bg-gold"></td><td class="bg-gold"></td><td class="bg-gold"></td><td class="bg-dark"></td>
+                        <td class="bg-gold"></td>
+                        <td class="bg-gold"></td>
+                        <td class="bg-gold"></td>
+                        <td class="bg-gold"></td>
+                        <td class="bg-dark"></td>
                     </tr>
                 </table>
             </td>
-            
+
             <td class="kop-text-side">
                 <h2>GRIYA RIAS ASMARA</h2>
                 <p>Alamat: Gg.Bons Royen 4 Dukuh kendaga Rt 02/11 Kec Larangan, Kabupaten Brebes, Jawa Tengah</p>
                 <p>Telp/WA: 085866659930 / 08386130011 | Email: griyariasasmara@gmail.com</p>
             </td>
-            
+
             <td class="kop-logo-side"></td>
         </tr>
     </table>
@@ -172,7 +209,7 @@
             <td style="width: 15%;">Periode Jadwal</td>
             <td style="width: 2%;">:</td>
             <td style="width: 33%;" class="fw-bold">{{ $bulan ?? 'Semua' }} {{ $tahun ?? '' }}</td>
-            
+
             <td style="width: 15%;">Tanggal Cetak</td>
             <td style="width: 2%;">:</td>
             <td style="width: 33%;">{{ date('d F Y') }}</td>
@@ -181,7 +218,7 @@
             <td>Jumlah Jadwal</td>
             <td>:</td>
             <td class="fw-bold">{{ count($jadwal) }} Acara</td>
-            
+
             <td>Cetak Oleh</td>
             <td>:</td>
             <td class="fw-bold" style="text-transform: uppercase;">Admin (SysGRA)</td>
@@ -206,11 +243,11 @@
             @forelse($jadwal as $i => $row)
                 @php
                     $alamatMentah = $row->alamat;
-                    
+
                     // Otomatis memotong nomor HP dari string alamat (menggunakan regex pintar)
                     preg_match_all('/08[0-9]{8,13}/', $alamatMentah, $matches);
                     $noHpList = $matches[0] ?? [];
-                    
+
                     // Bersihkan string alamat dari buntutan nomor HP biar ga duplikat teks panjang
                     $alamatBersih = trim(preg_replace('/08[0-9]{8,13}/', '', $alamatMentah));
                     $alamatBersih = rtrim($alamatBersih, ' /,-'); 
@@ -218,27 +255,33 @@
                 <tr>
                     <td class="text-center fw-bold" style="color: #555;">{{ $i + 1 }}</td>
                     <td class="text-center" style="font-size: 8pt;">
-                        {{ $row->tanggal_display ?? '-' }} {{ $row->bulan ?? '' }} {{ $row->tahun ?? '' }}
+                        @if(!empty($row->tanggal_awal))
+                            {{ \Carbon\Carbon::parse($row->tanggal_awal)->translatedFormat('d F Y') }}
+                        @else
+                            -
+                        @endif
                     </td>
                     <td class="fw-bold" style="color: #435ebe; font-size: 8.5pt;">{{ $row->nama }}</td>
-                    
+
                     <td class="text-left" style="line-height: 1.3;">
                         <span style="font-weight: bold; font-size: 8pt; display: block; color: #111;">
                             {{ $alamatBersih }}
                         </span>
-                        
+
                         {{-- Render otomatis nomor HP di bawah baris teks alamat dengan warna kontras --}}
                         @if(count($noHpList) > 0)
-                            <small style="color: #2c3e50; display: block; font-size: 7.5pt; font-weight: bold; margin-top: 3px;">
+                            <small
+                                style="color: #2c3e50; display: block; font-size: 7.5pt; font-weight: bold; margin-top: 3px;">
                                 <span style="color: #25d366;">▶</span> HP: {{ implode(' / ', $noHpList) }}
                             </small>
                         @elseif($row->whatsapp_number)
-                            <small style="color: #2c3e50; display: block; font-size: 7.5pt; font-weight: bold; margin-top: 3px;">
+                            <small
+                                style="color: #2c3e50; display: block; font-size: 7.5pt; font-weight: bold; margin-top: 3px;">
                                 <span style="color: #25d366;">▶</span> HP: {{ $row->whatsapp_number }}
                             </small>
                         @endif
                     </td>
-                    
+
                     <td class="text-left" style="font-size: 8pt;">{{ $row->paket->nama_paket ?? '-' }}</td>
                     <td class="text-center" style="font-size: 8pt;">{{ $row->asisten ?? '-' }}</td>
                     <td class="text-center" style="font-size: 8pt;">{{ $row->fg ?? '-' }}</td>
@@ -255,4 +298,5 @@
     </table>
 
 </body>
+
 </html>

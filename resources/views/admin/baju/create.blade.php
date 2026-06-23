@@ -3,7 +3,6 @@
 @section('title', 'Tambah Koleksi Baju')
 
 @push('css')
-    {{-- Memastikan gaya visual sinkron dengan modul lainnya --}}
     <link rel="stylesheet" href="{{ asset('assets-admin/css/admin-styles.css') }}">
 @endpush
 
@@ -11,7 +10,6 @@
 <div class="page-heading">
     <div class="page-title">
         <div class="row align-items-center">
-            {{-- Sisi Kiri: Judul dan Navigasi --}}
             <div class="col-12 col-md-6">
                 <nav aria-label="breadcrumb" class="mb-1">
                     <ol class="breadcrumb" style="font-size: 0.85rem;">
@@ -23,8 +21,6 @@
                 <h3 class="fw-bold mb-0"><i class="bi bi-person-badge-fill me-2"></i>Tambah Koleksi Baju</h3>
                 <p class="text-muted mb-0 small">Isi formulir di bawah ini untuk menambahkan data koleksi gaun baru.</p>
             </div>
-
-            {{-- Sisi Kanan --}}
             <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0">
                 <a href="{{ route('admin.baju.index') }}" class="text-muted small fw-bold text-decoration-none">
                     <i class="bi bi-chevron-left"></i> Kembali ke daftar koleksi
@@ -36,7 +32,6 @@
 </div>
 
 <section class="section">
-    {{-- TAMBAHAN PROTEKSI: Menangkap andalan pesan error validasi di atas form --}}
     @if ($errors->any())
         <div class="alert alert-danger alert-dismissible show fade shadow-sm mb-4">
             <div class="d-flex align-items-center">
@@ -62,8 +57,6 @@
                     <form action="{{ route('admin.baju.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="row mt-3">
-                            
-                            {{-- Input Paket diisi MANUAL berupa Teks Bebas --}}
                             <div class="col-md-6 mb-3">
                                 <label for="paket" class="form-label fw-bold">Nama Paket Pernikahan <span class="text-danger">*</span></label>
                                 <input type="text" name="paket" id="paket" class="form-control shadow-sm @error('paket') is-invalid @enderror" 
@@ -71,7 +64,6 @@
                                 @error('paket') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Baris 1 Kolom 2: Nama Gaun --}}
                             <div class="col-md-6 mb-3">
                                 <label for="nama_gown" class="form-label fw-bold">Nama Gaun / Baju <span class="text-danger">*</span></label>
                                 <input type="text" name="nama_gown" id="nama_gown" class="form-control shadow-sm @error('nama_gown') is-invalid @enderror" 
@@ -79,21 +71,13 @@
                                 @error('nama_gown') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Baris 2: Stok & Foto --}}
-                            <div class="col-md-4 mb-3">
-                                <label for="stok" class="form-label fw-bold">Stok Inventory</label>
-                                <input type="number" name="stok" id="stok" class="form-control shadow-sm @error('stok') is-invalid @enderror" value="{{ old('stok', 1) }}" min="1" required>
-                                @error('stok') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            </div>
-
-                            <div class="col-md-8 mb-3">
+                            <div class="col-md-12 mb-3">
                                 <label for="foto_gown" class="form-label fw-bold">Foto Koleksi <span class="text-danger">*</span></label>
                                 <input type="file" name="foto_gown" id="foto_gown" class="form-control shadow-sm @error('foto_gown') is-invalid @enderror" accept="image/*" required>
                                 <small class="text-muted d-block">Format: JPG, PNG (Max: 2MB)</small>
                                 @error('foto_gown') <div class="text-danger small">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Baris 3: Deskripsi Gaun --}}
                             <div class="col-12 mb-3">
                                 <label for="deskripsi_gown" class="form-label fw-bold">Deskripsi / Detail Gaun</label>
                                 <textarea name="deskripsi_gown" id="deskripsi_gown" class="form-control shadow-sm @error('deskripsi_gown') is-invalid @enderror" 
@@ -102,12 +86,10 @@
                             </div>
                         </div>
 
-                        {{-- Footer Action Buttons --}}
                         <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
                             <a href="{{ route('admin.baju.index') }}" class="btn btn-secondary shadow-sm px-4 fw-bold">
                                 <i class="bi bi-arrow-left me-1"></i> Kembali
                             </a>
-                            
                             <div class="d-flex gap-2">
                                 <button type="reset" class="btn btn-light px-4 fw-bold border">Reset</button>
                                 <button type="submit" class="btn btn-primary px-4 fw-bold shadow">

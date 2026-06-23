@@ -38,20 +38,32 @@ class PembukuanController extends Controller
                 $editUrl = route('admin.pembukuan.edit', ['id' => $row->id, 'f_tanggal' => $tanggal]);
                 return '
                 <div class="d-flex justify-content-center gap-2">
-                    <a href="'.$editUrl.'" class="btn btn-warning btn-sm fw-bold"><i class="bi bi-pencil-square"></i></a>
-                    <button onclick="hapusPembukuan('.$row->id.')" class="btn btn-danger btn-sm fw-bold"><i class="bi bi-trash"></i></button>
+                    <a href="' . $editUrl . '" class="btn btn-warning btn-sm fw-bold"><i class="bi bi-pencil-square"></i></a>
+                    <button onclick="hapusPembukuan(' . $row->id . ')" class="btn btn-danger btn-sm fw-bold"><i class="bi bi-trash"></i></button>
                 </div>';
             })
             ->rawColumns(['action'])
             ->make(true);
     }
 
-    public function pemasukanData(Request $request) { return $this->getDataTable('pemasukan', $request->input('tanggal', now()->toDateString())); }
-    public function pengeluaranData(Request $request) { return $this->getDataTable('pengeluaran', $request->input('tanggal', now()->toDateString())); }
+    public function pemasukanData(Request $request)
+    {
+        return $this->getDataTable('pemasukan', $request->input('tanggal', now()->toDateString()));
+    }
+    public function pengeluaranData(Request $request)
+    {
+        return $this->getDataTable('pengeluaran', $request->input('tanggal', now()->toDateString()));
+    }
 
     // Form Tambah
-    public function createPemasukan() { return view('admin.pembukuan.create', ['tipe' => 'pemasukan']); }
-    public function createPengeluaran() { return view('admin.pembukuan.create', ['tipe' => 'pengeluaran']); }
+    public function createPemasukan()
+    {
+        return view('admin.pembukuan.create', ['tipe' => 'pemasukan']);
+    }
+    public function createPengeluaran()
+    {
+        return view('admin.pembukuan.create', ['tipe' => 'pengeluaran']);
+    }
 
     // Simpan data
     public function store(Request $request)

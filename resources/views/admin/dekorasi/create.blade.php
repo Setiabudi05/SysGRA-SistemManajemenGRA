@@ -16,7 +16,7 @@
 @section('content')
 <div class="page-heading">
     <div class="page-title">
-        <div class="row align-items-center">
+        <div class="row align-items-center"A>
             {{-- Sisi Kiri: Judul dan Navigasi --}}
             <div class="col-12 col-md-6">
                 <nav aria-label="breadcrumb" class="mb-1">

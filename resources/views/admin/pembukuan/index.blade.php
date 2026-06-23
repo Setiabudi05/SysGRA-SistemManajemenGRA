@@ -23,7 +23,7 @@
             <div class="col-12 col-md-6 d-flex justify-content-md-end align-items-center gap-2 mt-3 mt-md-0">
                 <input type="date" id="tanggal" class="form-control shadow-sm w-auto" value="{{ $tanggal }}">
                 <button type="button" id="btn-print" class="btn btn-primary shadow-sm px-3 fw-bold">
-                    <i class="bi bi-printer me-1"></i> Cetak Laporan
+                    <i class="bi bi-printer me-1"></i> Cetak
                 </button>
             </div>
         </div>

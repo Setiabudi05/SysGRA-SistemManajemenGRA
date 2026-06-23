@@ -1,201 +1,94 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Owner - Cetak Jadwal Pengantin</title>
+    <title>Laporan Jadwal Operasional - {{ $bulan ?? 'Semua' }} {{ $tahun ?? '' }}</title>
     <style>
-        @page {
-            margin: 1.5cm;
-        }
+        @page { margin: 1.2cm; size: A4 portrait; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9pt; color: #333; line-height: 1.4; }
+        
+        /* Watermark Premium */
+        .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 80pt; color: rgba(212, 175, 55, 0.08); z-index: -1; pointer-events: none; }
 
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 10pt;
-            color: #333;
-            line-height: 1.4;
-        }
+        .kop-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+        .kop-table td { border: none !important; padding: 0 !important; vertical-align: middle; }
+        .kop-logo-side { width: 70px; }
+        .kop-text-side { text-align: center; }
+        
+        .kop-text-side h2 { margin: 0; font-size: 17pt; letter-spacing: 2px; color: #000; text-transform: uppercase; font-weight: bold; }
+        .kop-text-side p { margin: 3px 0; font-size: 8.5pt; color: #555; }
 
-        /* Kop Surat Mewah Minimalis Monogram */
-        table.kop-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 25px;
-        }
+        .double-line { border-top: 2px solid #2c3e50; border-bottom: 0.5px solid #2c3e50; height: 3px; margin: 10px 0 20px 0; }
+        
+        .report-title { text-align: center; font-weight: bold; font-size: 11pt; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
 
-        table.kop-table td {
-            border: none !important;
-            padding: 0 !important;
-        }
-
-        .logo-container {
-            width: 15%;
-            vertical-align: middle;
-        }
-
-        .monogram-logo {
-            font-size: 28pt;
-            font-weight: bold;
-            color: #d4af37;
-            line-height: 1;
-        }
-
-        .text-container {
-            width: 85%;
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        .text-container h2 {
-            margin: 0;
-            font-size: 18pt;
-            letter-spacing: 2px;
-            color: #000;
-            text-transform: uppercase;
-        }
-
-        .text-container p {
-            margin: 3px 0;
-            font-size: 9pt;
-            color: #555;
-        }
-
-        .GarisKop {
-            border-bottom: 3px double #333;
-            margin-bottom: 20px;
-            width: 100%;
-        }
-
-        .report-title {
-            text-align: center;
-            font-weight: bold;
-            font-size: 12pt;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Metadata Laporan */
-        table.info-box {
-            width: 100%;
-            margin-bottom: 20px;
-            border-collapse: collapse;
-        }
-
-        table.info-box td {
-            border: none !important;
-            padding: 4px 0 !important;
-            vertical-align: top;
-            font-size: 10pt;
-        }
-
-        /* Tabel Data Utama */
-        table.data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 5px;
-            table-layout: fixed;
-        }
-
-        table.data-table th {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6 !important;
-            padding: 10px 5px !important;
-            font-size: 9pt;
-            text-align: center;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-
-        table.data-table td {
-            border: 1px solid #dee2e6 !important;
-            padding: 8px 5px !important;
-            font-size: 9pt;
-            vertical-align: middle;
-            word-wrap: break-word;
-        }
-
-        .fw-bold { font-weight: bold; }
-        .text-center { text-align: center; }
-        .text-left { text-align: left; }
+        table.data-table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+        table.data-table th { background-color: #2c3e50 !important; color: #d4af37 !important; border: 1px solid #2c3e50 !important; padding: 8px 4px !important; font-size: 8pt; text-align: center; text-transform: uppercase; }
+        table.data-table td { border: 1px solid #cccccc !important; padding: 6px 4px !important; font-size: 8pt; word-wrap: break-word; }
     </style>
 </head>
-
 <body>
+    <div class="watermark">GRIYA RIAS ASMARA</div>
 
     <table class="kop-table">
         <tr>
-            <td class="logo-container">
-                <div class="monogram-logo">G</div>
-            </td>
-            <td class="text-container" style="padding-right: 60px;">
+            <td class="kop-logo-side"><div style="width: 50px; height: 50px; background: #2c3e50;"></div></td>
+            <td class="kop-text-side">
                 <h2>GRIYA RIAS ASMARA</h2>
-                <p>Alamat: Jl. Raya Brebes No. XX, Kabupaten Brebes, Jawa Tengah</p>
-                <p>Telp: 08xx-xxxx-xxxx | Email: griyariasasmara@gmail.com</p>
+                <p>Alamat: Gg.Bons Royen 4 Dukuh kendaga Rt 02/11 Kec Larangan, Kab. Brebes</p>
+                <p>Telp: 085866659930 | Email: griyariasasmara@gmail.com</p>
             </td>
+            <td class="kop-logo-side"></td>
         </tr>
     </table>
-    
-    <div class="GarisKop"></div>
+    <div class="double-line"></div>
 
-    <div class="report-title">LAPORAN JADWAL & PENUGASAN KRU</div>
-
-    <table class="info-box">
-        <tr>
-            <td style="width: 18%;">Periode Laporan</td>
-            <td style="width: 2%;">:</td>
-            <td style="width: 30%;" class="fw-bold">{{ $bulan ?? 'Semua' }} {{ $tahun ?? '' }}</td>
-            
-            <td style="width: 18%;">Tanggal Cetak</td>
-            <td style="width: 2%;">:</td>
-            <td style="width: 30%;">{{ date('d F Y') }}</td>
-        </tr>
-        <tr>
-            <td>Total Agenda</td>
-            <td>:</td>
-            <td class="fw-bold">{{ $jadwal->count() }} Acara</td>
-            
-            <td>Dicetak Oleh</td>
-            <td>:</td>
-            <td class="fw-bold" style="text-transform: uppercase;">Owner (SysGRA)</td>
-        </tr>
-    </table>
+    <div class="report-title">LAPORAN JADWAL OPERASIONAL (OWNER VIEW)</div>
 
     <table class="data-table">
         <thead>
             <tr>
                 <th style="width: 5%;">NO</th>
-                <th style="width: 13%;">TANGGAL</th>
+                <th style="width: 15%;">TANGGAL</th>
                 <th style="width: 15%;">PENGANTIN</th>
-                <th style="width: 19%;">LOKASI ACARA</th>
-                <th style="width: 16%;">PAKET</th>
-                <th style="width: 12%;">ASISTEN</th>
-                <th style="width: 10%;">FG</th>
-                <th style="width: 10%;">LAYOS</th>
+                <th style="width: 25%;">ALAMAT</th>
+                <th style="width: 15%;">PAKET</th>
+                <th style="width: 8%;">ASN</th>
+                <th style="width: 8%;">FG</th>
+                <th style="width: 9%;">LYS</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($jadwal as $i => $row)
-                <tr>
-                    <td class="text-center fw-bold">{{ $i + 1 }}</td>
-                    <td class="text-center">{{ $row->tanggal_display ?? '-' }} {{ $row->bulan ?? '' }} {{ $row->tahun ?? '' }}</td>
-                    <td class="fw-bold">{{ $row->nama }}</td>
-                    <td class="text-left">{{ $row->alamat }}</td>
-                    <td class="text-left">{{ $row->paket?->nama_paket ?? '-' }}</td>
-                    <td class="text-center" style="font-size: 8.5pt;">{{ $row->asisten ?? 'Belum diplot' }}</td>
-                    <td class="text-center" style="font-size: 8.5pt;">{{ $row->fg ?? 'Belum diplot' }}</td>
-                    <td class="text-center" style="font-size: 8.5pt;">{{ $row->layos ?? 'Belum diplot' }}</td>
-                </tr>
+            @forelse($data as $i => $row)
+            <tr>
+                <td align="center">{{ $i + 1 }}</td>
+                <td align="center">
+                    {{ \Carbon\Carbon::parse($row->tanggal_awal)->translatedFormat('d F Y') }}
+                </td>
+                <td style="font-weight: bold;">{{ $row->nama }}</td>
+                <td>{{ $row->alamat }}</td>
+                <td>{{ $row->paket->nama_paket ?? '-' }}</td>
+                <td align="center">{{ $row->asisten ?? '-' }}</td>
+                <td align="center">{{ $row->fg ?? '-' }}</td>
+                <td align="center">{{ $row->layos ?? '-' }}</td>
+            </tr>
             @empty
-                <tr>
-                    <td colspan="8" class="text-center" style="padding: 30px; color: #6c757d;">
-                        Tidak ada agenda jadwal pengantin pada periode ini.
-                    </td>
-                </tr>
+            <tr><td colspan="8" align="center">Data tidak ditemukan untuk periode ini.</td></tr>
             @endforelse
         </tbody>
     </table>
 
+    <table style="width: 100%; margin-top: 30px;">
+        <tr>
+            <td style="width: 60%; font-size: 8pt; color: #555;">
+                * Laporan ini dihasilkan secara sistematis oleh SysGRA.
+            </td>
+            <td style="text-align: center; font-size: 8pt;">
+                <div style="margin-bottom: 50px;">Brebes, {{ date('d F Y') }}</div>
+                <div style="font-weight: bold; text-decoration: underline;">Afip Listiyana</div>
+                <div>Owner Griya Rias Asmara</div>
+            </td>
+        </tr>
+    </table>
 </body>
-
 </html>

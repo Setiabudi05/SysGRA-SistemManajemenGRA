@@ -21,12 +21,6 @@
                     <h3 class="fw-bold mb-0">Laporan Pesanan Pengantin</h3>
                     <p class="text-muted mb-0">Monitoring data pesanan berdasarkan jadwal operasional.</p>
                 </div>
-
-                <div class="col-12 col-md-5 d-flex justify-content-md-end align-items-center mt-3 mt-md-0 gap-2">
-                    <button id="btn-print" class="btn btn-secondary shadow-sm">
-                        <i class="bi bi-printer"></i> Cetak Laporan
-                    </button>
-                </div>
             </div>
         </div>
         <hr>
@@ -34,31 +28,22 @@
 
     <section class="section">
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0 pb-0">
-                <div class="d-flex flex-wrap align-items-center gap-3">
-                    <h5 class="card-title mb-0 me-auto">Log Pesanan</h5>
+            <div class="card-header border-0 pt-3 bg-transparent">
+                <div class="d-flex justify-content-end align-items-center gap-2">
+                    <select id="filter-status" class="form-select form-select-sm shadow-sm" style="width: 140px;">
+                        <option value="">Status...</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="CONFIRMED">Confirmed</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="DRAFT">Draft</option>
+                    </select>
 
-                    {{-- Filter Bulan --}}
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="filter-label text-muted">Bulan:</span>
-                        <select id="filter-bulan" class="form-select form-select-sm shadow-sm">
-                            <option value="">Semua</option>
-                            @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $i => $b)
-                                <option value="{{ $b }}" {{ $i + 1 == date('n') ? 'selected' : '' }}>{{ $b }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <input type="date" id="tgl-acara" class="form-control form-control-sm shadow-sm" style="width: 140px;"
+                        title="Pilih Tanggal">
 
-                    {{-- Filter Tahun --}}
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="filter-label text-muted">Tahun:</span>
-                        <select id="filter-tahun" class="form-select form-select-sm shadow-sm">
-                            <option value="">Semua</option>
-                            @for ($y = date('Y'); $y <= date('Y') + 5; $y++)
-                                <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
-                            @endfor
-                        </select>
-                    </div>
+                    <button id="btn-reset" class="btn btn-sm btn-secondary shadow-sm" title="Reset Filter">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
                 </div>
             </div>
 
@@ -97,8 +82,8 @@
                 ajax: {
                     url: "{{ route('owner.booking.data') }}",
                     data: function (d) {
-                        d.bulan = $('#filter-bulan').val();
-                        d.tahun = $('#filter-tahun').val();
+                        d.status = $('#filter-status').val();
+                        d.tgl_acara = $('#tgl-acara').val();
                     }
                 },
                 // Di dalam script DataTables
@@ -119,7 +104,16 @@
                 ]
             });
 
-            $('#filter-bulan, #filter-tahun').change(function () { table.draw(); });
+            $('#filter-status, #tgl-acara').on('change', function () {
+                table.draw();
+            });
+
+            // Event Trigger: Reset Filter
+            $('#btn-reset').on('click', function () {
+                $('#filter-status').val('');
+                $('#tgl-acara').val('');
+                table.draw();
+            });
         });
     </script>
 @endpush

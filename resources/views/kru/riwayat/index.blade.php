@@ -71,6 +71,11 @@
                     <h5 class="fw-bold mb-0 me-auto">Log Riwayat Pekerjaan</h5>
 
                     <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Tanggal:</span>
+                        <input type="date" id="filter-tanggal" class="form-control form-control-sm" style="width: 140px;">
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
                         <span class="filter-label">Bulan:</span>
                         <select id="filter-bulan" class="form-select form-select-sm shadow-sm" style="width: 140px;">
                             <option value="">Semua Bulan</option>
@@ -135,6 +140,7 @@
                     data: function (d) {
                         d.bulan = $('#filter-bulan').val();
                         d.tahun = $('#filter-tahun').val();
+                        d.tanggal = $('#filter-tanggal').val();
                     }
                 },
                 columns: [
@@ -157,7 +163,7 @@
             });
 
             // 2. Filter Handler
-            $('#filter-bulan, #filter-tahun').change(function () {
+            $('#filter-bulan, #filter-tahun, #filter-tanggal').on('change', function () {
                 table.draw();
             });
 

@@ -9,7 +9,7 @@ class Paket extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nama_paket', 'tahun', 'makeup', 'dekorasi', 'dokumentasi', 'harga'];
+    protected $fillable = ['nama_paket', 'tahun', 'makeup', 'dekorasi', 'dokumentasi', 'harga', 'include', 'bonus'];
 
     public function dekorasis()
     {
@@ -19,5 +19,4 @@ class Paket extends Model
     {
         return $this->hasMany(BajuPengantin::class, 'paket_id');
     }
-    
 }

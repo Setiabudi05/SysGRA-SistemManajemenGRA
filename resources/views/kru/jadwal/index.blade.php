@@ -60,6 +60,11 @@
             <div class="card-header bg-transparent border-0 pb-3">
                 <div class="d-flex flex-wrap align-items-center gap-3">
                     <h5 class="fw-bold mb-0 me-auto">Log Jadwal</h5>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Tanggal:</span>
+                        <input type="date" id="filter-tanggal" class="form-control form-control-sm" style="width: 140px;">
+                    </div>
                     {{-- Filter Bulan --}}
                     <div class="d-flex align-items-center gap-2">
                         <span class="filter-label">Bulan:</span>
@@ -142,6 +147,7 @@
                         // Mengirimkan nilai filter bulan & tahun yang aktif ke server side controller
                         d.bulan = $('#filter-bulan').val();
                         d.tahun = $('#filter-tahun').val();
+                        d.tanggal = $('#filter-tanggal').val();
                     }
                 },
                 columns: [
@@ -170,7 +176,7 @@
             });
 
             // Pemicu redraw tabel saat dropdown diubah manual oleh kru
-            $('#filter-bulan, #filter-tahun').change(function () {
+            $('#filter-bulan, #filter-tahun, #filter-tanggal').on('change', function () {
                 table.draw();
             });
 

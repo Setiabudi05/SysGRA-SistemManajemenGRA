@@ -11,6 +11,7 @@ use App\Models\Booking;
 use App\Notifications\SistemNotifikasi;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class JadwalPengantinController extends Controller
 {
@@ -21,24 +22,27 @@ class JadwalPengantinController extends Controller
 
     public function data(Request $request)
     {
-        // Gunakan with('pesanan') agar data otomatis dari Booking bisa ditarik
         $query = JadwalPengantin::with(['paket', 'pesanan'])->orderBy('tanggal_awal', 'asc');
 
-        if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
-        }
-        if ($request->filled('tahun')) {
-            $query->where('tahun', $request->tahun);
+        // Prioritaskan filter tanggal spesifik
+        if ($request->filled('tanggal')) {
+            $query->whereDate('tanggal_awal', $request->tanggal);
+        } else {
+            // Hanya gunakan bulan & tahun jika tanggal tidak dipilih
+            if ($request->filled('bulan')) {
+                $query->where('bulan', $request->bulan);
+            }
+            if ($request->filled('tahun')) {
+                $query->where('tahun', $request->tahun);
+            }
         }
 
         return DataTables::of($query)
             ->addIndexColumn()
-            // Tampilan Nama (prioritas: dari Pesanan, jika kosong ambil data manual)
             ->editColumn('nama', fn($row) => $row->pesanan ? $row->pesanan->bride_groom_name : $row->nama)
-            // Tampilan Alamat (prioritas: dari Pesanan, jika kosong ambil data manual)
             ->editColumn('alamat', fn($row) => $row->pesanan ? $row->pesanan->event_address : $row->alamat)
             ->addColumn('tanggal_full', function ($row) {
-                $tglAwal = Carbon::parse($row->tanggal_awal)->format('d');
+                $tglAwal = \Carbon\Carbon::parse($row->tanggal_awal)->format('d');
                 return "$tglAwal $row->bulan $row->tahun";
             })
             ->editColumn('asisten', fn($row) => $row->asisten ?? '-')
@@ -47,13 +51,12 @@ class JadwalPengantinController extends Controller
             ->addColumn('keterangan_text', fn($row) => $row->keterangan ?? '-')
             ->addColumn('action', function ($row) {
                 return '
-                    <a href="' . route('admin.jadwalpengantin.edit', $row->id) . '" class="btn btn-warning btn-sm shadow-sm"><i class="bi bi-pencil-square"></i></a>
-                    <button onclick="hapusJadwal(' . $row->id . ')" class="btn btn-danger btn-sm shadow-sm"><i class="bi bi-trash"></i></button>';
+                <a href="' . route('admin.jadwalpengantin.edit', $row->id) . '" class="btn btn-warning btn-sm shadow-sm"><i class="bi bi-pencil-square"></i></a>
+                <button onclick="hapusJadwal(' . $row->id . ')" class="btn btn-danger btn-sm shadow-sm"><i class="bi bi-trash"></i></button>';
             })
             ->rawColumns(['action'])
             ->make(true);
     }
-
     public function create()
     {
         $pakets = Paket::all();
@@ -120,5 +123,26 @@ class JadwalPengantinController extends Controller
         $d = Carbon::parse($date);
         $map = ['January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret', 'April' => 'April', 'May' => 'Mei', 'June' => 'Juni', 'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September', 'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'];
         return ['bulan' => $map[$d->format('F')], 'tahun' => $d->format('Y')];
+    }
+
+    public function print(Request $request)
+    {
+        // GANTI 'jadwalPengantin' menjadi 'pesanan' (atau nama relasi yang benar di Model)
+        $query = JadwalPengantin::with(['paket', 'pesanan']);
+
+        if ($request->filled('bulan')) {
+            $query->where('bulan', $request->bulan);
+        }
+        if ($request->filled('tahun')) {
+            $query->where('tahun', $request->tahun);
+        }
+
+        $jadwal = $query->get();
+        $bulan = $request->bulan;
+        $tahun = $request->tahun;
+
+        return Pdf::loadView('admin.jadwalpengantin.print', compact('jadwal', 'bulan', 'tahun'))
+            ->setPaper('A4', 'portrait')
+            ->stream('jadwal-pengantin.pdf');
     }
 }

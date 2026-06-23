@@ -27,59 +27,29 @@ class BajuPengantinController extends Controller
      */
     public function data()
     {
-        try {
-            // Ambil data baju pengantin tanpa menggunakan eager loading relasi 'paket'
-            $baju = BajuPengantin::latest()->get();
-
-            return DataTables::of($baju)
-                ->addIndexColumn()
-                ->addColumn('foto', function ($row) {
-                    if ($row->foto_gown) {
-                        return '<div class="img-container shadow-sm" style="max-width: 60px;">
-                            <img src="' . asset('storage/' . $row->foto_gown) . '" alt="Foto Baju" class="img-fluid rounded">
-                        </div>';
-                    }
-                    return '<span class="text-muted small">No Image</span>';
-                })
-
-                // MENGGUNAKAN EDITCOLUMN: Karena 'paket' adalah nama kolom asli berjenis string di DB hasil ubah manual phpMyAdmin
-                ->editColumn('paket', function ($row) {
-                    return '<span class="fw-bold text-dark">' . e($row->paket) . '</span>';
-                })
-
-                ->addColumn('deskripsi', function ($row) {
-                    return $row->deskripsi_gown ? e($row->deskripsi_gown) : '<span class="text-muted italic small">-</span>';
-                })
-
-                ->addColumn('stok_badge', function ($row) {
-                    return $row->stok > 0
-                        ? '<span class="badge bg-success">' . $row->stok . '</span>'
-                        : '<span class="badge bg-danger">Habis</span>';
-                })
-
-                ->addColumn('action', function ($row) {
-                    return '
-                <div class="d-flex justify-content-center gap-1">
-                    <a href="' . route('admin.baju.edit', $row->id) . '" class="btn btn-warning btn-sm fw-bold shadow-sm py-1 px-2" style="font-size: 0.75rem;">
-                        <i class="bi bi-pencil-square"></i> Edit
-                    </a>
-                    <button onclick="hapusBaju(' . $row->id . ')" class="btn btn-danger btn-sm fw-bold shadow-sm py-1 px-2" style="font-size: 0.75rem;">
-                        <i class="bi bi-trash"></i> Hapus
-                    </button>
+        $baju = BajuPengantin::latest()->get();
+        return DataTables::of($baju)
+            ->addIndexColumn()
+            ->addColumn('foto', function ($row) {
+                return $row->foto_gown
+                    ? '<div class="img-container shadow-sm"><img src="' . asset('storage/' . $row->foto_gown) . '" alt="Foto"></div>'
+                    : '<span class="text-muted small">No Image</span>';
+            })
+            ->editColumn('paket', function ($row) {
+                return '<span class="fw-bold text-dark">' . $row->paket . '</span>';
+            })
+            ->addColumn('deskripsi', function ($row) {
+                return $row->deskripsi_gown ?: '-';
+            })
+            ->addColumn('action', function ($row) {
+                return '
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    <a href="' . route('admin.baju.edit', $row->id) . '" class="btn btn-warning btn-sm fw-bold shadow-sm py-1 px-2">Edit</a>
+                    <button type="button" class="btn btn-danger btn-sm fw-bold shadow-sm py-1 px-2 hapus-btn" data-id="' . $row->id . '">Hapus</button>
                 </div>';
-                })
-                ->rawColumns(['foto', 'paket', 'deskripsi', 'stok_badge', 'action'])
-                ->make(true);
-        } catch (\Exception $e) {
-            // Jika ada error internal, sistem akan mengembalikan pesan error rapi ke DataTables agar tidak memicu Ajax Error kosong
-            return response()->json([
-                'draw' => 0,
-                'recordsTotal' => 0,
-                'recordsFiltered' => 0,
-                'data' => [],
-                'error' => 'Gagal memuat data: ' . $e->getMessage()
-            ], 500);
-        }
+            })
+            ->rawColumns(['foto', 'paket', 'action'])
+            ->make(true);
     }
     /**
      * Tampilkan form tambah baju
@@ -98,12 +68,10 @@ class BajuPengantinController extends Controller
      */
     public function store(Request $request)
     {
-        // KUNCI SINKRONISASI: Mengubah aturan validasi dari paket_id menjadi string paket bebas
         $request->validate([
             'paket'          => 'required|string|max:255',
             'nama_gown'      => 'required|string|max:255',
             'deskripsi_gown' => 'nullable|string',
-            'stok'           => 'required|integer|min:1',
             'foto_gown'      => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
@@ -112,17 +80,14 @@ class BajuPengantinController extends Controller
             $fotoPath = $request->file('foto_gown')->store('baju_pengantin', 'public');
         }
 
-        // Menyimpan data murni berdasarkan input string ke kolom 'paket' di database phpMyAdmin
         BajuPengantin::create([
             'paket'          => $request->paket,
             'nama_gown'      => $request->nama_gown,
             'deskripsi_gown' => $request->deskripsi_gown,
-            'stok'           => $request->stok,
             'foto_gown'      => $fotoPath,
         ]);
 
-        return redirect()->route('admin.baju.index')
-            ->with('success', 'Baju pengantin berhasil ditambahkan ke dalam sistem!');
+        return redirect()->route('admin.baju.index')->with('success', 'Baju pengantin berhasil ditambahkan!');
     }
 
     /**
@@ -138,16 +103,15 @@ class BajuPengantinController extends Controller
     /**
      * Update data baju
      */
+
     public function update(Request $request, $id)
     {
         $baju = BajuPengantin::findOrFail($id);
 
-        // Pastikan rule validasi di bawah ini murni mengecek 'paket' sebagai string
         $request->validate([
             'paket'          => 'required|string|max:255',
             'nama_gown'      => 'required|string|max:255',
             'deskripsi_gown' => 'nullable|string',
-            'stok'           => 'required|integer|min:0',
             'foto_gown'      => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
@@ -155,7 +119,6 @@ class BajuPengantinController extends Controller
             'paket'          => $request->paket,
             'nama_gown'      => $request->nama_gown,
             'deskripsi_gown' => $request->deskripsi_gown,
-            'stok'           => $request->stok,
         ];
 
         if ($request->hasFile('foto_gown')) {
@@ -166,10 +129,7 @@ class BajuPengantinController extends Controller
         }
 
         $baju->update($data);
-
-        // PERBAIKAN RESPONS: Kita kembalikan ke index dengan session flash yang tepat
-        return redirect()->route('admin.baju.index')
-            ->with('success', 'Koleksi baju berhasil diperbarui.');
+        return redirect()->route('admin.baju.index')->with('success', 'Koleksi baju berhasil diperbarui.');
     }
 
     /**

@@ -186,7 +186,7 @@
             <tr>
                 <td class="label-cell">Durasi Acara</td>
                 <td class="separator">:</td>
-                <td>{{ $booking->event_duration }}</td>
+                <td>{{ $booking->event_duration }} Hari</td>
             </tr>
             <tr>
                 <td class="label-cell">Alamat Lokasi</td>
@@ -198,16 +198,28 @@
                 <td class="separator">:</td>
                 <td><strong>{{ $booking->package_name }}</strong></td>
             </tr>
+
+            {{-- BAGIAN BARU: Add-ons Dinamis --}}
             <tr>
-                <td class="label-cell">Harga Paket</td>
+                <td class="label-cell">Item Tambahan</td>
                 <td class="separator">:</td>
-                <td style="font-weight: bold;">Rp
-                    {{ number_format((int) preg_replace('/[^0-9]/', '', $booking->package_price), 0, ',', '.') }}</td>
+                <td>
+                    @if($booking->addOns->isNotEmpty())
+                        <ul style="margin: 0; padding-left: 15px;">
+                            @foreach($booking->addOns as $add)
+                                <li>{{ $add->nama_item }}</li>
+                            @endforeach
+                        </ul>
+                    @else
+                        -
+                    @endif
+                </td>
             </tr>
+
             <tr>
-                <td class="label-cell">Layanan Tambahan</td>
+                <td class="label-cell">Total Harga</td>
                 <td class="separator">:</td>
-                <td>{{ $booking->add_ons ?? '-' }}</td>
+                <td style="font-weight: bold;">Rp {{ number_format($booking->total_harga, 0, ',', '.') }}</td>
             </tr>
             <tr>
                 <td class="label-cell">Catatan Khusus</td>
@@ -231,7 +243,7 @@
             <div class="signature-box signature-box-left">
                 <p>Calon Pengantin,</p>
                 <div class="signature-space"></div>
-                <p><strong>( {{ $booking->customer_name }} )</strong></p>
+                <p><strong>( {{ $booking->bride_groom_name }} )</strong></p>
             </div>
             <div class="signature-box signature-box-right">
                 <p>Team Management,</p>

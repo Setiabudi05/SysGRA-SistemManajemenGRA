@@ -12,15 +12,15 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable;
 
-  protected $fillable = [
-    'name',
-    'jabatan',
-    'email',
-    'phone',
-    'password',
-    'role',
-    'phone', 
-];
+    protected $fillable = [
+        'name',
+        'jabatan',
+        'email',
+        'phone',
+        'address', // Tambahkan kolom alamat di sini (sesuaikan dengan nama kolom di database Anda)
+        'password',
+        'role',
+    ];
 
     protected $hidden = [
         'password',
@@ -35,11 +35,6 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    /**
-     * 2. TAMBAHKAN FUNGSI INI UNTUK MENGIRIM EMAIL RESET KUSTOM
-     * Fungsi ini akan menimpa (override) bawaan Laravel agar menggunakan 
-     * template Bahasa Indonesia yang sudah Anda buat di ResetPasswordNotificationCustom.
-     */
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new ResetPasswordNotificationCustom($token));

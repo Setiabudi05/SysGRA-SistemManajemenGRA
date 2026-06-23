@@ -12,36 +12,33 @@ class ProfileController extends Controller
 {
     public function index()
     {
-        // Mengambil data user tunggal yang sedang login
-        $user = User::find(Auth::id());
+        $user = Auth::user();
         return view('user.profile.index', compact('user'));
     }
 
     public function update(Request $request)
     {
         $user = User::findOrFail(Auth::id());
-        
-        // Validasi form (sesuai nama input html)
+
         $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email,' . $user->id,
-            'phone'    => 'nullable|numeric', // Menyesuaikan input phone
-            'address'  => 'nullable|string',  // Menyesuaikan input address
+            'phone'    => 'nullable|string',
+            'address'  => 'nullable|string',
             'password' => 'nullable|min:8|confirmed',
         ]);
 
-        // Masukkan data ke kolom database asli kamu
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->phone = $request->phone;     // Sesuai kolom database: phone
-        $user->address = $request->address; // Sesuai kolom database: address
+        $user->update([
+            'name'    => $request->name,
+            'email'   => $request->email,
+            'phone'   => $request->phone,
+            'address' => $request->address,
+        ]);
 
         if ($request->filled('password')) {
-            $user->password = Hash::make($request->password);
+            $user->update(['password' => Hash::make($request->password)]);
         }
 
-        $user->save();
-
-        return back()->with('success', 'Profil berhasil diperbarui!');
+        return redirect()->route('user.profile.index')->with('success', 'Profil berhasil diperbarui!');
     }
 }

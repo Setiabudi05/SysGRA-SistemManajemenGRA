@@ -4,6 +4,12 @@
 @push('css')
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="{{ asset('assets-admin/css/admin-styles.css') }}">
+    <style>
+        /* CSS untuk membuat nomor tabel otomatis dan tetap urut di DataTables */
+        #table-histori { counter-reset: rowNumber; }
+        #table-histori tbody tr { counter-increment: rowNumber; }
+        #table-histori tbody tr td:first-child::before { content: counter(rowNumber); }
+    </style>
 @endpush
 
 @section('content')
@@ -74,7 +80,7 @@
         {{-- Sisi Kanan: Log Transaksi Cicilan --}}
         <div class="col-12 col-lg-8">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+                <div class="card-header bg-transparent border-0 pb-0">
                     <h5 class="card-title mb-0">Log Transaksi Cicilan</h5>
                 </div>
                 <div class="card-body">
@@ -90,9 +96,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($booking->pembayarans as $index => $bayar)
+                                @foreach($booking->pembayarans as $bayar)
                                 <tr>
-                                    <td class="text-center text-muted">{{ $index + 1 }}</td>
+                                    <td class="text-center text-muted"></td> {{-- Nomor otomatis dari CSS --}}
                                     <td class="fw-bold">{{ \Carbon\Carbon::parse($bayar->created_at)->translatedFormat('d F Y') }}</td>
                                     <td>
                                         <span class="badge bg-light-secondary text-secondary">

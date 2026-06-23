@@ -3,39 +3,43 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Paket;
-use App\Models\Dekorasi;
 use App\Models\Booking;
 use App\Models\Pembukuan;
-use App\Models\User;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // Menggunakan nama class langsung (Simplified)
-        $totalPaket = Paket::count();
-        $totalDekorasi = Dekorasi::count(); 
-        $totalPelanggan = Booking::distinct('customer_name')->count();
-        $totalBooking = Booking::count();
+        $now = Carbon::now();
 
-        $netIncome = Pembukuan::where('tipe', 'pemasukan')->sum('nominal') -
-                     Pembukuan::where('tipe', 'pengeluaran')->sum('nominal');
+        // 1. Occupancy Rate (Menggunakan event_date)
+        $daysInMonth = $now->daysInMonth;
+        $bookedDays = Booking::whereMonth('event_date', $now->month)
+            ->whereYear('event_date', $now->year)
+            ->distinct('event_date')
+            ->count('event_date');
+        $occupancyRate = ($bookedDays / $daysInMonth) * 100;
 
-        $pendingPayment = Booking::all()->sum('sisa_tagihan');
+        // 2. Customer Acquisition
+        $newCustomers = Booking::whereMonth('created_at', $now->month)
+            ->whereYear('created_at', $now->year)
+            ->count();
 
-        $recentBookings = Booking::latest()->take(5)->get();
+        // 3. Financial Health (Pemasukan - Pengeluaran)
+        $income = Pembukuan::where('tipe', 'pemasukan')->whereMonth('tanggal', $now->month)->sum('nominal');
+        $expense = Pembukuan::where('tipe', 'pengeluaran')->whereMonth('tanggal', $now->month)->sum('nominal');
+        $netProfit = $income - $expense;
+
+        // 4. Pending Receivables
+        // Karena kolom sisa_tagihan tidak ada, kita lewati dulu atau hitung dari kolom lain jika ada.
+        $pendingReceivables = 0;
 
         return view('owner.dashboard', compact(
-            'totalPaket',
-            'totalDekorasi',
-            'totalPelanggan',
-            'totalBooking',
-            'netIncome',
-            'pendingPayment',
-            'recentBookings'
+            'occupancyRate',
+            'newCustomers',
+            'netProfit',
+            'pendingReceivables'
         ));
     }
 }

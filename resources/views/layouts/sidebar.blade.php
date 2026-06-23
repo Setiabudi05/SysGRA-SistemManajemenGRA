@@ -89,6 +89,11 @@
                     <li class="sidebar-item {{ request()->routeIs('admin.baju.*') ? 'active' : '' }}"><a
                             href="{{ route('admin.baju.index') }}" class="sidebar-link"><i
                                 class="bi bi-person-hearts"></i><span>Baju Pengantin</span></a></li>
+                    <li class="sidebar-item {{ request()->routeIs('admin.addons.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.addons.index') }}" class="sidebar-link">
+                            <i class="bi bi-plus-circle"></i><span>Item Tambahan (Add-ons)</span>
+                        </a>
+                    </li>
                     <li class="sidebar-title">Manajemen</li>
                     @php $isJadwalAdminActive = request()->is('admin/jadwal*'); @endphp
                     <li class="sidebar-item has-sub {{ $isJadwalAdminActive ? 'active' : '' }}">
