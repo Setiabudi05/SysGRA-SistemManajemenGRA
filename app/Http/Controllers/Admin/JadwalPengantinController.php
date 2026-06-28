@@ -19,7 +19,9 @@ class JadwalPengantinController extends Controller
     {
         return view('admin.jadwalpengantin.index');
     }
-
+    /**
+     * Menampilkan data pesanan di tabel admin
+     */
     public function data(Request $request)
     {
         $query = JadwalPengantin::with(['paket', 'pesanan'])->orderBy('tanggal_awal', 'asc');
@@ -42,8 +44,30 @@ class JadwalPengantinController extends Controller
             ->editColumn('nama', fn($row) => $row->pesanan ? $row->pesanan->bride_groom_name : $row->nama)
             ->editColumn('alamat', fn($row) => $row->pesanan ? $row->pesanan->event_address : $row->alamat)
             ->addColumn('tanggal_full', function ($row) {
-                $tglAwal = \Carbon\Carbon::parse($row->tanggal_awal)->format('d');
-                return "$tglAwal $row->bulan $row->tahun";
+                // Array pemetaan bulan ke bahasa Indonesia
+                $bulanIndo = [
+                    'January' => 'Januari',
+                    'February' => 'Februari',
+                    'March' => 'Maret',
+                    'April' => 'April',
+                    'May' => 'Mei',
+                    'June' => 'Juni',
+                    'July' => 'Juli',
+                    'August' => 'Agustus',
+                    'September' => 'September',
+                    'October' => 'Oktober',
+                    'November' => 'November',
+                    'December' => 'Desember'
+                ];
+
+                // Ambil tanggal
+                $tgl = \Carbon\Carbon::parse($row->tanggal_awal)->format('d');
+
+                // Ganti nama bulan dari database (kolom $row->bulan) dengan array di atas
+                // Jika $row->bulan sudah dalam bahasa Inggris (August), ini akan mengubahnya ke (Agustus)
+                $namaBulan = isset($bulanIndo[$row->bulan]) ? $bulanIndo[$row->bulan] : $row->bulan;
+
+                return "$tgl $namaBulan $row->tahun";
             })
             ->editColumn('asisten', fn($row) => $row->asisten ?? '-')
             ->editColumn('fg', fn($row) => $row->fg ?? '-')
@@ -57,6 +81,7 @@ class JadwalPengantinController extends Controller
             ->rawColumns(['action'])
             ->make(true);
     }
+
     public function create()
     {
         $pakets = Paket::all();
@@ -67,11 +92,8 @@ class JadwalPengantinController extends Controller
     {
         $validated = $this->validateRequest($request);
         $mapping = $this->mapBulanTahun($request->tanggal_awal);
-
         JadwalPengantin::create(array_merge($validated, $mapping));
-
-        return redirect()->route('admin.jadwalpengantin.index')
-            ->with('swal_success', 'Jadwal berhasil ditambahkan!');
+        return redirect()->route('admin.jadwalpengantin.index')->with('swal_success', 'Jadwal berhasil ditambahkan!');
     }
 
     public function edit($id)
@@ -93,7 +115,6 @@ class JadwalPengantinController extends Controller
         $jadwal = JadwalPengantin::findOrFail($id);
         $validated = $this->validateRequest($request);
         $mapping = $this->mapBulanTahun($request->tanggal_awal);
-
         $jadwal->update(array_merge($validated, $mapping));
         return redirect()->route('admin.jadwalpengantin.index')->with('swal_success', 'Jadwal diperbarui!');
     }
@@ -121,6 +142,7 @@ class JadwalPengantinController extends Controller
     private function mapBulanTahun($date)
     {
         $d = Carbon::parse($date);
+        // Pastikan menyimpan format Bahasa Indonesia
         $map = ['January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret', 'April' => 'April', 'May' => 'Mei', 'June' => 'Juni', 'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September', 'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'];
         return ['bulan' => $map[$d->format('F')], 'tahun' => $d->format('Y')];
     }

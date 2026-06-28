@@ -14,6 +14,9 @@ class JadwalGown extends Model
         'gown',
         'bulan',
         'tahun',
+        'nama',      // Tambahkan ini
+        'alamat',    // Tambahkan ini
+        'paket_id',  // Tambahkan ini
     ];
 
     // Relasi ke JadwalPengantin

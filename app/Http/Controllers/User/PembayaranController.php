@@ -12,22 +12,34 @@ class PembayaranController extends Controller
 {
     public function index()
     {
-        // PERBAIKAN MUTLAK: Mengubah 'another_column_name' menjadi 'user_id' agar mengunci data Naila
-        $bookings = Booking::where('user_id', Auth::id())
-                    ->whereIn('status', [
-                        'pending', 'PENDING', 
-                        'confirmed', 'CONFIRMED', 
-                        'success', 'SUCCESS', 
-                        'terkonfirmasi', 'TERKONFIRMASI',
-                        'failed', 'FAILED'
-                    ]) 
-                    ->orderBy('updated_at', 'desc')
-                    ->get();
+        // Pastikan memuat relasi paket dan addOns
+        $bookings = Booking::with(['paket', 'addOns', 'pembayarans'])
+            ->where('user_id', Auth::id())
+            ->whereIn('status', [
+                'pending',
+                'PENDING',
+                'confirmed',
+                'CONFIRMED',
+                'success',
+                'SUCCESS',
+                'terkonfirmasi',
+                'TERKONFIRMASI',
+                'failed',
+                'FAILED'
+            ])
+            ->orderBy('updated_at', 'desc')
+            ->get();
 
-        // Melempar variabel 'bookings' secara aman ke view pelanggan
+        // Tambahkan logika hitung total di sini jika ingin lebih bersih
+        $bookings->each(function ($booking) {
+            $hargaPaket = (float) ($booking->paket->harga ?? 0);
+            $totalAddons = (float) $booking->addOns->sum('harga');
+            // Simpan ke atribut virtual agar mudah dipanggil di Blade
+            $booking->total_bersih = $hargaPaket + $totalAddons;
+        });
+
         return view('user.pembayaran.index', compact('bookings'));
     }
-
     public function uploadBukti(Request $request, $id)
     {
         // Validasi file agar hanya gambar yang diizinkan
@@ -42,7 +54,7 @@ class PembayaranController extends Controller
         if ($request->hasFile('bukti_transfer')) {
             $file = $request->file('bukti_transfer');
             $filename = 'BUKTI_' . $id . '_' . time() . '.' . $file->getClientOriginalExtension();
-            
+
             // Simpan ke public/bukti_transfer
             $file->move(public_path('bukti_transfer'), $filename);
 
@@ -52,6 +64,6 @@ class PembayaranController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Bukti pembayaran berhasil diupload!');
+        return redirect()->back()->with('success_bukti', 'Bukti pembayaran berhasil diupload!');
     }
 }

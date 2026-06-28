@@ -39,10 +39,11 @@ class Booking extends Model
     protected $appends = ['total_bayar', 'sisa_tagihan'];
 
     // Relasi ke tabel master Add-ons melalui tabel pivot 'add_ons_booking'
-    public function addOns()
-    {
-        return $this->belongsToMany(AddOn::class, 'add_ons_booking', 'booking_id', 'add_on_id');
-    }
+    // Pastikan di kedua Model (Booking & AddOn)
+public function addOns()
+{
+    return $this->belongsToMany(AddOn::class, 'add_ons_booking', 'booking_id', 'add_on_id');
+}
 
     // Relasi ke Paket
     public function paket()
@@ -67,8 +68,13 @@ class Booking extends Model
     // Tambahkan Accessor untuk Total Harga
     public function getTotalHargaAttribute()
     {
-        // Ambil harga paket dan tambahkan dengan total harga semua add-ons yang berelasi
-        return (int)$this->package_price + $this->addOns->sum('harga');
+        // Harga Paket
+        $hargaPaket = $this->paket->harga; // Pastikan ini mengambil harga paket asli
+
+        // Harga Add-ons (Pastikan di-sum hanya sekali)
+        $hargaAddOns = $this->addOns->sum('harga');
+
+        return $hargaPaket + $hargaAddOns;
     }
     // Logic untuk menghitung sisa tagihan
     public function getSisaTagihanAttribute()

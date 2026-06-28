@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Owner;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 use App\Models\JadwalPengantin;
 use App\Models\Jadwal;
 use App\Models\User;
@@ -60,6 +61,7 @@ class JadwalPengantinController extends Controller
     public function update(Request $request, $id)
     {
         $jadwal = JadwalPengantin::findOrFail($id);
+
         $validated = $request->validate([
             'tanggal_awal' => 'required|date',
             'nama' => 'required',
@@ -79,11 +81,67 @@ class JadwalPengantinController extends Controller
         $validated['tahun'] = $d->format('Y');
 
         $jadwal->update($validated);
-        return redirect()->route('owner.jadwalpengantin.index')->with('swal_success', 'Jadwal diperbarui!');
+
+        // --- LOGIKA KIRIM WA ---
+    if ($request->filled('fg')) {
+        $namaFG = trim($request->fg); 
+        
+        // MENCARI USER: Gunakan 'LIKE' agar lebih toleran terhadap perbedaan penulisan
+        $userFG = User::where('name', 'LIKE', '%' . $namaFG . '%')->first();
+
+        if ($userFG) {
+            // Pastikan kolom yang benar di tabel users Anda (apakah 'phone' atau 'whatsapp_number'?)
+            // Jika nama kolom di database Anda adalah 'phone', maka gunakan $userFG->phone
+            if (!empty($userFG->phone)) {
+                $this->kirimWhatsAppKeKru($userFG, $jadwal, 'Fotografer (FG)');
+            } else {
+                Log::info("DEBUG: User " . $userFG->name . " ditemukan, tapi kolom 'phone' kosong.");
+            }
+        } else {
+            Log::info("DEBUG: User dengan nama " . $namaFG . " tidak ketemu di tabel users.");
+        }
     }
 
+        return redirect()->route('owner.jadwalpengantin.index')->with('swal_success', 'Jadwal diperbarui dan notifikasi dikirim!');
+    }
+    private function kirimWhatsAppKeKru($user, $jadwal, $posisi)
+    {
+        $token = "McjqVVgU8QqgqY3TA3z9";
 
+        // Ganti $user->whatsapp_number dengan $user->phone
+        // Pastikan kolom 'phone' memang ada di tabel users Anda
+        $nomor = trim($user->phone);
 
+        if (empty($nomor)) {
+            Log::info("DEBUG: Kru " . $user->name . " tidak punya data di kolom 'phone'.");
+            return;
+        }
+
+        if (str_starts_with($nomor, '0')) {
+            $nomor = '62' . substr($nomor, 1);
+        }
+
+       $pesan = "🔔 *PENUGASAN BARU: SYSGRA*\n\n" .
+             "Halo *" . $user->name . "*,\n" .
+             "Anda telah didelegasikan sebagai *" . $posisi . "* untuk agenda pernikahan berikut:\n\n" .
+             "--- 📋 DETAIL ACARA 📋 ---\n" .
+            "👰 *Pengantin:* " . $jadwal->nama . "\n" .
+            "📅 *Tanggal:* " . \Carbon\Carbon::parse($jadwal->tanggal_awal)->translatedFormat('d F Y') . "\n" .
+            "📍 *Lokasi:* " . $jadwal->alamat . "\n\n" .
+            "Mohon segera cek dashboard untuk detail pekerjaan.\n" .
+            "© Griya Rias Asmara";
+
+        try {
+            $response = Http::withHeaders(['Authorization' => $token])->post('https://api.fonnte.com/send', [
+                'target'  => $nomor,
+                'message' => $pesan,
+            ]);
+
+            Log::info("DEBUG: Respon Fonnte untuk " . $user->name . ": " . $response->body());
+        } catch (\Exception $e) {
+            Log::error("DEBUG: Gagal kirim WA ke " . $user->name . ": " . $e->getMessage());
+        }
+    }
     public function checkKruAvailability(Request $request) // <--- Ubah nama fungsi ke ini
     {
         $tanggalInput = \Carbon\Carbon::parse($request->tanggal)->format('Y-m-d');

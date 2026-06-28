@@ -52,6 +52,7 @@
                                 <th>Nama Paket</th>
                                 <th>MakeUp</th>
                                 <th>Dekorasi</th>
+                                <th>Layos/Tenda</th>
                                 <th>Dokumentasi</th>
                                 <th>Include</th>
                                 <th>Free</th>
@@ -90,6 +91,7 @@
                     { data: 'nama_paket', name: 'nama_paket', class: 'fw-bold' },
                     { data: 'makeup', name: 'makeup' },
                     { data: 'dekorasi', name: 'dekorasi' },
+                    { data: 'layos', name: 'layos' },
                     { data: 'dokumentasi', name: 'dokumentasi' },
                     { data: 'include', name: 'include' },
                     { data: 'bonus', name: 'bonus' },

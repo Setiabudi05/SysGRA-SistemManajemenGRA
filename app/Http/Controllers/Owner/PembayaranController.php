@@ -10,51 +10,53 @@ use Carbon\Carbon;
 
 class PembayaranController extends Controller
 {
-    /**
-     * Menampilkan halaman utama laporan pembayaran (Owner)
-     */
     public function index()
     {
         return view('owner.pembayaran.index');
     }
 
-    /**
-     * Mengambil data untuk DataTables (Server-Side)
-     */
     public function data(Request $request)
     {
-        // Ambil data dengan relasi paket dan pembayaran
-        $bookings = Booking::with(['paket', 'pembayarans'])
-            ->whereIn('status', ['CONFIRMED', 'COMPLETED'])
-            ->latest()
-            ->get(); // Gunakan get() agar menjadi Collection
+        // 1. Ambil data dalam bentuk Query Builder (tapi jangan get() dulu)
+        $query = Booking::with(['paket', 'addOns', 'pembayarans'])
+            ->whereIn('status', ['CONFIRMED', 'COMPLETED']);
 
-        // Filter berdasarkan logika manual
-        $filteredData = $bookings->filter(function ($row) use ($request) {
-            $totalHarga = $row->paket->harga ?? 0;
-            $totalBayar = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
+        // 2. Jika ada filter TANGGAL, lakukan di database (biar cepat)
+        if ($request->filled('tgl')) {
+            $query->whereDate('event_date', $request->tgl);
+        }
 
-            // Logika Status: Lunas atau Belum Lunas
-            $statusPembayaran = ($totalBayar >= $totalHarga && $totalHarga > 0) ? 'LUNAS' : 'BELUM LUNAS';
+        // 3. Eksekusi query menjadi Collection agar kita bisa memfilter hasil perhitungan
+        $bookings = $query->get();
 
-            if ($request->filled('status') && $statusPembayaran !== $request->status) return false;
-            if ($request->filled('tgl') && Carbon::parse($row->event_date)->format('Y-m-d') !== $request->tgl) return false;
+        // 4. Lakukan Filter STATUS (LUNAS / BELUM LUNAS) pada collection
+        if ($request->filled('status')) {
+            $bookings = $bookings->filter(function ($row) use ($request) {
+                $totalHarga = ($row->paket->harga ?? 0) + $row->addOns->sum('harga');
+                $totalBayar = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
+                $statusPembayaran = ($totalBayar >= $totalHarga && $totalHarga > 0) ? 'LUNAS' : 'BELUM LUNAS';
 
-            return true;
-        });
+                return $statusPembayaran == $request->status;
+            });
+        }
 
-        return DataTables::of($filteredData)
+        // 5. Kirim data ke DataTables
+        return DataTables::of($bookings)
             ->addIndexColumn()
             ->addColumn('tanggal_full', fn($row) => Carbon::parse($row->event_date)->format('d M Y'))
             ->addColumn('pengantin', fn($row) => $row->bride_groom_name)
             ->addColumn('paket_nama', fn($row) => $row->paket->nama_paket ?? '-')
-            ->addColumn('harga_paket', fn($row) => 'Rp ' . number_format($row->paket->harga ?? 0, 0, ',', '.'))
+            ->addColumn('harga_paket', function ($row) {
+                $total = ($row->paket->harga ?? 0) + $row->addOns->sum('harga');
+                return 'Rp ' . number_format($total, 0, ',', '.');
+            })
             ->addColumn('sisa_tagihan', function ($row) {
-                $sisa = ($row->paket->harga ?? 0) - $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
-                return 'Rp ' . number_format(max(0, $sisa), 0, ',', '.');
+                $totalHarga = ($row->paket->harga ?? 0) + $row->addOns->sum('harga');
+                $terbayar = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
+                return 'Rp ' . number_format(max(0, $totalHarga - $terbayar), 0, ',', '.');
             })
             ->addColumn('status_pembayaran', function ($row) {
-                $totalHarga = $row->paket->harga ?? 0;
+                $totalHarga = ($row->paket->harga ?? 0) + $row->addOns->sum('harga');
                 $totalBayar = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
                 return ($totalBayar >= $totalHarga && $totalHarga > 0)
                     ? '<span class="badge bg-primary">LUNAS</span>'
@@ -64,21 +66,17 @@ class PembayaranController extends Controller
             ->rawColumns(['status_pembayaran', 'action'])
             ->make(true);
     }
-    /**
-     * Menampilkan detail riwayat pembayaran per pesanan
-     */
+
     public function histori($id)
     {
-        $booking = Booking::with(['paket', 'pembayarans'])->findOrFail($id);
-
-        $totalHarga = $booking->paket->harga ?? 0;
-        $totalBayar = $booking->pembayarans
-            ->whereIn('status_pembayaran', ['success', 'lunas', null])
-            ->sum('jumlah_bayar');
+        $booking = Booking::with(['paket', 'pembayarans', 'addOns'])->findOrFail($id);
+        $totalHarga = ($booking->paket->harga ?? 0) + $booking->addOns->sum('harga');
+        $totalBayar = $booking->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
         $sisaTagihan = $totalHarga - $totalBayar;
 
         return view('owner.pembayaran.histori', compact('booking', 'totalHarga', 'totalBayar', 'sisaTagihan'));
     }
+
 
     /**
      * Menampilkan halaman cetak nota pembayaran

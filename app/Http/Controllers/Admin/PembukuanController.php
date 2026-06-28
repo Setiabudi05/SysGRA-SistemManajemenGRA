@@ -55,6 +55,20 @@ class PembukuanController extends Controller
         return $this->getDataTable('pengeluaran', $request->input('tanggal', now()->toDateString()));
     }
 
+    public function getSaldo(Request $request)
+    {
+        $tanggal = $request->input('tanggal', now()->toDateString());
+
+        $pemasukan = Pembukuan::whereDate('tanggal', $tanggal)->where('tipe', 'pemasukan')->sum('nominal');
+        $pengeluaran = Pembukuan::whereDate('tanggal', $tanggal)->where('tipe', 'pengeluaran')->sum('nominal');
+
+        return response()->json([
+            'pemasukan' => $pemasukan,
+            'pengeluaran' => $pengeluaran,
+            'saldo' => $pemasukan - $pengeluaran
+        ]);
+    }
+
     // Form Tambah
     public function createPemasukan()
     {

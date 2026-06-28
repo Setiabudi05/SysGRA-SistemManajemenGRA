@@ -66,42 +66,60 @@ class PembayaranController extends Controller
      */
     public function data(Request $request)
     {
-        // 1. Ambil data dengan eager loading, lalu ubah ke collection dengan ->get()
+        // 1. Ambil data dengan relasi yang dibutuhkan
         $bookings = Booking::with(['paket', 'pembayarans', 'addOns'])->get();
 
-        // 2. Terapkan filter Anda PERSIS (akan diproses di memori)
+        // 2. Filter data
         $filteredData = $bookings->filter(function ($row) use ($request) {
-            $harga = $row->total_harga; // Menggunakan accessor total_harga
+            $harga = $row->total_harga;
             $total = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
             $sisa = $harga - $total;
 
-            // Logika Status
             $status = ($sisa <= 0 && $total > 0) ? 'LUNAS' : (strtoupper($row->status) == 'CONFIRMED' ? 'CONFIRMED' : 'PENDING');
 
-            if ($request->filled('status') && $status !== $request->status) {
-                return false;
-            }
+            if ($request->filled('status') && $status !== $request->status) return false;
+            if ($request->filled('tgl') && \Carbon\Carbon::parse($row->event_date)->format('Y-m-d') !== $request->tgl) return false;
 
-            if ($request->filled('tgl') && \Carbon\Carbon::parse($row->event_date)->format('Y-m-d') !== $request->tgl) {
-                return false;
-            }
+            return true;
+        });
+        $filteredData = $bookings->filter(function ($row) use ($request) {
+            // PERBAIKAN: Hitung total harga murni (harga paket + total add-ons)
+            $hargaPaket = (int) $row->paket->harga;
+            $totalAddons = (int) $row->addOns->sum('harga');
+            $totalTagihan = $hargaPaket + $totalAddons;
+
+            $totalTerbayar = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
+            $sisa = $totalTagihan - $totalTerbayar;
+
+            // Logika Status
+            $status = ($sisa <= 0 && $totalTerbayar > 0) ? 'LUNAS' : (strtoupper($row->status) == 'CONFIRMED' ? 'CONFIRMED' : 'PENDING');
+
+            if ($request->filled('status') && $status !== $request->status) return false;
+            if ($request->filled('tgl') && \Carbon\Carbon::parse($row->event_date)->format('Y-m-d') !== $request->tgl) return false;
 
             return true;
         });
 
-        // 3. Masukkan collection yang sudah terfilter ke DataTables
+        // 3. Setup DataTables
         return DataTables::of($filteredData)
             ->addIndexColumn()
-            ->addColumn('tanggal_acara', fn($row) => Carbon::parse($row->event_date)->format('d M Y'))
+
+            // --- PERBAIKAN: Format Tanggal ke Bahasa Indonesia (20 Juni 2026) ---
+            ->addColumn('tanggal_acara', function ($row) {
+                \Carbon\Carbon::setLocale('id'); // Pastikan locale diset ke Indonesia
+                return \Carbon\Carbon::parse($row->event_date)->translatedFormat('d F Y');
+            })
+            // --------------------------------------------------------------------
+
             ->addColumn('pengantin', fn($row) => $row->bride_groom_name)
             ->addColumn('total_bayar', function ($row) {
                 $total = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
                 return 'Rp ' . number_format($total, 0, ',', '.');
             })
             ->addColumn('sisa', function ($row) {
-                $harga = $row->total_harga;
-                $total = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
-                return 'Rp ' . number_format(max(0, $harga - $total), 0, ',', '.');
+                $totalTagihan = (int)$row->paket->harga + (int)$row->addOns->sum('harga');
+                $totalTerbayar = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
+                return 'Rp ' . number_format(max(0, $totalTagihan - $totalTerbayar), 0, ',', '.');
             })
             ->addColumn('status', function ($row) {
                 $harga = $row->total_harga;

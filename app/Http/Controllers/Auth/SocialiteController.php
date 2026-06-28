@@ -6,16 +6,16 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Socialite\Facades\Socialite; 
-use Illuminate\Support\Str; 
-use Illuminate\Support\Facades\Log; 
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class SocialiteController extends Controller
 {
     /**
      * Mengarahkan pengguna ke halaman autentikasi Google.
      */
-    public function redirectToProvider() 
+    public function redirectToProvider()
     {
         return Socialite::driver('google')->redirect();
     }
@@ -23,32 +23,32 @@ class SocialiteController extends Controller
     /**
      * Menangani callback dari Google setelah autentikasi.
      */
-    public function handleProviderCallback() 
+    public function handleProviderCallback()
     {
         try {
-            $socialUser = Socialite::driver('google')->user(); 
+            $googleUser = Socialite::driver('google')->user();
         } catch (\Exception $e) {
-            Log::error("Google Socialite Error (SYSGRA): " . $e->getMessage());
-            return redirect()->route('login')->with('error', 'Login dengan Google gagal. Silakan coba lagi.');
+            return redirect()->route('login')->with('error', 'Gagal login dengan Google.');
         }
 
-        // Cari user berdasarkan email
-        $user = User::where('email', $socialUser->getEmail())->first();
+        // Gunakan updateOrCreate agar jika user sudah pernah login, dia tidak terduplikasi
+        $user = User::updateOrCreate(
+            ['email' => $googleUser->getEmail()],
+            [
+                'name'      => $googleUser->getName(),
+                'google_id' => $googleUser->getId(),
+                'password'  => bcrypt('password_acak_123'), // Wajib ada password meski login google
+                // INI BAGIAN PENTINGNYA:
+                'role'      => 'pelanggan',
+            ]
+        );
 
-        if ($user) {
-            // Jika user sudah ada, langsung login
-            Auth::login($user, true);
-        } else {
-            // Jika user belum ada (pendaftaran baru via Google)
-            $user = User::create([
-                'name'              => $socialUser->getName() ?? $socialUser->getNickname() ?? explode('@', $socialUser->getEmail())[0],
-                'email'             => $socialUser->getEmail(),
-                'password'          => bcrypt(Str::random(16)), // Password acak aman
-                'role'              => 'user',                  // Default role di SYSGRA
-                'email_verified_at' => now(),                   // Langsung diverifikasi
-            ]);
-            Auth::login($user, true);
-        }
+        // Login user ke sistem
+        Auth::login($user);
+
+        // Redirect berdasarkan role (sama dengan logika di routes)
+        return redirect()->route('user.dashboard');
+
 
         /**
          * 🌟 PENYESUAIAN SYSGRA 🌟
@@ -60,6 +60,6 @@ class SocialiteController extends Controller
 
         // Pengalihan standar untuk user SYSGRA (Landing Page atau Dashboard User)
         // Jika Anda ingin ke dashboard user, gunakan: route('profile') atau route('home')
-        return redirect()->intended(route('home')); 
+        return redirect()->intended(route('home'));
     }
 }

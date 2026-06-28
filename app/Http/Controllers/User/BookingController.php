@@ -37,16 +37,11 @@ class BookingController extends Controller
             'addons.*'         => 'exists:add_ons,id',
         ]);
 
-        // 1. Inisialisasi variabel di luar try
-        $totalHarga = 0;
-
         try {
+            // 1. Ambil data paket
             $paket = Paket::findOrFail($request->paket_id);
 
-            // 2. Hitung harga add-ons dan totalnya di sini
-            $hargaAddons = AddOn::whereIn('id', $request->addons ?? [])->sum('harga');
-            $totalHarga = $paket->harga + $hargaAddons;
-
+            // 2. Hitung Durasi (tetap dihitung untuk kebutuhan data simpan)
             $dateRangeString = $request->event_date_range;
             $duration = 1;
 
@@ -60,7 +55,13 @@ class BookingController extends Controller
                 $eventDate = Carbon::parse($dateRangeString)->format('Y-m-d');
             }
 
-            // Validasi Kuota
+            // 3. LOGIKA HARGA FLAT (TIDAK ADA PENGALI DURASI)
+            $hargaAddons = AddOn::whereIn('id', $request->addons ?? [])->sum('harga');
+
+            // Total = Harga Paket (Flat) + Harga Add-ons (Flat)
+            $totalHarga = $paket->harga + $hargaAddons;
+
+            // 4. Validasi Kuota
             $maxQuotaPerDay = 5;
             $totalJobOnDay = Booking::whereIn('status', ['pending', 'confirmed', 'success'])
                 ->where('event_date', $eventDate)
@@ -70,7 +71,7 @@ class BookingController extends Controller
                 return back()->withErrors(['event_date_range' => 'Kuota penuh untuk tanggal tersebut.'])->withInput();
             }
 
-            // Simpan Booking
+            // 5. Simpan ke Database
             $booking = Booking::create([
                 'customer_name'    => $request->customer_name,
                 'whatsapp_number'  => $request->whatsapp_number,
@@ -83,20 +84,20 @@ class BookingController extends Controller
                 'event_duration'   => $duration,
                 'paket_id'         => $request->paket_id,
                 'package_name'     => $paket->nama_paket,
-                'package_price'    => (string) $totalHarga, // Menggunakan variabel yang sudah dihitung
+                'package_price'    => (string) $totalHarga, // Nilai sudah flat
                 'notes'            => $request->notes,
                 'status'           => 'draft',
                 'user_id'          => Auth::id(),
             ]);
 
-            // Simpan Relasi Add-ons (Tabel Pivot)
+            // 6. Simpan Relasi Add-ons
             if ($request->has('addons')) {
                 $booking->addOns()->attach($request->addons);
             }
 
             return redirect()->route('user.keranjang')->with('success_booking', 'Berhasil disimpan ke keranjang!');
-        } catch (Exception $e) {
-            return back()->withErrors(['event_date_range' => 'Gagal: ' . $e->getMessage()])->withInput();
+        } catch (\Exception $e) {
+            return back()->withErrors(['event_date_range' => 'Gagal menyimpan pesanan: ' . $e->getMessage()])->withInput();
         }
     }
     public function keranjang()

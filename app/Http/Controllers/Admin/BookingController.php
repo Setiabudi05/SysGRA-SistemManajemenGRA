@@ -34,20 +34,20 @@ class BookingController extends Controller
         // 1. Gunakan subquery untuk menghitung total harga (Paket + Add-ons)
         // agar sisa_tagihan di tabel pesanan selalu akurat & sinkron
         $query = DB::table('bookings')
+            ->join('pakets', 'bookings.package_name', '=', 'pakets.nama_paket') // Join ke tabel pakets
             ->select([
                 'bookings.id',
                 'bookings.customer_name',
                 'bookings.whatsapp_number',
                 'bookings.bride_groom_name',
                 'bookings.package_name',
-                'bookings.package_price',
                 'bookings.event_date',
                 'bookings.status',
-                // Menghitung total harga: Harga Paket + Total Harga Add-ons
-                DB::raw('(SELECT package_price + IFNULL(SUM(add_ons.harga), 0) 
+                // LOGIKA: Harga Paket MURNI + Total Add-ons (TIDAK ADA PENGALI DURASI)
+                DB::raw('(pakets.harga + (SELECT IFNULL(SUM(add_ons.harga), 0) 
                       FROM add_ons_booking 
                       LEFT JOIN add_ons ON add_ons.id = add_ons_booking.add_on_id 
-                      WHERE add_ons_booking.booking_id = bookings.id) as total_tagihan_final')
+                      WHERE add_ons_booking.booking_id = bookings.id)) as total_tagihan_final')
             ])
             ->latest('bookings.created_at');
 
@@ -70,11 +70,10 @@ class BookingController extends Controller
                     ->whereIn('status_pembayaran', ['success', 'lunas', null])
                     ->sum('jumlah_bayar');
 
-                // Menggunakan 'total_tagihan_final' dari subquery
+                // Hitung sisa berdasarkan total_tagihan_final yang sudah benar
                 $sisa = (int)$row->total_tagihan_final - (int)$terbayar;
                 return 'Rp ' . number_format(max(0, $sisa), 0, ',', '.');
             })
-            // Mengedit tampilan harga paket agar sesuai total final
             ->editColumn('package_price', fn($row) => 'Rp ' . number_format($row->total_tagihan_final, 0, ',', '.'))
             ->editColumn('status', function ($row) {
                 $class = ['PENDING' => 'bg-light-warning text-warning', 'CONFIRMED' => 'bg-light-primary text-primary', 'COMPLETED' => 'bg-light-success text-success', 'DRAFT' => 'bg-secondary text-white'][strtoupper($row->status)] ?? 'bg-secondary';
@@ -209,41 +208,25 @@ class BookingController extends Controller
     }
     public function updateStatus(Request $request, $id)
     {
-        $booking = Booking::findOrFail($id);
+        // Load booking dengan relasi paket dan addOns agar total_harga bisa dihitung
+        $booking = Booking::with(['paket', 'addOns'])->findOrFail($id);
         $statusInput = strtolower($request->status);
 
-        // LOGIKA: KONFIRMASI DP MANUAL (Hanya diproses jika status saat ini bener-bener masih PENDING)
-        if ($statusInput == 'confirmed') {
-            if (strtoupper($booking->status) == 'PENDING') {
-                $booking->update(['status' => 'CONFIRMED']);
-                $this->kirimWhatsApp($booking);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Pesanan Berhasil Dikonfirmasi Manual & WhatsApp Terkirim!'
-                ]);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pesanan sudah berstatus Terkonfirmasi sebelumnya.'
-            ]);
-        }
-
-        // LOGIKA: SELESAI / PELUNASAN (COMPLETED)
         if ($statusInput == 'completed') {
+            // MENGGUNAKAN ACCESSOR YANG ANDA BUAT (Sudah pasti akurat 35.250.000)
+            $totalTagihan = (int)$booking->total_harga;
+
+            // HITUNG TOTAL BAYAR
             $totalBayar = DB::table('pembayarans')
                 ->where('pesanan_id', $booking->id)
-                ->where(function ($q) {
-                    $q->whereRaw('LOWER(status_pembayaran) = ?', ['success'])
-                        ->orWhereRaw('LOWER(status_pembayaran) = ?', ['lunas'])
-                        ->orWhereNull('status_pembayaran');
-                })
+                ->whereIn('status_pembayaran', ['success', 'lunas', null])
                 ->sum('jumlah_bayar');
 
-            $sisa = (int)$booking->package_price - (int)$totalBayar;
+            // HITUNG SISA
+            $sisa = $totalTagihan - (int)$totalBayar;
 
-            if ($sisa > 0) {
+            // Toleransi selisih untuk pembulatan
+            if ($sisa > 1000) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Gagal! Masih ada sisa tagihan Rp ' . number_format($sisa, 0, ',', '.')
@@ -251,71 +234,40 @@ class BookingController extends Controller
             }
 
             $booking->update(['status' => 'COMPLETED']);
-            return response()->json(['success' => true, 'message' => 'Pesanan Berhasil Diselesaikan!']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pesanan Berhasil Diselesaikan!'
+            ]);
         }
-
-        return response()->json(['success' => false, 'message' => 'Aksi tidak dikenali.']);
     }
-
     /**
      * Menghapus data pesanan/booking (SINKRON HAPUS BERUNTUN GLOBAL)
      */
     public function destroy($id)
-    {
-        DB::beginTransaction();
-        try {
-            $booking = Booking::findOrFail($id);
+{
+    DB::beginTransaction();
+    try {
+        // 1. Hapus manual dari tabel pivot dengan query builder (menghindari error relasi)
+        DB::table('add_ons_booking')->where('booking_id', $id)->delete();
 
-            // 1. Ambil semua ID pembayaran yang terikat dengan pesanan/booking ini
-            $pembayaranIds = DB::table('pembayarans')
-                ->where('pesanan_id', $booking->id)
-                ->pluck('id');
+        // 2. Hapus data terkait lainnya
+        DB::table('pembayarans')->where('pesanan_id', $id)->delete();
 
-            // 2. Bersihkan catatan di jurnal pembukuan kas berdasarkan id pembayaran tersebut
-            if ($pembayaranIds->isNotEmpty()) {
-                DB::table('pembukuans')->whereIn('pembayaran_id', $pembayaranIds)->delete();
-            }
+        // 3. Hapus booking
+        Booking::where('id', $id)->delete();
 
-            // 3. Bumihanguskan semua riwayat cicilan terkait di tabel pembayarans
-            DB::table('pembayarans')->where('pesanan_id', $booking->id)->delete();
-
-            // 4. Hapus data utama di tabel bookings
-            $booking->delete();
-
-            DB::commit();
-            return response()->json([
-                'success' => true,
-                'message' => 'Pesanan dan seluruh riwayat pembayaran terkait berhasil dihapus permanen!'
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menghapus pesanan: ' . $e->getMessage()
-            ], 500);
-        }
+        DB::commit();
+        return response()->json(['success' => true, 'message' => 'Berhasil dihapus!']);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
-
+}
     public function print($id)
     {
         $booking = Booking::findOrFail($id);
         $pdf = Pdf::loadView('admin.booking.print_pdf', compact('booking'))->setPaper('A4', 'portrait');
         return $pdf->stream("Formulir_Booking_{$booking->customer_name}.pdf");
-    }
-
-    private function kirimWhatsApp($booking)
-    {
-        $token = "TOKEN_FONNTE_ANDA";
-        $pesan = "Halo " . $booking->customer_name . ", DP pesanan Anda di Griya Rias Asmara telah kami terima. Status pesanan Anda kini: TERKONFIRMASI. Terima kasih.";
-
-        try {
-            Http::withHeaders(['Authorization' => $token])->post('https://api.fonnte.com/send', [
-                'target'  => $booking->whatsapp_number,
-                'message' => $pesan,
-                'role'    => 'pelanggan'
-            ]);
-        } catch (\Exception $e) {
-            // Log error jika diperlukan
-        }
     }
 }

@@ -68,19 +68,19 @@
                             <textarea name="dekorasi" rows="4" class="form-control shadow-sm"></textarea>
                         </div>
                         <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Detail Layos/Tenda</label>
+                            <textarea name="layos" rows="4" class="form-control shadow-sm"></textarea>
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">Detail Dokumentasi</label>
                             <textarea name="dokumentasi" rows="4" class="form-control shadow-sm"></textarea>
                         </div>
-                    </div>
-
-                    {{-- Baris 3: Include & Free (2 Kolom - dibuat lebih lebar) --}}
-                    <div class="row justify-content-center">
-                        <div class="col-md-6 mb-3">
+                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold text-success"><i
                                     class="bi bi-check-circle me-1"></i>Include</label>
                             <textarea name="include" rows="4" class="form-control shadow-sm border-success"></textarea>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold text-warning"><i class="bi bi-gift me-1"></i>Free
                                 (Bonus)</label>
                             <textarea name="bonus" rows="4" class="form-control shadow-sm border-warning"></textarea>

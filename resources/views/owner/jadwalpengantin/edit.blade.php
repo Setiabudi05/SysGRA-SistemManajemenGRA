@@ -161,7 +161,12 @@
     <script>
         $(document).ready(function () {
             // Inisialisasi Select2
-            $('#asisten-select').select2({ theme: 'bootstrap-5', width: '100%' });
+            $('#asisten-select').select2({
+                theme: 'bootstrap-5',
+                placeholder: "-- Pilih Asisten --",
+                allowClear: true,
+                width: '100%'
+            });
             $('.status-trigger').select2({ theme: 'bootstrap-5', width: '100%' });
 
             // Event Submit Form

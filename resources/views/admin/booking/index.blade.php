@@ -128,7 +128,8 @@
         });
 
         // Fungsi Hapus Pesanan
-        function hapusBooking(id) {
+        // Pastikan fungsi ini berada di luar $(document).ready
+        window.hapusBooking = function (id) {
             Swal.fire({
                 title: "Hapus Pesanan?",
                 text: "Data pesanan akan dihapus permanen!",
@@ -141,7 +142,9 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ url('admin/booking/destroy') }}/" + id,
+                        // Gunakan route helper yang benar agar path tidak rusak
+                        // Ganti bagian URL di AJAX Anda menjadi:
+                        url: "{{ route('admin.booking.destroy', ':id') }}".replace(':id', id),
                         type: "DELETE",
                         data: { _token: "{{ csrf_token() }}" },
                         success: function (res) {
@@ -153,6 +156,9 @@
                                 showConfirmButton: false
                             });
                             if (res.success) table.ajax.reload(null, false);
+                        },
+                        error: function (err) {
+                            Swal.fire('Gagal!', 'Terjadi kesalahan saat menghapus data.', 'error');
                         }
                     });
                 }

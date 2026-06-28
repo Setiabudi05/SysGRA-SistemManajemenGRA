@@ -199,7 +199,7 @@
 @push('js')
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>
-    $(document).ready(function() {
+         $(document).ready(function() {
         function hitungTotal() {
             let hargaPaket = parseFloat($('#select_paket').find(':selected').data('harga')) || 0;
             let hargaAddons = 0;
@@ -216,6 +216,6 @@
             $('#customer_name').val($(this).find(':selected').data('name') || '');
         });
     });
-</script>
+    </script>
 @endpush
 

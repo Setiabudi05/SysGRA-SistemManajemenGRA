@@ -16,8 +16,7 @@ class PaketController extends Controller
     }
     public function data(Request $request)
     {
-        $pakets = Paket::select(['id', 'nama_paket', 'tahun', 'makeup', 'dekorasi', 'dokumentasi', 'include', 'bonus', 'harga']);
-
+       $pakets = Paket::select(['id', 'nama_paket', 'tahun', 'makeup', 'dekorasi', 'layos', 'dokumentasi', 'include', 'bonus', 'harga']);
         // Filter Tahun
         if ($request->has('tahun') && !empty($request->tahun)) {
             $pakets->where('tahun', $request->tahun);
@@ -61,11 +60,13 @@ class PaketController extends Controller
             'tahun'      => 'required|numeric',
             'makeup'     => 'nullable|string',
             'dekorasi'   => 'nullable|string',
+            'layos'       => 'nullable|string',
             'dokumentasi' => 'nullable|string',
-            'include'    => 'nullable|string', // Tambahkan ini
-            'bonus'      => 'nullable|string', // Tambahkan ini
+            'include'    => 'nullable|string',
             'harga'      => 'required|numeric|min:0',
         ]);
+
+        $pakets = Paket::select(['id', 'nama_paket', 'tahun', 'makeup', 'dekorasi', 'layos', 'dokumentasi', 'include', 'bonus', 'harga']);
 
         Paket::create($validated);
         return redirect()->route('admin.paket.index')->with('swal_success', 'Paket berhasil ditambah!');
@@ -84,12 +85,14 @@ class PaketController extends Controller
             'nama_paket'  => 'required|string|max:255',
             'tahun'       => 'required|numeric',
             'makeup'      => 'nullable|string',
+            'layos'       => 'nullable|string',
             'dekorasi'    => 'nullable|string',
             'dokumentasi' => 'nullable|string',
-            'include'     => 'nullable|string', // Kolom baru
-            'bonus'       => 'nullable|string', // Kolom baru
+            'include'     => 'nullable|string',
+            'bonus'       => 'nullable|string',
             'harga'       => 'required|numeric|min:0',
         ]);
+        $pakets = Paket::select(['id', 'nama_paket', 'tahun', 'makeup', 'dekorasi', 'layos', 'dokumentasi', 'include', 'bonus', 'harga']);
 
         // 2. Cari data paket berdasarkan ID
         $paket = Paket::findOrFail($id);

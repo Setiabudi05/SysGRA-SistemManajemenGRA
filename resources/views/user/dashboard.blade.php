@@ -19,25 +19,25 @@
     </div>
 
     {{-- STATISTIK --}}
-    <div class="row">
-        @foreach([
-            ['icon' => 'lock-fill', 'title' => 'Total Pesanan', 'val' => ($total_pesanan ?? 0).' Paket', 'color' => 'text-primary', 'bg' => 'bg-primary-light'],
-            ['icon' => 'wallet2', 'title' => 'Status Terakhir', 'val' => ($status_terakhir ?? 'DRAFT'), 'color' => 'text-success', 'bg' => 'bg-success-light'],
-            ['icon' => 'cash-stack', 'title' => 'Sisa Tagihan', 'val' => 'Rp '.number_format($sisa_tagihan ?? 0, 0, ',', '.'), 'color' => 'text-danger', 'bg' => 'bg-danger-light']
-        ] as $stat)
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0" style="border-radius: 20px;">
-                <div class="card-body p-4 d-flex align-items-center">
-                    <div class="{{ $stat['bg'] }} p-3 rounded-3 me-3 {{ $stat['color'] }}"><i class="bi bi-{{ $stat['icon'] }} fs-4"></i></div>
-                    <div>
-                        <p class="text-muted mb-0 small">{{ $stat['title'] }}</p>
-                        <h5 class="fw-bold mb-0 {{ $stat['color'] }}">{{ $stat['val'] }}</h5>
-                    </div>
+<div class="row">
+    @foreach([
+        ['icon' => 'lock-fill', 'title' => 'Total Pesanan', 'val' => ($total_pesanan ?? 0).' Paket', 'color' => 'text-primary', 'bg' => 'bg-primary-light'],
+        ['icon' => 'wallet2', 'title' => 'Status Terakhir', 'val' => ($status_terakhir ?? 'DRAFT'), 'color' => 'text-success', 'bg' => 'bg-success-light'],
+        ['icon' => 'cash-stack', 'title' => 'Sisa Tagihan', 'val' => 'Rp '.number_format($sisa_tagihan ?? 0, 0, ',', '.'), 'color' => 'text-danger', 'bg' => 'bg-danger-light']
+    ] as $stat)
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0" style="border-radius: 20px;">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="{{ $stat['bg'] }} p-3 rounded-3 me-3 {{ $stat['color'] }}"><i class="bi bi-{{ $stat['icon'] }} fs-4"></i></div>
+                <div>
+                    <p class="text-muted mb-0 small">{{ $stat['title'] }}</p>
+                    <h5 class="fw-bold mb-0 {{ $stat['color'] }}">{{ $stat['val'] }}</h5>
                 </div>
             </div>
         </div>
-        @endforeach
     </div>
+    @endforeach
+</div>
 
    {{-- ALUR PEMESANAN (Ditarik naik lebih tinggi) --}}
     <div class="card shadow-sm border-0 mt-n5" style="border-radius: 20px; position: relative; z-index: 1;">

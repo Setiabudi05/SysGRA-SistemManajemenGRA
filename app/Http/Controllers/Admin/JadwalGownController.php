@@ -8,7 +8,6 @@ use App\Models\JadwalGown;
 use App\Models\JadwalPengantin;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class JadwalGownController extends Controller
 {
@@ -19,10 +18,8 @@ class JadwalGownController extends Controller
 
     public function data(Request $request)
     {
-        // Mengambil data utama dari Jadwal Pengantin agar otomatis terisi
-        $query = \App\Models\JadwalPengantin::with(['paket', 'jadwalGown'])->orderBy('tanggal_awal', 'asc');
+        $query = JadwalPengantin::with(['paket', 'jadwalGown'])->orderBy('tanggal_awal', 'asc');
 
-        // Prioritaskan filter tanggal spesifik
         if ($request->filled('tanggal')) {
             $query->whereDate('tanggal_awal', $request->tanggal);
         } else {
@@ -37,27 +34,26 @@ class JadwalGownController extends Controller
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('tanggal_full', function ($row) {
-                $awal = $row->tanggal_awal ? \Carbon\Carbon::parse($row->tanggal_awal)->format('d') : '-';
-                $akhir = $row->tanggal_akhir ? \Carbon\Carbon::parse($row->tanggal_akhir)->format('d') : null;
-                $bulanTahun = $row->bulan . ' ' . $row->tahun;
-                return ($akhir && $awal != $akhir) ? "$awal - $akhir $bulanTahun" : "$awal $bulanTahun";
+                $awal = $row->tanggal_awal ? Carbon::parse($row->tanggal_awal)->format('d') : '-';
+                return "$awal {$row->bulan} {$row->tahun}";
             })
             ->addColumn('paket', fn($row) => $row->paket?->nama_paket ?? '-')
-            // Menampilkan rincian busana
             ->addColumn('gown_detail', function ($row) {
-                return $row->jadwalGown->nama_gown ?? '<span class="badge bg-light-secondary text-muted">Belum diset</span>';
+                return $row->jadwalGown ? $row->jadwalGown->gown : '<span class="text-muted small">Belum diset</span>';
             })
             ->addColumn('action', function ($row) {
-                $gownId = $row->jadwalGown ? $row->jadwalGown->id : 'null';
+                // Alur mengikuti Dekor: Mengarahkan ke edit ID Pengantin
+                $editUrl = route('admin.jadwalgown.edit', ['id' => $row->id]);
+                $gownId = $row->jadwalgown ? $row->jadwalGown->id : 'null';
                 return '
-            <div class="d-flex justify-content-center gap-2">
-                <a href="' . route('admin.jadwalgown.edit', $row->id) . '" class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
-                    <i class="bi bi-pencil-square"></i> Edit
-                </a>
-                <button onclick="hapusGown(' . $gownId . ')" class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
-                    <i class="bi bi-trash"></i> Hapus
-                </button>
-            </div>';
+    <div class="d-flex justify-content-center gap-2">
+        <a href="' . $editUrl . '" class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
+            <i class="bi bi-pencil-square"></i> Edit
+        </a>
+        <button onclick="hapusGown(' . $gownId . ')" class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
+            <i class="bi bi-trash"></i> Hapus
+        </button>
+    </div>';
             })
             ->rawColumns(['gown_detail', 'action'])
             ->make(true);
@@ -73,47 +69,36 @@ class JadwalGownController extends Controller
         return view('admin.jadwalgown.create', compact('jadwals'));
     }
 
-    public function store(Request $request)
-    {
-        $validated = $this->validateRequest($request);
-        $jadwalPengantin = JadwalPengantin::findOrFail($request->jadwal_pengantin_id);
-
-        if (JadwalGown::where('jadwal_pengantin_id', $jadwalPengantin->id)->exists()) {
-            return back()->withErrors(['error' => 'Jadwal ini sudah memiliki data Gown.']);
-        }
-
-        $sync = $this->syncWithJadwal($jadwalPengantin);
-        $data = array_merge($validated, $sync);
-        JadwalGown::create($data);
-
-        // Redirect ke filter sesuai bulan dan tahun data yang baru dibuat
-        return redirect()->route('admin.jadwalgown.index', [
-            'bulan' => $sync['bulan'],
-            'tahun' => $sync['tahun']
-        ])->with('swal_success', 'Jadwal berhasil ditambahkan!');
-    }
-
+    // Pastikan fungsi edit mengirim 'jadwal' dan 'pengantin'
     public function edit($id)
     {
-        $jadwalGown = JadwalGown::findOrFail($id);
-        $jadwals = JadwalPengantin::orderBy('tanggal_awal', 'asc')->get();
-        return view('admin.jadwalgown.edit', compact('jadwalGown', 'jadwals'));
+        // Kita ambil pengantinnya dulu
+        $pengantin = JadwalPengantin::with(['paket', 'jadwalGown'])->findOrFail($id);
+
+        // Kita siapkan objek Gown (jika null, buat objek baru)
+        $jadwal = $pengantin->jadwalGown ?? new JadwalGown();
+
+        return view('admin.jadwalgown.edit', compact('jadwal', 'pengantin'));
     }
 
     public function update(Request $request, $id)
     {
-        $jadwalGown = JadwalGown::findOrFail($id);
-        $validated = $this->validateRequest($request);
-        $jadwalPengantin = JadwalPengantin::findOrFail($request->jadwal_pengantin_id);
+        $request->validate(['gown' => 'required']);
+        $p = JadwalPengantin::findOrFail($id);
 
-        $data = array_merge($validated, $this->syncWithJadwal($jadwalPengantin));
-        $jadwalGown->update($data);
+        JadwalGown::updateOrCreate(
+            ['jadwal_pengantin_id' => $id],
+            [
+                'gown' => $request->gown,
+                'nama' => $p->nama,
+                'alamat' => $p->alamat,
+                'paket_id' => $p->paket_id,
+                'bulan' => $p->bulan,
+                'tahun' => $p->tahun,
+            ]
+        );
 
-        // Redirect menggunakan parameter 'last_filter' dari hidden input
-        return redirect()->route('admin.jadwalgown.index', [
-            'bulan' => $request->last_bulan,
-            'tahun' => $request->last_tahun
-        ])->with('swal_success', 'Jadwal berhasil diperbarui!');
+        return redirect()->route('admin.jadwalgown.index')->with('success', 'Data berhasil diperbarui!');
     }
 
     /**

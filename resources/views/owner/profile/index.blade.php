@@ -46,7 +46,7 @@
                 <div class="col-md-8">
                     <div class="card shadow-sm border-0">
                         <div class="card-body p-4">
-                            <form action="{{ route('admin.profile.update') }}" method="POST">
+                            <form action="{{ route('owner.profile.update') }}" method="POST">
                                 @csrf @method('PUT')
 
                                 <h5 class="fw-bold mb-4 border-bottom pb-2">Informasi Dasar</h5>

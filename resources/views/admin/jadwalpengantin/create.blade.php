@@ -1,3 +1,9 @@
+@php
+    // Mengambil user berdasarkan kolom jabatan masing-masing
+    $kruAsisten = \App\Models\User::where('role', 'kru')->where('jabatan', 'asisten')->get();
+    $kruFG      = \App\Models\User::where('role', 'kru')->where('jabatan', 'fg')->get();
+    $kruLayos   = \App\Models\User::where('role', 'kru')->where('jabatan', 'layos')->get();
+@endphp
 @extends('layouts.master')
 @section('title', 'Tambah Jadwal Pengantin')
 

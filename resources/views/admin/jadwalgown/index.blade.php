@@ -120,7 +120,7 @@
                 },
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
-                    { data: 'tanggal_full', name: 'tanggal_awal' },
+                    { data: 'tanggal_full', name: 'tanggal_full' },
                     { data: 'nama', name: 'nama', class: 'fw-bold text-primary' },
                     { data: 'alamat', name: 'alamat' },
                     { data: 'paket', name: 'paket' },

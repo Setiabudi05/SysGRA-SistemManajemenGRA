@@ -42,21 +42,16 @@
                         <tbody>
                             @forelse($bookings as $b)
                                 @php
-                                    // Mengambil total harga final (Paket + Add-ons)
-                                    $hargaBersih = (float) $b->total_harga;
+                                    // HARGA BERSIH = Harga Paket Saja + Total Add-ons (Durasi TIDAK dipakai)
+                                    $hargaBersih = (float) ($b->paket->harga ?? 0) + (float) $b->addOns->sum('harga');
 
-                                    $totalTerbayar = \DB::table('pembayarans')
-                                        ->where('pesanan_id', $b->id)
-                                        ->where(function ($q) {
-                                            $q->whereRaw('LOWER(status_pembayaran) = ?', ['success'])
-                                                ->orWhereRaw('LOWER(status_pembayaran) = ?', ['lunas'])
-                                                ->orWhereNull('status_pembayaran');
-                                        })
+                                    $totalTerbayar = $b->pembayarans
+                                        ->whereIn('status_pembayaran', ['success', 'lunas', null])
                                         ->sum('jumlah_bayar');
 
                                     $sisaTagihan = max(0, $hargaBersih - $totalTerbayar);
                                     $statusMain = strtoupper($b->status);
-                                    $lastPaymentId = $b->pembayarans->last() ? $b->pembayarans->last()->id : null;
+                                    $lastPaymentId = $b->pembayarans->last()?->id;
                                 @endphp
                                 <tr class="border-bottom">
                                     <td class="fw-bold text-primary">#GRA-{{ $b->id }}</td>
@@ -64,7 +59,6 @@
                                         <div class="fw-bold text-dark mb-0">{{ $b->package_name }}</div>
                                         <div class="small text-secondary">
                                             <i class="bi bi-person-heart me-1"></i> {{ $b->bride_groom_name }}
-                                            {{-- TAMPILKAN ADD-ONS --}}
                                             @if($b->addOns && $b->addOns->isNotEmpty())
                                                 <div class="mt-1">
                                                     @foreach($b->addOns as $add)
@@ -129,18 +123,22 @@
         </div>
     </div>
 
-    {{-- Modal --}}
+    {{-- Modal Upload --}}
     <div class="modal fade" id="modalUploadBukti" tabindex="-1">
         <div class="modal-dialog">
             <form id="formUpload" action="" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5>Upload Bukti Pembayaran</h5>
+                        <h5 class="modal-title">Upload Bukti Pembayaran</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body"><input type="file" name="bukti_transfer" class="form-control" required
-                            accept="image/*"></div>
-                    <div class="modal-footer"><button type="submit" class="btn btn-primary">Simpan Bukti</button></div>
+                    <div class="modal-body">
+                        <input type="file" name="bukti_transfer" class="form-control" required accept="image/*">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Simpan Bukti</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -153,6 +151,25 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            @if(session('success'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pesanan Berhasil!',
+                    text: 'Silakan lanjutkan pembayaran.',
+                    confirmButtonColor: '#3085d6'
+                });
+            @endif
+
+            // Alert 2: Muncul hanya saat upload bukti sukses
+            @if(session('success_bukti'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Bukti pembayaran berhasil diupload.',
+                    confirmButtonColor: '#28a745'
+                });
+            @endif
+            // Event untuk tombol upload
             document.body.addEventListener('click', function (e) {
                 if (e.target.closest('.upload-bukti-btn')) {
                     const btn = e.target.closest('.upload-bukti-btn');
@@ -161,6 +178,7 @@
                     new bootstrap.Modal(document.getElementById('modalUploadBukti')).show();
                 }
 
+                // Event untuk tombol bayar (Midtrans)
                 if (e.target.closest('.pay-button')) {
                     const btn = e.target.closest('.pay-button');
                     const bookingId = btn.getAttribute('data-id');

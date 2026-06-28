@@ -63,6 +63,7 @@ class JadwalPengantin extends Model
         return $this->hasOne(JadwalDekor::class, 'jadwal_pengantin_id');
     }
 
+    // Di App\Models\JadwalPengantin.php
     public function jadwalGown()
     {
         return $this->hasOne(JadwalGown::class, 'jadwal_pengantin_id');

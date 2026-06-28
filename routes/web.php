@@ -118,7 +118,7 @@ Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('ow
         Route::get('/data', [OwnerJadwalPengantin::class, 'data'])->name('data');
         Route::get('/print', [OwnerJadwalPengantin::class, 'print'])->name('print');
         Route::get('/{id}/edit', [OwnerJadwalPengantin::class, 'edit'])->name('edit');
-        Route::put('/{id}/update', [OwnerJadwalPengantin::class, 'update'])->name('update');
+       Route::put('/{id}/update', [OwnerJadwalPengantin::class, 'update'])->name('update');
         Route::get('/check-kru', [OwnerJadwalPengantin::class, 'checkKruAvailability'])->name('check-kru');
         Route::get('/check-status', [OwnerJadwalPengantin::class, 'checkKruStatus'])->name('check-status');
     });
@@ -229,7 +229,7 @@ Route::middleware(['auth', 'verified', 'role:pelanggan'])->prefix('user')->name(
 | 5. RUTE ADMIN (Prefix 'admin.') - OPERASIONAL (Admin & Owner)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/profile', [AdminProfileController::class, 'index'])->name('profile.index');
     Route::put('/profile/update', [AdminProfileController::class, 'update'])->name('profile.update');

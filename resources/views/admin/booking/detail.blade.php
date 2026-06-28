@@ -181,14 +181,30 @@
             confirmButtonText: 'Ya, Update!'
         }).then((result) => {
             if (result.isConfirmed) {
+                // --- GANTI BAGIAN $.ajax DI BAWAH INI ---
                 $.ajax({
                     url: "{{ route('admin.booking.updateStatus', $booking->id) }}",
                     type: "PUT",
                     data: { _token: "{{ csrf_token() }}", status: val },
                     success: function(res) {
-                        Swal.fire({ icon: 'success', title: 'Berhasil', text: res.message, timer: 1500, showConfirmButton: false }).then(() => location.reload());
+                        Swal.fire({ 
+                            icon: 'success', 
+                            title: 'Berhasil', 
+                            text: res.message, 
+                            timer: 1500, 
+                            showConfirmButton: false 
+                        }).then(() => location.reload());
+                    },
+                    error: function(err) {
+                        // Ini akan menangkap pesan error dari Controller (422)
+                        Swal.fire({ 
+                            icon: 'error', 
+                            title: 'Gagal', 
+                            text: err.responseJSON.message 
+                        });
                     }
                 });
+                // --- SELESAI GANTI ---
             }
         });
     }

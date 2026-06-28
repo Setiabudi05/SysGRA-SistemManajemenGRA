@@ -89,12 +89,12 @@
                 // Di dalam script DataTables
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, class: 'text-center' },
-                    { data: 'tanggal_full', name: 'event_date' },
-                    { data: 'nama', name: 'bride_groom_name' }, // Harus 'nama' sesuai Controller
-                    { data: 'paket.nama_paket', name: 'paket.nama_paket', defaultContent: '-' },
+                    { data: 'tanggal_full', name: 'event_date' }, // Sesuai dengan addColumn('tanggal_full'...)
+                    { data: 'nama', name: 'bride_groom_name' },
+                    { data: 'paket_nama', name: 'paket_nama' }, // Sesuai dengan addColumn('paket_nama'...)
                     {
-                        data: 'harga_paket',
-                        name: 'paket.harga',
+                        data: 'harga_total_final', // Sesuai dengan nama baru di controller
+                        name: 'harga_total_final',
                         render: function (data) {
                             return 'Rp ' + parseInt(data || 0).toLocaleString('id-ID');
                         }

@@ -18,4 +18,10 @@ class AddOn extends Model
         'deskripsi', 
         'harga'
     ];
+
+// Pastikan di kedua Model (Booking & AddOn)
+public function addOns()
+{
+    return $this->belongsToMany(AddOn::class, 'add_ons_booking', 'booking_id', 'add_on_id');
+}
 }

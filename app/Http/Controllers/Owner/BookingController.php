@@ -23,30 +23,45 @@ class BookingController extends Controller
      */
     public function data(Request $request)
     {
-        // Menggunakan Booking sebagai sumber data utama
-        $query = Booking::with(['paket'])
+        // 1. Ambil data dengan eager loading
+        $query = Booking::with(['paket', 'addOns', 'pembayarans'])
             ->orderBy('event_date', 'asc');
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+        // 2. Filter Tanggal (Ini aman dilakukan di Database)
         if ($request->filled('tgl_acara')) {
             $query->whereDate('event_date', $request->tgl_acara);
         }
 
-        return DataTables::of($query)
+        $bookings = $query->get();
+
+        // 3. Filter STATUS (Ini dilakukan setelah data ditarik ke memory)
+        if ($request->filled('status')) {
+            $status = $request->status;
+            $bookings = $bookings->filter(function ($row) use ($status) {
+                // Kita hitung ulang statusnya di sini
+                $totalHarga = ($row->paket->harga ?? 0) + $row->addOns->sum('harga');
+                $totalTerbayar = $row->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
+                $sisa = $totalHarga - $totalTerbayar;
+
+                $statusPembayaran = ($sisa <= 0 && $totalHarga > 0) ? 'LUNAS' : 'BELUM LUNAS';
+
+                // Sesuaikan dengan logic status Anda (PENDING/CONFIRMED dll)
+                return strtoupper($row->status) === strtoupper($status);
+            });
+        }
+
+        return DataTables::of($bookings)
             ->addIndexColumn()
-            ->addColumn('tanggal_full', function ($row) {
-                return Carbon::parse($row->event_date)->format('d M Y');
-            })
-            ->addColumn('nama', function ($row) {
-                return $row->bride_groom_name;
-            })
-            ->addColumn('paket_nama', function ($row) {
-                return $row->paket->nama_paket ?? '-';
-            })
-            ->addColumn('harga_paket', function ($row) {
-                return $row->paket->harga ?? 0;
+            ->addColumn('tanggal_full', fn($row) => Carbon::parse($row->event_date)->format('d M Y'))
+            ->addColumn('nama', fn($row) => $row->bride_groom_name)
+            ->addColumn('paket_nama', fn($row) => $row->paket->nama_paket ?? '-')
+
+            // PERBAIKAN: Hitung Harga Murni (Paket + AddOns) Tanpa Durasi
+            // Di dalam method data() pada BookingController
+            ->addColumn('harga_total_final', function ($row) { // Ubah nama kolom agar jelas
+                $hargaPaket = (int) ($row->paket ? $row->paket->harga : 0);
+                $totalAddons = (int) $row->addOns->sum('harga');
+                return $hargaPaket + $totalAddons; // Ini akan dikirim ke JS sebagai angka
             })
             ->editColumn('status', function ($row) {
                 $status = strtoupper($row->status);

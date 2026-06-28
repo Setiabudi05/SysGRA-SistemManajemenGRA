@@ -28,8 +28,11 @@ class CheckRole
         $user = Auth::user();
 
         // 3. Periksa apakah role pengguna ada di dalam daftar $roles yang diizinkan
-        if (in_array($user->role, $roles)) {
-            // 4. Jika diizinkan (role-nya cocok), lanjutkan ke halaman yang dituju
+        // Di CheckRole.php
+        $userRole = strtolower($user->role);
+        $allowedRoles = array_map('strtolower', $roles);
+
+        if (in_array($userRole, $allowedRoles)) {
             return $next($request);
         }
 
