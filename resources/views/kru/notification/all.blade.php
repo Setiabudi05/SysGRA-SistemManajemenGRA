@@ -165,7 +165,7 @@
             });
 
             // Jalankan AJAX Request menggunakan Fetch API bawaan browser murni
-            let urlRoute = "{{ route('notification.respond', ':id') }}".replace(':id', notifId);
+            let urlRoute = "{{ route('kru.notification.respond', ':id') }}".replace(':id', notifId);
 
             fetch(urlRoute, {
                 method: "POST",

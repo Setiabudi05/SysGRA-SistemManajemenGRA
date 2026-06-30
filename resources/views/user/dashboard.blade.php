@@ -2,6 +2,7 @@
 @section('title', 'Dashboard Pengantin')
 
 @section('content')
+
 <div class="page-content mt-4">
     {{-- WELCOME CARD --}}
     <div class="card shadow-sm border-0 mb-4" style="background: #435ee0; border-radius: 20px;">
@@ -66,43 +67,73 @@
         </div>
     </div>
 {{-- CHATBOT WIDGET --}}
-<div id="chatbot-widget" class="position-fixed" style="bottom: 30px; right: 30px; z-index: 1050;">
-    <button class="btn btn-primary rounded-circle shadow-lg p-3" style="width: 60px; height: 60px;" onclick="toggleChat()">
-        <i class="bi bi-robot fs-3"></i> </button>
-    <div id="chat-window" class="card shadow-lg border-0 d-none" style="width: 340px; border-radius: 15px; position: absolute; bottom: 80px; right: 0;">
-        <div class="card-header border-0 text-white p-3" style="background: #435ee0; border-radius: 15px 15px 0 0;">
-            <div class="d-flex align-items-center justify-content-between">
-                <h6 class="mb-0 text-white"><i class="bi bi-robot me-2"></i>Asmara Bot AI</h6>
-                <button type="button" class="btn-close btn-close-white" onclick="toggleChat()"></button>
-            </div>
+
+{{-- CHATBOT WIDGET --}}
+
+<div id="chatbot-widget" style="position: fixed; bottom: 30px; right: 30px; z-index: 9999;">
+    <button class="btn btn-primary rounded-circle shadow-lg" style="width: 60px; height: 60px;" onclick="toggleChat()">
+        <i class="bi bi-robot fs-3"></i> 
+    </button>
+    
+    <div id="chat-window" class="card shadow-lg border-0 d-none" style="width: 350px; height: 450px; position: absolute; bottom: 75px; right: 0; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column;">
+        <div class="card-header text-white p-3 d-flex justify-content-between align-items-center" style="background: #435ee0;">
+            <h6 class="mb-0"><i class="bi bi-robot me-2"></i>Asmara Bot AI</h6>
+            <button type="button" class="btn-close btn-close-white" onclick="toggleChat()"></button>
         </div>
-        <div class="card-body p-3 bg-light" style="height: 300px; overflow-y: auto;" id="chat-content">
+        
+        <div class="card-body p-3 bg-light" style="flex: 1; overflow-y: auto;" id="chat-content">
             <div class="d-flex mb-3">
                 <div class="bg-white p-2 rounded shadow-sm small text-dark">
-                    Halo {{ Auth::user()->name }}! Saya Asmara Bot AI, siap membantu persiapan pernikahan impian Anda. Ada yang bisa saya bantu?
+                    Halo {{ Auth::user()->name }}! Saya Asmara Bot AI. Ada yang bisa saya bantu terkait persiapan pernikahan Anda?
                 </div>
             </div>
         </div>
-        <div class="card-footer bg-white border-0 p-3" style="border-radius: 0 0 15px 15px;">
+        
+        <div class="card-footer bg-white border-0 p-2">
             <div class="input-group">
-                <input type="text" id="chat-input" class="form-control form-control-sm" placeholder="Tanya tentang paket, jadwal, atau fitting...">
-                <button class="btn btn-primary btn-sm" onclick="sendMessage()"><i class="bi bi-send"></i></button>
+                <input type="text" id="chat-input" class="form-control" placeholder="Tanya paket...">
+                <button class="btn btn-primary" onclick="sendMessage()"><i class="bi bi-send"></i></button>
             </div>
         </div>
     </div>
 </div>
-<style>
-    .circle-icon-sm { width: 50px; height: 50px; border-radius: 50%; background: #fff; border: 2px solid #eef2ff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin: 0 auto; }
-</style>
 
 <script>
-    function toggleChat() {
-        const chatWindow = document.getElementById('chat-window');
-        chatWindow.classList.toggle('d-none');
+    function toggleChat() { document.getElementById('chat-window').classList.toggle('d-none'); }
+
+    async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const content = document.getElementById('chat-content');
+        const message = input.value.trim();
+        if (!message) return;
+
+        // Tambahkan pesan User (Class msg-user akan otomatis membuatnya ke kanan)
+        content.innerHTML += `<div class="msg-user"><span>${message}</span></div>`;
+        input.value = '';
+        content.scrollTop = content.scrollHeight;
+
+        try {
+            const res = await fetch('/user/chat', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ message: message })
+            });
+
+            const data = await res.json();
+            
+            // Tambahkan pesan Bot (Class msg-bot akan otomatis membuatnya ke kiri)
+            content.innerHTML += `<div class="msg-bot"><span>${data.reply}</span></div>`;
+        } catch (e) {
+            content.innerHTML += `<div class="msg-bot"><span style="color:red;">${e.message}</span></div>`;
+        }
+        content.scrollTop = content.scrollHeight;
+        
     }
-    function sendMessage() {
-        // Logika kirim pesan akan diintegrasikan dengan AI Chatbot Anda nanti
-        alert('Fitur Chatbot Sedang Disiapkan!');
-    }
+    
+    document.getElementById('chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 </script>
 @endsection
+

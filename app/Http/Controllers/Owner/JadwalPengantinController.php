@@ -82,25 +82,35 @@ class JadwalPengantinController extends Controller
 
         $jadwal->update($validated);
 
-        // --- LOGIKA KIRIM WA ---
-    if ($request->filled('fg')) {
-        $namaFG = trim($request->fg); 
-        
-        // MENCARI USER: Gunakan 'LIKE' agar lebih toleran terhadap perbedaan penulisan
-        $userFG = User::where('name', 'LIKE', '%' . $namaFG . '%')->first();
 
-        if ($userFG) {
-            // Pastikan kolom yang benar di tabel users Anda (apakah 'phone' atau 'whatsapp_number'?)
-            // Jika nama kolom di database Anda adalah 'phone', maka gunakan $userFG->phone
-            if (!empty($userFG->phone)) {
-                $this->kirimWhatsAppKeKru($userFG, $jadwal, 'Fotografer (FG)');
+        // --- LOGIKA KIRIM WA ---
+        if ($request->filled('fg')) {
+            $namaFG = trim($request->fg);
+
+            // MENCARI USER: Gunakan 'LIKE' agar lebih toleran terhadap perbedaan penulisan
+            $userFG = User::where('name', 'LIKE', '%' . $namaFG . '%')->first();
+
+            if ($userFG) {
+                // 1. KIRIM WA
+                if (!empty($userFG->phone)) {
+                    $this->kirimWhatsAppKeKru($userFG, $jadwal, 'Fotografer (FG)');
+                } else {
+                    Log::info("DEBUG: User " . $userFG->name . " ditemukan, tapi kolom 'phone' kosong.");
+                }
+
+                // 2. KIRIM NOTIFIKASI DATABASE (Untuk Lonceng)
+                $userFG->notify(new \App\Notifications\SistemNotifikasi([
+                    'judul' => 'Penugasan Baru',
+                    'pesan' => "Anda ditugaskan sebagai Fotografer (FG) untuk acara " . $jadwal->nama,
+                    'url'   => route('kru.jadwal.index'), // Sesuaikan route dashboard kru Anda
+                    'icon'  => 'bi-camera'
+                ]));
+
+                Log::info("DEBUG: Notifikasi database untuk FG dikirim ke: " . $userFG->name);
             } else {
-                Log::info("DEBUG: User " . $userFG->name . " ditemukan, tapi kolom 'phone' kosong.");
+                Log::info("DEBUG: User dengan nama " . $namaFG . " tidak ketemu di tabel users.");
             }
-        } else {
-            Log::info("DEBUG: User dengan nama " . $namaFG . " tidak ketemu di tabel users.");
         }
-    }
 
         return redirect()->route('owner.jadwalpengantin.index')->with('swal_success', 'Jadwal diperbarui dan notifikasi dikirim!');
     }
@@ -121,10 +131,10 @@ class JadwalPengantinController extends Controller
             $nomor = '62' . substr($nomor, 1);
         }
 
-       $pesan = "🔔 *PENUGASAN BARU: SYSGRA*\n\n" .
-             "Halo *" . $user->name . "*,\n" .
-             "Anda telah didelegasikan sebagai *" . $posisi . "* untuk agenda pernikahan berikut:\n\n" .
-             "--- 📋 DETAIL ACARA 📋 ---\n" .
+        $pesan = "🔔 *PENUGASAN BARU: SYSGRA*\n\n" .
+            "Halo *" . $user->name . "*,\n" .
+            "Anda telah didelegasikan sebagai *" . $posisi . "* untuk agenda pernikahan berikut:\n\n" .
+            "--- 📋 DETAIL ACARA 📋 ---\n" .
             "👰 *Pengantin:* " . $jadwal->nama . "\n" .
             "📅 *Tanggal:* " . \Carbon\Carbon::parse($jadwal->tanggal_awal)->translatedFormat('d F Y') . "\n" .
             "📍 *Lokasi:* " . $jadwal->alamat . "\n\n" .

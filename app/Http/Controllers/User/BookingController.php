@@ -5,7 +5,10 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\Paket;
 use App\Models\Booking;
-use App\Models\AddOn; // Pastikan model AddOn di-import
+use App\Models\AddOn;
+use App\Models\User;
+use App\Notifications\SistemNotifikasi;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -94,7 +97,16 @@ class BookingController extends Controller
             if ($request->has('addons')) {
                 $booking->addOns()->attach($request->addons);
             }
-
+            $admins = User::where('role', 'admin')->get(); // Menggunakan User yang sudah di-import
+            foreach ($admins as $admin) {
+                $admin->notify(new SistemNotifikasi([
+                    'judul'      => '🛒 Pesanan Masuk (Draft)',
+                    'pesan'      => 'Pelanggan ' . Auth::user()->name . ' menyimpan booking untuk acara ' . $paket->nama_paket,
+                    'icon'       => 'bi-cart-plus',
+                    'link'       => route('admin.booking.index'),
+                    'booking_id' => $booking->id
+                ]));
+            }
             return redirect()->route('user.keranjang')->with('success_booking', 'Berhasil disimpan ke keranjang!');
         } catch (\Exception $e) {
             return back()->withErrors(['event_date_range' => 'Gagal menyimpan pesanan: ' . $e->getMessage()])->withInput();
@@ -108,6 +120,8 @@ class BookingController extends Controller
             ->where('status', 'draft')
             ->orderBy('created_at', 'desc')
             ->get();
+
+
 
         return view('user.keranjang.index', compact('carts'));
     }
@@ -134,6 +148,25 @@ class BookingController extends Controller
         Booking::where('user_id', Auth::id())
             ->where('status', 'draft')
             ->update(['status' => 'pending']);
+
+        $admins = User::where('role', 'admin')->get(); // Pastikan variabel $admins didefinisikan kembali di sini
+        foreach ($admins as $admin) {
+            $notif = $admin->notifications()
+                ->where('data->booking_id', $item->id)
+                ->first();
+
+            if ($notif) {
+                $notif->update([
+                    'data' => [
+                        'judul'      => '🔔 Booking Perlu Diproses!',
+                        'pesan'      => 'Pelanggan ' . Auth::user()->name . ' telah melakukan konfirmasi booking.',
+                        'icon'       => 'bi-cart-check',
+                        'link'       => route('admin.booking.index'),
+                        'booking_id' => $item->id
+                    ]
+                ]);
+            }
+        }
 
         return redirect()->route('user.pembayaran')->with('success', 'Konfirmasi berhasil!');
     }

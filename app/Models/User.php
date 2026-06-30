@@ -11,6 +11,7 @@ use App\Notifications\ResetPasswordNotificationCustom;
 class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable;
+    
 
     protected $fillable = [
         'name',

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Booking;
 use App\Models\Pembukuan;
 use Carbon\Carbon;
@@ -41,5 +42,25 @@ class DashboardController extends Controller
             'netProfit',
             'pendingReceivables'
         ));
+    }
+
+
+    public function allNotifications()
+    {
+        // Gunakan Auth::user()
+        $allNotif = Auth::user()->notifications()
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return view('owner.notification.all', compact('allNotif'));
+    }
+
+    public function markAsRead($id)
+    {
+        // Gunakan Auth::user()
+        $notification = Auth::user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+
+        return redirect()->route('owner.notification.all');
     }
 }

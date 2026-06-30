@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\JadwalPengantin;
 use App\Models\User;
+use App\Notifications\SistemNotifikasi;
+use Illuminate\Support\Facades\Notification;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
 
@@ -143,54 +145,54 @@ class DashboardController extends Controller
     }
     public function allNotifications()
     {
-    // KUNCI: Ambil user lalu beri tahu VS Code kalau ini adalah Model User resmi
-        /** @var \App\Models\User $user */
-        $user = auth()->user();
-
-        // Sekarang panggil dari variabel $user, garis merah dijamin hilang!
-        $allNotif = $user->notifications()->orderBy('created_at', 'desc')->paginate(10);
-
+        $allNotif = auth()->user()->notifications()->orderBy('created_at', 'desc')->paginate(10);
         return view('kru.notification.all', compact('allNotif'));
     }
 
-    public function respondNotification(Request $request, $id)
+    public function markAsRead($id)
     {
-        /** @var \App\Models\User $currentUser */
-        $currentUser = auth()->user();
-
-        // 1. Cari notifikasi milik kru
-        $notification = $currentUser->notifications()->findOrFail($id);
-        $data = $notification->data;
-
-        // 2. Ambil keputusan dari tombol (bisa / tidak_bisa)
-        $jawaban = $request->input('jawaban');
-        $alasan = $request->input('alasan', '');
-
-        $data['status_konfirmasi'] = $jawaban;
-        $data['alasan'] = $alasan;
-
-        // Update data JSON notifikasi si kru di database
-        $notification->data = $data;
-        $notification->markAsRead(); // Otomatis tandai sudah dibaca
-        $notification->save();
-
-        // 3. KIRIM NOTIFIKASI BALIK KE OWNER & ADMIN
-        $statusTeks = $jawaban == 'bisa' ? 'BISA HADIR ✅' : 'BERHALANGAN HADIR ❌';
-        $alasanTeks = $alasan ? " (Alasan: $alasan)" : "";
-
-        $payloadOwner = [
-            'judul' => '📢 Konfirmasi Tugas Kru!',
-            'pesan' => "Kru {$currentUser->name} menyatakan {$statusTeks} untuk tugasnya{$alasanTeks}.",
-            'icon'  => $jawaban == 'bisa' ? 'bi-check-circle-fill' : 'bi-x-circle-fill',
-            'link'  => route('owner.jadwalpengantin.index') // Jika diklik, owner masuk ke jadwal
-        ];
-
-        // Cari user yang rolenya owner dan admin
-        $penerimaNotif = User::whereIn('role', ['owner', 'admin'])->get();
-        foreach ($penerimaNotif as $penerima) {
-            $penerima->notify(new \App\Notifications\SistemNotifikasi($payloadOwner));
-        }
-
-        return response()->json(['success' => true, 'message' => 'Konfirmasi berhasil dikirim ke Owner!']);
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        return redirect()->route('kru.jadwal.index'); // Sesuaikan rute redirect
     }
+
+
+
+public function respondNotification(Request $request, $id)
+{
+    /** @var \App\Models\User $currentUser */
+    $currentUser = auth()->user();
+
+    // 1. Update notifikasi milik Kru
+    $notification = $currentUser->notifications()->findOrFail($id);
+    $data = $notification->data;
+    $data['status_konfirmasi'] = $request->jawaban;
+    $data['alasan'] = $request->alasan ?? '';
+    
+    $notification->update(['data' => $data]);
+    $notification->markAsRead();
+
+    // 2. Persiapkan data untuk Owner & Admin
+    $statusTeks = $request->jawaban == 'bisa' ? 'BISA HADIR ✅' : 'BERHALANGAN HADIR ❌';
+    $alasanTeks = $request->alasan ? " (Alasan: {$request->alasan})" : "";
+
+    $payload = [
+        'judul' => '📢 Konfirmasi Tugas Kru!',
+        'pesan' => "Kru {$currentUser->name} menyatakan {$statusTeks} untuk tugasnya{$alasanTeks}.",
+        'icon'  => $request->jawaban == 'bisa' ? 'bi-check-circle-fill' : 'bi-x-circle-fill',
+        'link'  => route('owner.jadwalpengantin.index') 
+    ];
+
+    // 3. Kirim ke Owner dan Admin
+    $penerima = User::whereIn('role', ['owner', 'admin'])->get();
+    
+    foreach ($penerima as $user) {
+        $user->notify(new SistemNotifikasi($payload));
+    }
+
+    return response()->json([
+        'success' => true, 
+        'message' => 'Konfirmasi berhasil dikirim!'
+    ]);
+}
 }

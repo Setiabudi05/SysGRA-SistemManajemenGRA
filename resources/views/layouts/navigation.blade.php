@@ -35,27 +35,17 @@
 
                             @forelse(auth()->user()->unreadNotifications as $notification)
                                 <li>
-                                    {{-- PERBAIKAN: Tambahkan query string ?jadwal_id= dari database JSON agar melompat ke
-                                    halaman JADWAL yang tepat --}}
-                                    @php
-                                        // Cari data jadwal_id dari data json notifikasi
-                                        $jadwalIdParam = '';
-                                        if (isset($notification->data['link'])) {
-                                            // Ekstrak ID dari URL bawaan jika ada
-                                            $jadwalIdParam = basename(parse_url($notification->data['link'], PHP_URL_PATH));
-                                        }
-                                    @endphp
-                                    {{-- PERBAIKAN: Ubah 'kru.notification.read' menjadi 'notification.read' --}}
-                                    <a class="dropdown-item d-flex align-items-start py-3"
-                                        href="{{ route('notification.read', $notification->id) }}?jadwal_id={{ $jadwalIdParam }}">
+                                    <a class="dropdown-item d-flex align-items-start py-3" {{-- KUNCI: Gunakan prefix role user
+                                        yang sedang login + .notification.read --}}
+                                        href="{{ route(auth()->user()->role . '.notification.read', $notification->id) }}">
+
                                         <div class="avatar bg-light-primary me-3">
                                             <i class="bi {{ $notification->data['icon'] ?? 'bi-bell' }} text-primary"></i>
                                         </div>
                                         <div>
-                                            <h6 class="mb-1 text-sm">{{ $notification->data['judul'] ?? 'Info Baru' }}</h6>
-                                            <p class="mb-0 text-xs text-muted">{{ $notification->data['pesan'] }}</p>
-                                            <small
-                                                class="text-xs text-secondary">{{ $notification->created_at->diffForHumans() }}</small>
+                                            <h6 class="mb-1 text-sm">{{ $notification->data['judul'] ?? 'Notifikasi Baru' }}
+                                            </h6>
+                                            <p class="mb-0 text-xs text-muted">{{ $notification->data['pesan'] ?? '' }}</p>
                                         </div>
                                     </a>
                                 </li>
@@ -68,9 +58,18 @@
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
-                            {{-- PERBAIKAN: Cukup panggil rute universal yang baru --}}
-                            <li><a class="dropdown-item text-center text-sm text-primary fw-bold"
-                                    href="{{ route('notification.all') }}">Lihat Semua Notifikasi</a></li>
+                            <li>
+                                @php
+                                    // Mengambil role user saat ini (misal: 'kru', 'owner', 'admin', 'pelanggan')
+                                    $rolePrefix = auth()->user()->role; 
+                                @endphp
+
+                                <a class="dropdown-item text-center text-sm text-primary fw-bold"
+                                    href="{{ route($rolePrefix . '.notification.all') }}"
+                                    style="display: block; cursor: pointer;">
+                                    Lihat Semua Notifikasi
+                                </a>
+                            </li>
                         </ul>
                     </li>
                 @endif
@@ -118,7 +117,7 @@
                     <li>
                         @php
                             $profileRoute = match (Auth::user()->role) {
-                                'owner' => route('owner.profile.index'), 
+                                'owner' => route('owner.profile.index'),
                                 'admin' => route('admin.profile.index'),
                                 'kru' => route('kru.profile.index'),
                                 default => route('user.profile.index'),

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Paket;
 use App\Models\Dekorasi;
 use App\Models\Booking;
@@ -16,7 +17,7 @@ class DashboardController extends Controller
     {
         // 1. Data Statistik (Total Angka)
         $totalPaket = Paket::count();
-        $totalDekorasi = Dekorasi::count(); 
+        $totalDekorasi = Dekorasi::count();
         $totalPelanggan = Booking::distinct('bride_groom_name')->count();
         $totalBooking = Booking::count();
 
@@ -39,13 +40,27 @@ class DashboardController extends Controller
 
         // Mengirimkan semua variabel ke view admin.dashboard
         return view('admin.dashboard', compact(
-            'totalPaket', 
-            'totalDekorasi', 
-            'totalPelanggan', 
-            'totalBooking', 
-            'allBookings', 
-            'upcomingSchedules', 
+            'totalPaket',
+            'totalDekorasi',
+            'totalPelanggan',
+            'totalBooking',
+            'allBookings',
+            'upcomingSchedules',
             'statusCounts'
         ));
+    }
+
+    public function allNotifications()
+    {
+        // Admin melihat notifikasi yang ditujukan untuk dirinya
+        $allNotif = auth()->user()->notifications()->orderBy('created_at', 'desc')->paginate(10);
+        return view('admin.notification.all', compact('allNotif'));
+    }
+
+    public function markAsRead($id)
+    {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        return redirect()->route('admin.dashboard');
     }
 }

@@ -59,6 +59,8 @@ Route::middleware('guest')->group(function () {
     Route::get('auth/google/callback', [SocialiteController::class, 'handleProviderCallback'])->name('socialite.google.callback');
 });
 
+// Hapus sementara middleware agar kita tahu apakah masalahnya di otentikasi
+Route::post('/user/chat', [\App\Http\Controllers\User\ChatbotController::class, 'chat']);
 // Redirect Beranda Berdasarkan Role
 Route::get('/', function () {
     if (Auth::check()) {
@@ -86,20 +88,6 @@ Route::get('/home', function () {
 })->name('home');
 
 
-/*
-|--------------------------------------------------------------------------
-| SPECIAL NOTIFICATION ROUTE (Universal - Bisa Diakses Semua Role)
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/notification/{id}/read', [KruJadwal::class, 'readNotification'])->name('notification.read');
-    Route::post('/notification/{id}/respond', [KruDashboardController::class, 'respondNotification'])->name('notification.respond');
-
-    // PERBAIKAN UTAMA: Mendaftarkan nama rute notification.all agar layout navigasi tidak error 500
-    Route::get('/notifications/all', function () {
-        return back()->with('info', 'Riwayat log notifikasi sistem.');
-    })->name('notification.all');
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -108,6 +96,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 */
 Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('owner.')->group(function () {
     Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/notifications/all', [OwnerDashboardController::class, 'allNotifications'])->name('notification.all');
+    Route::get('/notifications/read/{id}', [OwnerDashboardController::class, 'markAsRead'])->name('notification.read');
+
     Route::get('users/json', [OwnerUserController::class, 'data'])->name('users.data');
     Route::resource('users', OwnerUserController::class);
     Route::get('/laporan-pembukuan', [LaporanPembukuanController::class, 'index'])->name('pembukuan.index');
@@ -118,7 +110,7 @@ Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('ow
         Route::get('/data', [OwnerJadwalPengantin::class, 'data'])->name('data');
         Route::get('/print', [OwnerJadwalPengantin::class, 'print'])->name('print');
         Route::get('/{id}/edit', [OwnerJadwalPengantin::class, 'edit'])->name('edit');
-       Route::put('/{id}/update', [OwnerJadwalPengantin::class, 'update'])->name('update');
+        Route::put('/{id}/update', [OwnerJadwalPengantin::class, 'update'])->name('update');
         Route::get('/check-kru', [OwnerJadwalPengantin::class, 'checkKruAvailability'])->name('check-kru');
         Route::get('/check-status', [OwnerJadwalPengantin::class, 'checkKruStatus'])->name('check-status');
     });
@@ -158,6 +150,12 @@ Route::middleware(['auth', 'verified', 'role:owner'])->prefix('owner')->name('ow
 Route::middleware(['auth', 'verified', 'role:kru'])->prefix('kru')->name('kru.')->group(function () {
     Route::get('/dashboard', [KruDashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/data', [KruDashboardController::class, 'data'])->name('dashboard.data');
+
+    Route::get('/notifications/all', [KruDashboardController::class, 'allNotifications'])->name('notification.all');
+    Route::get('/notifications/read/{id}', [KruDashboardController::class, 'markAsRead'])->name('notification.read');
+    Route::post('/notifications/respond/{id}', [KruDashboardController::class, 'respondNotification'])->name('notification.respond');
+
+
     Route::get('/profile', [KruProfileController::class, 'index'])->name('profile.index');
     Route::put('/profile/update', [KruProfileController::class, 'update'])->name('profile.update');
 
@@ -190,6 +188,7 @@ Route::middleware(['auth', 'verified', 'role:kru'])->prefix('kru')->name('kru.')
         return "Halaman Detail Pekerjaan ID: " . $id;
     })->name('job.detail');
 });
+
 /*
 |--------------------------------------------------------------------------
 | 4. RUTE USER / PELANGGAN (Prefix 'user.')
@@ -197,6 +196,7 @@ Route::middleware(['auth', 'verified', 'role:kru'])->prefix('kru')->name('kru.')
 */
 Route::middleware(['auth', 'verified', 'role:pelanggan'])->prefix('user')->name('user.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\User\DashboardController::class, 'index'])->name('dashboard');
+
 
     Route::get('/booking', [PelangganBooking::class, 'index'])->name('booking');
     Route::post('/booking/store', [PelangganBooking::class, 'storeToBooking'])->name('booking.store');
@@ -231,6 +231,11 @@ Route::middleware(['auth', 'verified', 'role:pelanggan'])->prefix('user')->name(
 */
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/notifications/read/{id}', [App\Http\Controllers\Admin\DashboardController::class, 'markAsRead'])->name('notification.read');
+
+    Route::get('/notifications/all', [App\Http\Controllers\Admin\DashboardController::class, 'allNotifications'])->name('notification.all');
+
     Route::get('/profile', [AdminProfileController::class, 'index'])->name('profile.index');
     Route::put('/profile/update', [AdminProfileController::class, 'update'])->name('profile.update');
 
