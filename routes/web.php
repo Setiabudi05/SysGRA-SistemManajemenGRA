@@ -61,6 +61,7 @@ Route::middleware('guest')->group(function () {
 
 // Hapus sementara middleware agar kita tahu apakah masalahnya di otentikasi
 Route::post('/user/chat', [\App\Http\Controllers\User\ChatbotController::class, 'chat']);
+Route::post('/user/chat/clear', [\App\Http\Controllers\User\ChatbotController::class, 'clear']);
 // Redirect Beranda Berdasarkan Role
 Route::get('/', function () {
     if (Auth::check()) {
