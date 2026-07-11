@@ -12,18 +12,20 @@ return new class extends Migration {
     {
         Schema::create('jadwal_pengantins', function (Blueprint $table) {
             $table->id();
-            $table->date('tanggal_awal');    // tanggal mulai
-            $table->date('tanggal_akhir');   // tanggal selesai
-            $table->string('bulan');         // bulan acara (ambil dari tanggal_awal)
+            $table->foreignId('pesanan_id')->constrained('bookings')->onDelete('cascade');
+            $table->date('tanggal_awal');
+            $table->date('tanggal_akhir')->nullable();
+            $table->string('bulan');
+            $table->year('tahun');
             $table->string('nama');
             $table->string('alamat');
-            $table->string('paket');
+            $table->foreignId('paket_id')->constrained('pakets');
             $table->string('asisten')->nullable();
             $table->string('fg')->nullable();
             $table->string('layos')->nullable();
+            $table->tinyInteger('is_manual')->default(0); // Penanda entri manual atau otomatis
             $table->timestamps();
         });
-
     }
 
     /**

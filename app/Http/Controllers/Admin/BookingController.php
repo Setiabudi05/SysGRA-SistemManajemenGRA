@@ -31,8 +31,7 @@ class BookingController extends Controller
      */
     public function data(Request $request)
     {
-        // 1. Gunakan subquery untuk menghitung total harga (Paket + Add-ons)
-        // agar sisa_tagihan di tabel pesanan selalu akurat & sinkron
+
         $query = DB::table('bookings')
             ->join('pakets', 'bookings.package_name', '=', 'pakets.nama_paket') // Join ke tabel pakets
             ->select([
@@ -43,7 +42,6 @@ class BookingController extends Controller
                 'bookings.package_name',
                 'bookings.event_date',
                 'bookings.status',
-                // LOGIKA: Harga Paket MURNI + Total Add-ons (TIDAK ADA PENGALI DURASI)
                 DB::raw('(pakets.harga + (SELECT IFNULL(SUM(add_ons.harga), 0) 
                       FROM add_ons_booking 
                       LEFT JOIN add_ons ON add_ons.id = add_ons_booking.add_on_id 
@@ -57,7 +55,6 @@ class BookingController extends Controller
         if ($request->filled('tgl_acara')) {
             $query->whereDate('bookings.event_date', $request->tgl_acara);
         }
-
         return DataTables::of($query)
             ->addIndexColumn()
             ->editColumn('event_date', function ($row) {
@@ -76,7 +73,8 @@ class BookingController extends Controller
             })
             ->editColumn('package_price', fn($row) => 'Rp ' . number_format($row->total_tagihan_final, 0, ',', '.'))
             ->editColumn('status', function ($row) {
-                $class = ['PENDING' => 'bg-light-warning text-warning', 'CONFIRMED' => 'bg-light-primary text-primary', 'COMPLETED' => 'bg-light-success text-success', 'DRAFT' => 'bg-secondary text-white'][strtoupper($row->status)] ?? 'bg-secondary';
+                $class = ['PENDING' => 'bg-light-warning text-warning', 'CONFIRMED' => 'bg-light-primary text-primary', 
+                'COMPLETED' => 'bg-light-success text-success', 'DRAFT' => 'bg-secondary text-white'][strtoupper($row->status)] ?? 'bg-secondary';
                 return '<span class="badge ' . $class . ' px-3 py-2 fw-bold">' . strtoupper($row->status) . '</span>';
             })
             ->addColumn('action', function ($row) {
@@ -213,7 +211,6 @@ class BookingController extends Controller
         $statusInput = strtolower($request->status);
 
         if ($statusInput == 'completed') {
-            // MENGGUNAKAN ACCESSOR YANG ANDA BUAT (Sudah pasti akurat 35.250.000)
             $totalTagihan = (int)$booking->total_harga;
 
             // HITUNG TOTAL BAYAR

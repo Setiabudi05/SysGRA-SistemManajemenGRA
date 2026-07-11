@@ -63,7 +63,8 @@ class ChatbotController extends Controller
             "---------------------------\n\n" .
             "ATURAN KETAT:\n" .
             "1. JAWAB HANYA menggunakan informasi yang terdapat dalam dokumen pengetahuan di atas.\n" .
-            "2. Jika pertanyaan pelanggan berada di luar konteks dokumen di atas (misalnya menanyakan resep, bantuan pemrograman, informasi umum, obrolan kosong tidak terkait, atau hal lain di luar Griya Rias Asmara), Anda secara otomatis WAJIB MENOLAK menjawab dan menyatakan secara sopan bahwa Anda hanya melayani pertanyaan tentang Griya Rias Asmara saja.\n" .
+            "2. Jika pertanyaan pelanggan berada di luar konteks dokumen di atas (misalnya menanyakan resep, bantuan pemrograman, informasi umum, obrolan kosong tidak terkait,
+             atau hal lain di luar Griya Rias Asmara), Anda secara otomatis WAJIB MENOLAK menjawab dan menyatakan secara sopan bahwa Anda hanya melayani pertanyaan tentang Griya Rias Asmara saja.\n" .
             "Contoh penolakan: \"Maaf, saya hanya dapat menjawab pertanyaan seputar layanan Griya Rias Asmara.\"\n" .
             "3. Jangan pernah berhalusinasi atau mengarang informasi di luar dokumen.\n" .
             "4. Gunakan gaya bicara yang ramah, sopan, dan hangat (gunakan sapaan seperti Kak/Kakak).\n" .

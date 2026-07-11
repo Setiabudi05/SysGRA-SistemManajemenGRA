@@ -151,51 +151,38 @@ class PembayaranController extends Controller
             $nominal = (int) preg_replace('/[^0-9]/', '', $request->jumlah_bayar);
             $booking = Booking::findOrFail($request->pesanan_id);
 
-            // VALIDASI CONSTRAINT-BASED SCHEDULING (CBS) 
-            $maxQuotaPerDay = 6;
-            $totalJobOnDay = Booking::whereIn('status', ['terkonfirmasi', 'CONFIRMED', 'LUNAS', 'success', 'completed'])
-                ->where('event_date', $booking->event_date)
-                ->where('id', '!=', $booking->id)
-                ->count();
-
-            if ($totalJobOnDay >= $maxQuotaPerDay) {
-                DB::rollBack();
-                return back()->withErrors([
-                    'pesanan_id' => 'Gagal Verifikasi! Kuota pelayanan pada tanggal tersebut mendadak sudah penuh terisi oleh pesanan offline/langsung lain.'
-                ])->withInput();
-            }
-
-            // 1. Simpan ke Tabel Pembayaran dengan status standarisasi 'success'
+            // 1. Simpan Pembayaran
             $pembayaran = Pembayaran::create([
                 'pesanan_id'        => $booking->id,
                 'jumlah_bayar'      => $nominal,
                 'keterangan'        => $request->keterangan,
                 'status_pembayaran' => 'success',
-                'bukti_transfer'    => null,
-                'catatan_admin'     => 'Diverifikasi Manual oleh Admin'
             ]);
 
-            // 2. Ubah status booking pelanggan menjadi CONFIRMED (KAPITAL)
-            $booking->update([
-                'status' => 'CONFIRMED'
-            ]);
+            // 2. Update status booking
+            $booking->update(['status' => 'CONFIRMED']);
 
-            // 3. Otomatis masuk ke jurnal Pembukuan kas masuk (G ganda aman)
-            Pembukuan::create([
-                'tanggal'       => now()->toDateString(),
-                'tipe'          => 'pemasukan',
-                'customer'      => $booking->bride_groom_name,
-                'keterangan'    => 'Verifikasi Manual: ' . $request->keterangan,
-                'nominal'       => $nominal,
-                'pembayaran_id' => $pembayaran->id
-            ]);
+            // 3. CEK APAKAH SUDAH ADA DI PEMBUKUAN (Mencegah Duplikasi)
+            // Jika sudah ada, jangan buat baru lagi
+            $pembukuanExist = Pembukuan::where('pembayaran_id', $pembayaran->id)->exists();
+
+            if (!$pembukuanExist) {
+                Pembukuan::create([
+                    'tanggal'       => now()->toDateString(),
+                    'tipe'          => 'pemasukan',
+                    'customer'      => $booking->bride_groom_name,
+                    'keterangan'    => 'Verifikasi Manual: ' . $request->keterangan,
+                    'nominal'       => $nominal,
+                    'pembayaran_id' => $pembayaran->id
+                ]);
+            }
 
             DB::commit();
             return redirect()->route('admin.pembayaran.histori', $booking->id)
-                ->with('swal_success', 'Pesanan Berhasil Diverifikasi & Dijadwalkan!');
+                ->with('swal_success', 'Pesanan Berhasil Diverifikasi!');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['pesanan_id' => 'Sistem gagal memproses: ' . $e->getMessage()])->withInput();
+            return back()->withErrors(['pesanan_id' => 'Sistem Gagal Memproses: ' . $e->getMessage()]);
         }
     }
 

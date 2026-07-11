@@ -38,7 +38,6 @@ class JadwalPengantinController extends Controller
                 $query->where('tahun', $request->tahun);
             }
         }
-
         return DataTables::of($query)
             ->addIndexColumn()
             ->editColumn('nama', fn($row) => $row->pesanan ? $row->pesanan->bride_groom_name : $row->nama)
@@ -59,14 +58,9 @@ class JadwalPengantinController extends Controller
                     'November' => 'November',
                     'December' => 'Desember'
                 ];
-
                 // Ambil tanggal
                 $tgl = \Carbon\Carbon::parse($row->tanggal_awal)->format('d');
-
-                // Ganti nama bulan dari database (kolom $row->bulan) dengan array di atas
-                // Jika $row->bulan sudah dalam bahasa Inggris (August), ini akan mengubahnya ke (Agustus)
                 $namaBulan = isset($bulanIndo[$row->bulan]) ? $bulanIndo[$row->bulan] : $row->bulan;
-
                 return "$tgl $namaBulan $row->tahun";
             })
             ->editColumn('asisten', fn($row) => $row->asisten ?? '-')

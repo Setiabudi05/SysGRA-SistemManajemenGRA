@@ -155,6 +155,7 @@ class BookingController extends Controller
                 ->where('data->booking_id', $item->id)
                 ->first();
 
+                
             if ($notif) {
                 $notif->update([
                     'data' => [

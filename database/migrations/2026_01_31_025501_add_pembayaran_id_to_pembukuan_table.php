@@ -8,15 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('pembukuan', function (Blueprint $table) {
-            // Menambahkan kolom foreign key untuk relasi ke tabel pembayarans
-            $table->unsignedBigInteger('pembayaran_id')->nullable()->after('nominal');
-            
-            // Opsional: Tambahkan foreign key constraint agar data konsisten
-            $table->foreign('pembayaran_id')->references('id')->on('pembayarans')->onDelete('cascade');
+        Schema::create('pembayarans', function (Blueprint $table) {
+            $table->id();
+            $table->bigInteger('pesanan_id')->unsigned();
+            $table->string('bukti_transfer')->nullable();
+            $table->string('jumlah_bayar');
+            $table->string('keterangan')->nullable(); 
+            $table->string('status_pembayaran', 50)->nullable(); 
+            $table->timestamps();
+            // Menambahkan foreign key manual jika ingin menjaga integritas relasi
+            $table->foreign('pesanan_id')->references('id')->on('bookings')->onDelete('cascade');
         });
     }
-
     public function down(): void
     {
         Schema::table('pembukuan', function (Blueprint $table) {

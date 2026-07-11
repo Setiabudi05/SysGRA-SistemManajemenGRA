@@ -84,26 +84,11 @@
                                 @if(Auth::user()->role == 'owner') Owner
                                 @elseif(Auth::user()->role == 'admin') Administrator
                                 @elseif(Auth::user()->role == 'kru')
-                                    @php
-                                        $name = Auth::user()->name;
-                                        $checkJob = \App\Models\JadwalPengantin::where('bulan', ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][(int) date('m') - 1])
-                                            ->where('tahun', date('Y'))
-                                            ->where(function ($q) use ($name) {
-                                                $q->where('fg', $name)->orWhere('asisten', 'like', "%$name%")->orWhere('layos', $name);
-                                            })->first();
-                                        if ($checkJob) {
-                                            if ($checkJob->fg == $name)
-                                                echo "Fotografer";
-                                            elseif (str_contains($checkJob->asisten, $name))
-                                                echo "Asisten";
-                                            elseif ($checkJob->layos == $name)
-                                                echo "Kru Layos";
-                                            else
-                                                echo "Kru Lapangan";
-                                        } else {
-                                            echo "Kru Lapangan";
-                                        }
-                                    @endphp
+                                    {{-- Mengubah 'fg' menjadi 'Fotografer' secara otomatis --}}
+                                    @if(Auth::user()->jabatan == 'fg') Fotografer
+                                    @elseif(Auth::user()->jabatan == 'Asisten MUA') Asisten
+                                    @elseif(Auth::user()->jabatan == 'Layos / Dekorasi') Kru Layos
+                                    @else {{ Auth::user()->jabatan }} @endif
                                 @else Pelanggan @endif
                             </p>
                         </div>

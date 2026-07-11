@@ -6,16 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
         Schema::create('dekorasis', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('paket_id'); // relasi ke paket
-            $table->string('foto')->nullable();
-            $table->text('deskripsi');
-            $table->timestamps();
-
-            $table->foreign('paket_id')->references('id')->on('pakets')->onDelete('cascade');
+            $table->foreignId('paket_id')->constrained('pakets')->onDelete('cascade');
+            $table->string('foto')->nullable(); 
+            $table->text('deskripsi');         
         });
     }
 

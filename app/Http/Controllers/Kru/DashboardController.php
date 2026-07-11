@@ -15,111 +15,50 @@ use Carbon\Carbon;
 class DashboardController extends Controller
 {
     /**
-     * Menampilkan Halaman Dashboard Utama Kru
+     * Helper terpusat untuk menyaring data berdasarkan nama kru
+     * Menggunakan TRIM untuk menghindari masalah spasi di database
      */
+    private function applyKruFilter($query, $namaKru)
+    {
+        $namaKru = trim($namaKru);
+        return $query->where(function ($q) use ($namaKru) {
+            $q->whereRaw("TRIM(fg) = ?", [$namaKru])
+                ->orWhereRaw("TRIM(asisten) LIKE ?", ["%$namaKru%"])
+                ->orWhereRaw("TRIM(layos) = ?", [$namaKru]);
+        });
+    }
+
     public function index()
     {
-        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $namaKru = $user->name;
-        // Ambil nama depan (misal: "Norma Ynk" jadi "Norma")
-        $namaDepan = explode(' ', $namaKru)[0];
-
-        // 1. Info waktu sekarang
         $today = Carbon::today()->toDateString();
+        $bulanSekarangIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][(int)date('m') - 1];
         $tahunSekarang = date('Y');
-        $listBulanIndo = [
-            1 => 'Januari',
-            2 => 'Februari',
-            3 => 'Maret',
-            4 => 'April',
-            5 => 'Mei',
-            6 => 'Juni',
-            7 => 'Juli',
-            8 => 'Agustus',
-            9 => 'September',
-            10 => 'Oktober',
-            11 => 'November',
-            12 => 'Desember'
-        ];
-        $bulanSekarangIndo = $listBulanIndo[(int)date('m')];
 
-        // 2. Query Dasar yang Fleksibel (Berlaku untuk 3 CARD & WIDGET)
-        $baseQueryBulanIni = JadwalPengantin::where('bulan', $bulanSekarangIndo)
-            ->where('tahun', $tahunSekarang)
-            ->where(function ($q) use ($namaKru, $namaDepan) {
-                $q->where('fg', 'LIKE', '%' . $namaDepan . '%')
-                    ->orWhere('asisten', 'LIKE', '%' . $namaDepan . '%')
-                    ->orWhere('layos', 'LIKE', '%' . $namaDepan . '%')
-                    ->orWhere('fg', 'LIKE', '%' . $namaKru . '%')
-                    ->orWhere('asisten', 'LIKE', '%' . $namaKru . '%')
-                    ->orWhere('layos', 'LIKE', '%' . $namaKru . '%');
-            });
+        // Menggunakan filter terpusat
+        $baseQuery = $this->applyKruFilter(JadwalPengantin::query(), $user->name)
+            ->where('bulan', $bulanSekarangIndo)
+            ->where('tahun', $tahunSekarang);
 
-        // 3. HITUNG STATISTIK (CARD)
-        $tugasBulanIni = (clone $baseQueryBulanIni)->count();
-
-        // Tugas Selesai (Tanggal Awal < Hari Ini)
-        $tugasSelesai = (clone $baseQueryBulanIni)
-            ->whereDate('tanggal_awal', '<', $today)
-            ->count();
-
-        // Sisa Tugas (Tanggal Awal >= Hari Ini)
-        $sisaTugas = (clone $baseQueryBulanIni)
-            ->whereDate('tanggal_awal', '>=', $today)
-            ->count();
-
-        // Widget Tugas Terdekat (Widget Kanan)
-        $nextJob = (clone $baseQueryBulanIni)
-            ->whereDate('tanggal_awal', '>=', $today)
-            ->orderBy('tanggal_awal', 'asc')
-            ->first();
+        // Menghitung statistik menggunakan clone agar baseQuery tidak rusak
+        $tugasBulanIni = (clone $baseQuery)->count();
+        $tugasSelesai  = (clone $baseQuery)->whereDate('tanggal_awal', '<', $today)->count();
+        $sisaTugas     = (clone $baseQuery)->whereDate('tanggal_awal', '>=', $today)->count();
+        $nextJob       = (clone $baseQuery)->whereDate('tanggal_awal', '>=', $today)->orderBy('tanggal_awal', 'asc')->first();
 
         return view('kru.dashboard', compact('tugasBulanIni', 'tugasSelesai', 'sisaTugas', 'nextJob'));
     }
 
-    /**
-     * Mengambil Data untuk DataTables (AJAX)
-     */
     public function data(Request $request)
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $namaKru = $user->name;
-        $namaDepan = explode(' ', $namaKru)[0];
+        $bulanSekarangIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][(int)date('m') - 1];
 
-        $bulanSekarang = [
-            1 => 'Januari',
-            2 => 'Februari',
-            3 => 'Maret',
-            4 => 'April',
-            5 => 'Mei',
-            6 => 'Juni',
-            7 => 'Juli',
-            8 => 'Agustus',
-            9 => 'September',
-            10 => 'Oktober',
-            11 => 'November',
-            12 => 'Desember'
-        ][(int)date('m')];
-
-        $tahunSekarang = date('Y');
-
-        // Query Tabel harus sama persis logikanya dengan Card
-        $query = JadwalPengantin::with('paket')
-            ->where('bulan', $bulanSekarang)
-            ->where('tahun', $tahunSekarang)
-            ->where(function ($q) use ($namaKru, $namaDepan) {
-                $q->where('fg', 'LIKE', '%' . $namaDepan . '%')
-                    ->orWhere('asisten', 'LIKE', '%' . $namaDepan . '%')
-                    ->orWhere('layos', 'LIKE', '%' . $namaDepan . '%')
-                    ->orWhere('fg', 'LIKE', '%' . $namaKru . '%')
-                    ->orWhere('asisten', 'LIKE', '%' . $namaKru . '%')
-                    ->orWhere('layos', 'LIKE', '%' . $namaKru . '%');
-            });
+        $query = $this->applyKruFilter(JadwalPengantin::with('paket'), Auth::user()->name)
+            ->where('bulan', $bulanSekarangIndo)
+            ->where('tahun', date('Y'));
 
         return DataTables::of($query)
-            ->addIndexColumn()
+            ->addIndexColumn() // <-- Wajib ada agar error DT_RowIndex hilang
             ->addColumn('tanggal_custom', function ($row) {
                 $getDay = function ($value) {
                     if (!$value) return null;
@@ -143,6 +82,7 @@ class DashboardController extends Controller
             })
             ->make(true);
     }
+
     public function allNotifications()
     {
         $allNotif = auth()->user()->notifications()->orderBy('created_at', 'desc')->paginate(10);
@@ -158,41 +98,41 @@ class DashboardController extends Controller
 
 
 
-public function respondNotification(Request $request, $id)
-{
-    /** @var \App\Models\User $currentUser */
-    $currentUser = auth()->user();
+    public function respondNotification(Request $request, $id)
+    {
+        /** @var \App\Models\User $currentUser */
+        $currentUser = auth()->user();
 
-    // 1. Update notifikasi milik Kru
-    $notification = $currentUser->notifications()->findOrFail($id);
-    $data = $notification->data;
-    $data['status_konfirmasi'] = $request->jawaban;
-    $data['alasan'] = $request->alasan ?? '';
-    
-    $notification->update(['data' => $data]);
-    $notification->markAsRead();
+        // 1. Update notifikasi milik Kru
+        $notification = $currentUser->notifications()->findOrFail($id);
+        $data = $notification->data;
+        $data['status_konfirmasi'] = $request->jawaban;
+        $data['alasan'] = $request->alasan ?? '';
 
-    // 2. Persiapkan data untuk Owner & Admin
-    $statusTeks = $request->jawaban == 'bisa' ? 'BISA HADIR ✅' : 'BERHALANGAN HADIR ❌';
-    $alasanTeks = $request->alasan ? " (Alasan: {$request->alasan})" : "";
+        $notification->update(['data' => $data]);
+        $notification->markAsRead();
 
-    $payload = [
-        'judul' => '📢 Konfirmasi Tugas Kru!',
-        'pesan' => "Kru {$currentUser->name} menyatakan {$statusTeks} untuk tugasnya{$alasanTeks}.",
-        'icon'  => $request->jawaban == 'bisa' ? 'bi-check-circle-fill' : 'bi-x-circle-fill',
-        'link'  => route('owner.jadwalpengantin.index') 
-    ];
+        // 2. Persiapkan data untuk Owner & Admin
+        $statusTeks = $request->jawaban == 'bisa' ? 'BISA HADIR ✅' : 'BERHALANGAN HADIR ❌';
+        $alasanTeks = $request->alasan ? " (Alasan: {$request->alasan})" : "";
 
-    // 3. Kirim ke Owner dan Admin
-    $penerima = User::whereIn('role', ['owner', 'admin'])->get();
-    
-    foreach ($penerima as $user) {
-        $user->notify(new SistemNotifikasi($payload));
+        $payload = [
+            'judul' => '📢 Konfirmasi Tugas Kru!',
+            'pesan' => "Kru {$currentUser->name} menyatakan {$statusTeks} untuk tugasnya{$alasanTeks}.",
+            'icon'  => $request->jawaban == 'bisa' ? 'bi-check-circle-fill' : 'bi-x-circle-fill',
+            'link'  => route('owner.jadwalpengantin.index')
+        ];
+
+        // 3. Kirim ke Owner dan Admin
+        $penerima = User::whereIn('role', ['owner', 'admin'])->get();
+
+        foreach ($penerima as $user) {
+            $user->notify(new SistemNotifikasi($payload));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Konfirmasi berhasil dikirim!'
+        ]);
     }
-
-    return response()->json([
-        'success' => true, 
-        'message' => 'Konfirmasi berhasil dikirim!'
-    ]);
-}
 }

@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('baju_pengantins', function (Blueprint $table) {
+        Schema::create('add_ons', function (Blueprint $table) {
             $table->id();
-            $table->string('nama_gown');
-            $table->string('paket');
-            $table->string('foto_gown')->nullable();
-            $table->text('deskripsi_gown')->nullable();
+            $table->string('nama_item');
+            $table->text('deskripsi')->nullable();
+            $table->decimal('harga', 15, 2);
             $table->timestamps();
         });
     }
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('baju_pengantins');
+        Schema::dropIfExists('add_ons');
     }
 };

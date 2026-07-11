@@ -47,30 +47,29 @@ class RiwayatController extends Controller
     /**
      * Data Riwayat untuk DataTables (Logika Nama Depan Fleksibel)
      */
+   /**
+     * Data Riwayat untuk DataTables (Diperbarui untuk akurasi data)
+     */
     public function data(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $namaKru = $user->name;
-        $namaDepan = explode(' ', $namaKru)[0];
+        $namaKru = trim($user->name); // Gunakan TRIM untuk menghapus spasi tersembunyi
         $today = Carbon::today()->toDateString();
 
         $query = JadwalPengantin::with('paket')
-            ->where(function ($q) use ($namaKru, $namaDepan) {
-                $q->where('fg', 'LIKE', '%' . $namaDepan . '%')
-                    ->orWhere('asisten', 'LIKE', '%' . $namaDepan . '%')
-                    ->orWhere('layos', 'LIKE', '%' . $namaDepan . '%')
-                    ->orWhere('fg', 'LIKE', '%' . $namaKru . '%')
-                    ->orWhere('asisten', 'LIKE', '%' . $namaKru . '%')
-                    ->orWhere('layos', 'LIKE', '%' . $namaKru . '%');
+            ->where(function ($q) use ($namaKru) {
+                // Gunakan whereRaw dengan TRIM agar pencarian 100% akurat
+                $q->whereRaw("TRIM(fg) = ?", [$namaKru])
+                  ->orWhereRaw("TRIM(asisten) LIKE ?", ["%$namaKru%"])
+                  ->orWhereRaw("TRIM(layos) = ?", [$namaKru]);
             })
             ->where('tanggal_awal', '<', $today)
-            ->orderBy('tanggal_awal', 'asc'); // KUNCI 1: Ubah dari desc menjadi asc di sini
+            ->orderBy('tanggal_awal', 'asc');
 
         if ($request->filled('tanggal')) {
             $query->whereDate('tanggal_awal', $request->tanggal);
         } else {
-            // Hanya gunakan bulan & tahun jika tanggal tidak dipilih
             if ($request->filled('bulan')) {
                 $query->where('bulan', $request->bulan);
             }
@@ -78,22 +77,15 @@ class RiwayatController extends Controller
                 $query->where('tahun', $request->tahun);
             }
         }
+
         return DataTables::of($query)
-            ->addIndexColumn()
+            ->addIndexColumn() // <-- INI WAJIB ADA agar error DT_RowIndex hilang
             ->addColumn('tanggal_custom', function ($row) {
                 $bulanIndo = [
-                    'January' => 'Januari',
-                    'February' => 'Februari',
-                    'March' => 'Maret',
-                    'April' => 'April',
-                    'May' => 'Mei',
-                    'June' => 'Juni',
-                    'July' => 'Juli',
-                    'August' => 'Agustus',
-                    'September' => 'September',
-                    'October' => 'Oktober',
-                    'November' => 'November',
-                    'December' => 'Desember'
+                    'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
+                    'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
+                    'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September',
+                    'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
                 ];
                 $bulan = $bulanIndo[$row->bulan] ?? $row->bulan;
                 $tglText = $this->formatTanggal($row);

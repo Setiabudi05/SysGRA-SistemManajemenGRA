@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('jadwals', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->date('event_date');
+            $table->string('nama_event');
+            $table->string('tipe')->default('GRA'); 
+            $table->string('nama_vendor')->nullable();
+            $table->text('keterangan')->nullable();
             $table->timestamps();
         });
     }

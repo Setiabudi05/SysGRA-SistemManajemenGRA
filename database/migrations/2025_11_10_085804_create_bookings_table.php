@@ -8,37 +8,31 @@ return new class extends Migration {
     /**
      * Run the migrations.
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
-
-            // Data Pemesan
+            // Relasi
+            $table->bigInteger('user_id')->nullable(); 
+            $table->bigInteger('paket_id')->nullable(); 
             $table->string('customer_name');
             $table->string('whatsapp_number');
             $table->string('bride_groom_name')->nullable();
             $table->string('parent_name')->nullable();
             $table->string('facebook_name')->nullable();
             $table->string('instagram_name')->nullable();
-
-            // Data Acara
             $table->text('event_address');
+            $table->string('latitude')->nullable();    
+            $table->string('longitude')->nullable();   
             $table->date('event_date');
-            $table->string('event_duration')->nullable();
-
-            // Data Paket
+            $table->integer('event_duration')->default(1);
             $table->string('package_name');
             $table->string('package_price');
+            $table->text('notes')->nullable();         
+            $table->string('status')->default('pending'); 
+            $table->string('another_column_name')->nullable(); 
 
-            // Catatan
-            $table->text('add_ons')->nullable();
-            $table->text('gown_notes')->nullable();
-            $table->text('other_notes')->nullable();
-
-            // (Opsional) Tambahkan ini untuk melacak status
-            // $table->string('status')->default('pending'); 
-
-            $table->timestamps(); // Ini akan membuat created_at dan updated_at
+            $table->timestamps();
         });
     }
 

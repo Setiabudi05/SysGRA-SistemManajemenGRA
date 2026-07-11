@@ -9,11 +9,7 @@ use Illuminate\Http\Request;
 
 class LoginController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Login Controller
-    |--------------------------------------------------------------------------
-    */
+   
 
     use AuthenticatesUsers;
 

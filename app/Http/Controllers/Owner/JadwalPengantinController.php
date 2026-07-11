@@ -74,7 +74,8 @@ class JadwalPengantinController extends Controller
         ]);
 
         $d = Carbon::parse($request->tanggal_awal);
-        $map = ['January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret', 'April' => 'April', 'May' => 'Mei', 'June' => 'Juni', 'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September', 'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'];
+        $map = ['January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret', 'April' => 'April', 'May' => 'Mei', 'June' => 'Juni', 
+        'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September', 'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'];
 
         $validated['asisten'] = $request->has('asisten') ? implode(',', $request->asisten) : null;
         $validated['bulan'] = $map[$d->format('F')];
@@ -82,14 +83,11 @@ class JadwalPengantinController extends Controller
 
         $jadwal->update($validated);
 
-
         // --- LOGIKA KIRIM WA ---
         if ($request->filled('fg')) {
             $namaFG = trim($request->fg);
-
             // MENCARI USER: Gunakan 'LIKE' agar lebih toleran terhadap perbedaan penulisan
             $userFG = User::where('name', 'LIKE', '%' . $namaFG . '%')->first();
-
             if ($userFG) {
                 // 1. KIRIM WA
                 if (!empty($userFG->phone)) {
@@ -97,7 +95,6 @@ class JadwalPengantinController extends Controller
                 } else {
                     Log::info("DEBUG: User " . $userFG->name . " ditemukan, tapi kolom 'phone' kosong.");
                 }
-
                 // 2. KIRIM NOTIFIKASI DATABASE (Untuk Lonceng)
                 $userFG->notify(new \App\Notifications\SistemNotifikasi([
                     'judul' => 'Penugasan Baru',
@@ -117,11 +114,7 @@ class JadwalPengantinController extends Controller
     private function kirimWhatsAppKeKru($user, $jadwal, $posisi)
     {
         $token = "McjqVVgU8QqgqY3TA3z9";
-
-        // Ganti $user->whatsapp_number dengan $user->phone
-        // Pastikan kolom 'phone' memang ada di tabel users Anda
         $nomor = trim($user->phone);
-
         if (empty($nomor)) {
             Log::info("DEBUG: Kru " . $user->name . " tidak punya data di kolom 'phone'.");
             return;

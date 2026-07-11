@@ -7,18 +7,21 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     public function up(): void
-    {
-        Schema::create('pakets', function (Blueprint $table) {
-            $table->id();
-            $table->string('nama_paket', 100); // nama paket (misal: All In Diamond)
-            $table->text('makeup')->nullable(); // detail makeup
-            $table->text('dekorasi')->nullable(); // detail dekorasi
-            $table->text('dokumentasi')->nullable(); // detail dokumentasi
-            $table->bigInteger('harga'); // harga paket
-            $table->timestamps();
-        });
-    }
-
+{
+    Schema::create('pakets', function (Blueprint $table) {
+        $table->id();
+        $table->string('nama_paket');
+        $table->integer('tahun');
+        $table->text('makeup')->nullable();
+        $table->text('dekorasi')->nullable();
+        $table->text('layos')->nullable();
+        $table->text('dokumentasi')->nullable();
+        $table->bigInteger('harga');
+        $table->text('include')->nullable();
+        $table->text('bonus')->nullable();
+        $table->timestamps();
+    });
+}
     public function down(): void
     {
         Schema::dropIfExists('pakets');

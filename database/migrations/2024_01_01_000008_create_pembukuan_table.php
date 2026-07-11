@@ -11,11 +11,14 @@ return new class extends Migration
         Schema::create('pembukuan', function (Blueprint $table) {
             $table->id();
             $table->date('tanggal');
-            $table->enum('tipe', ['pemasukan', 'pengeluaran']);
-            $table->string('customer');
+            $table->string('tipe');
+            $table->string('customer')->nullable();
             $table->string('keterangan')->nullable();
             $table->decimal('nominal', 15, 2);
+            $table->bigInteger('pembayaran_id')->unsigned()->nullable();
             $table->timestamps();
+
+            $table->foreign('pembayaran_id')->references('id')->on('pembayarans')->onDelete('cascade');
         });
     }
 

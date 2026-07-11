@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('baju_pengantins', function (Blueprint $table) {
+        Schema::create('add_ons_booking', function (Blueprint $table) {
             $table->id();
-            $table->string('nama_gown');
-            $table->string('paket');
-            $table->string('foto_gown')->nullable();
-            $table->text('deskripsi_gown')->nullable();
+            $table->foreignId('booking_id')->constrained('bookings')->onDelete('cascade');
+            $table->foreignId('add_on_id')->constrained('add_ons')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -26,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('baju_pengantins');
+        Schema::dropIfExists('add_ons_booking');
     }
 };
