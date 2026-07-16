@@ -6,10 +6,8 @@
     <div class="page-heading mb-3">
         <div class="row align-items-center">
             <div class="col-12 col-md-6">
-                <h3 class="fw-bold text-dark"><i class="bi bi-cash-stack me-2 text-primary"></i>Riwayat Pembayaran & Cicilan
-                </h3>
-                <p class="text-muted small">Selesaikan pembayaran DP awal atau cicilan Anda secara otomatis menggunakan
-                    Midtrans Sandbox.</p>
+                <h3 class="fw-bold text-dark"><i class="bi bi-cash-stack me-2 text-primary"></i>Riwayat Pembayaran & Cicilan</h3>
+                <p class="text-muted small">Selesaikan pembayaran DP awal atau cicilan Anda secara otomatis menggunakan Midtrans Sandbox.</p>
             </div>
             <div class="col-12 col-md-6 text-md-end">
                 <nav aria-label="breadcrumb">
@@ -42,13 +40,8 @@
                         <tbody>
                             @forelse($bookings as $b)
                                 @php
-                                    // HARGA BERSIH = Harga Paket Saja + Total Add-ons (Durasi TIDAK dipakai)
                                     $hargaBersih = (float) ($b->paket->harga ?? 0) + (float) $b->addOns->sum('harga');
-
-                                    $totalTerbayar = $b->pembayarans
-                                        ->whereIn('status_pembayaran', ['success', 'lunas', null])
-                                        ->sum('jumlah_bayar');
-
+                                    $totalTerbayar = $b->pembayarans->whereIn('status_pembayaran', ['success', 'lunas', null])->sum('jumlah_bayar');
                                     $sisaTagihan = max(0, $hargaBersih - $totalTerbayar);
                                     $statusMain = strtoupper($b->status);
                                     $lastPaymentId = $b->pembayarans->last()?->id;
@@ -56,28 +49,25 @@
                                 <tr class="border-bottom">
                                     <td class="fw-bold text-primary">#GRA-{{ $b->id }}</td>
                                     <td>
-                                        <div class="fw-bold text-dark mb-0">{{ $b->package_name }}</div>
+                                        <div class="fw-bold text-dark mb-0">{{ $b->paket->nama_paket ?? 'Paket Tidak Ditemukan' }}</div>
                                         <div class="small text-secondary">
                                             <i class="bi bi-person-heart me-1"></i> {{ $b->bride_groom_name }}
                                             @if($b->addOns && $b->addOns->isNotEmpty())
                                                 <div class="mt-1">
                                                     @foreach($b->addOns as $add)
-                                                        <span
-                                                            class="badge bg-light text-primary border rounded-pill small p-1 px-2 me-1">{{ $add->nama_item }}</span>
+                                                        <span class="badge bg-light text-primary border rounded-pill small p-1 px-2 me-1">{{ $add->nama_item }}</span>
                                                     @endforeach
                                                 </div>
                                             @endif
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        <span
-                                            class="badge bg-light-secondary text-dark fw-bold border">{{ date('d M Y', strtotime($b->event_date)) }}</span>
+                                        <span class="badge bg-light-secondary text-dark fw-bold border">{{ date('d M Y', strtotime($b->event_date)) }}</span>
                                     </td>
                                     <td class="fw-bold text-dark">Rp {{ number_format($hargaBersih, 0, ',', '.') }}</td>
                                     <td class="fw-bold text-danger">
                                         @if($sisaTagihan <= 0)
-                                            <span class="text-success fw-bold"><i
-                                                    class="bi bi-check-circle-fill me-1"></i>LUNAS</span>
+                                            <span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>LUNAS</span>
                                         @else
                                             Rp {{ number_format($sisaTagihan, 0, ',', '.') }}
                                         @endif
@@ -86,35 +76,32 @@
                                         @if($statusMain == 'PENDING')
                                             <span class="badge bg-warning text-dark px-3 py-2 fw-bold">BELUM DP</span>
                                         @elseif(in_array($statusMain, ['CONFIRMED', 'TERKONFIRMASI', 'SUCCESS', 'LUNAS']))
-                                            <span class="badge bg-success px-3 py-2 fw-bold"><i
-                                                    class="bi bi-shield-fill-check me-1"></i>SAH (TERKONFIRMASI)</span>
+                                            <span class="badge bg-success px-3 py-2 fw-bold"><i class="bi bi-shield-fill-check me-1"></i>Terkonfirmasi</span>
                                         @else
                                             <span class="badge bg-secondary px-3 py-2 fw-bold">{{ $statusMain }}</span>
                                         @endif
                                     </td>
                                     <td class="text-center">
                                         @if($sisaTagihan > 0)
-                                            <button type="button"
-                                                class="btn btn-primary btn-sm rounded-pill pay-button px-3 shadow-sm"
-                                                data-id="{{ $b->id }}" data-status="{{ strtolower($statusMain) }}"
-                                                data-sisa="{{ $sisaTagihan }}">
-                                                <i class="bi bi-credit-card-2-front-fill me-1"></i> Bayar
+                                            <button class="btn btn-primary pay-button" 
+                                                data-id="{{ $b->id }}" 
+                                                data-status="{{ $b->status }}" 
+                                                data-sisa="{{ $sisaTagihan }}"
+                                                data-paket="{{ strtolower($b->paket->nama_paket ?? 'biasa') }}">
+                                                Bayar
                                             </button>
                                         @endif
                                     </td>
                                     <td class="text-center">
                                         @if($lastPaymentId)
-                                            <button type="button" class="btn btn-sm btn-outline-info upload-bukti-btn"
-                                                data-id="{{ $lastPaymentId }}">
+                                            <button type="button" class="btn btn-sm btn-outline-info upload-bukti-btn" data-id="{{ $lastPaymentId }}">
                                                 <i class="bi bi-cloud-arrow-up"></i>
                                             </button>
                                         @endif
                                     </td>
                                 </tr>
                             @empty
-                                <tr>
-                                    <td colspan="8" class="text-center py-4 text-muted">Belum ada data transaksi aktif.</td>
-                                </tr>
+                                <tr><td colspan="8" class="text-center py-4 text-muted">Belum ada data transaksi aktif.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -146,30 +133,18 @@
 @endsection
 
 @push('js')
-    <script src="https://app.sandbox.midtrans.com/snap/snap.js"
-        data-client-key="{{ config('midtrans.client_key') ?? env('MIDTRANS_CLIENT_KEY') }}"></script>
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') ?? env('MIDTRANS_CLIENT_KEY') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             @if(session('success'))
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Pesanan Berhasil!',
-                    text: 'Silakan lanjutkan pembayaran.',
-                    confirmButtonColor: '#3085d6'
-                });
+                Swal.fire({ icon: 'success', title: 'Pesanan Berhasil!', text: 'Silakan lanjutkan pembayaran.', confirmButtonColor: '#3085d6' });
             @endif
 
-            // Alert 2: Muncul hanya saat upload bukti sukses
             @if(session('success_bukti'))
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: 'Bukti pembayaran berhasil diupload.',
-                    confirmButtonColor: '#28a745'
-                });
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Bukti pembayaran berhasil diupload.', confirmButtonColor: '#28a745' });
             @endif
-            // Event untuk tombol upload
+
             document.body.addEventListener('click', function (e) {
                 if (e.target.closest('.upload-bukti-btn')) {
                     const btn = e.target.closest('.upload-bukti-btn');
@@ -178,26 +153,37 @@
                     new bootstrap.Modal(document.getElementById('modalUploadBukti')).show();
                 }
 
-                // Event untuk tombol bayar (Midtrans)
                 if (e.target.closest('.pay-button')) {
                     const btn = e.target.closest('.pay-button');
                     const bookingId = btn.getAttribute('data-id');
-                    const statusBooking = btn.getAttribute('data-status');
+                    const statusBooking = btn.getAttribute('data-status').toLowerCase();
                     const sisaTagihan = parseInt(btn.getAttribute('data-sisa'));
+                    const namaPaket = btn.getAttribute('data-paket');
+
+                    const isAllIn = namaPaket.includes('all in') || namaPaket.includes('all-in');
+                    const nominalDP = isAllIn ? 5000000 : 2000000;
 
                     if (statusBooking === 'pending') {
                         Swal.fire({
                             title: 'Pembayaran DP Awal',
-                            text: 'Minimal DP Rp 5.000.000',
+                            text: `Paket (${namaPaket.toUpperCase()}) memerlukan DP sebesar Rp ${nominalDP.toLocaleString('id-ID')}`,
                             icon: 'info',
-                            showCancelButton: true
-                        }).then((res) => { if (res.isConfirmed) panggilMidtransSnap(bookingId, 5000000); });
+                            showCancelButton: true,
+                            confirmButtonText: 'Bayar Sekarang'
+                        }).then((res) => { if (res.isConfirmed) panggilMidtransSnap(bookingId, nominalDP); });
                     } else {
                         Swal.fire({
                             title: 'Nominal Cicilan',
                             input: 'number',
+                            inputValue: sisaTagihan,
                             showCancelButton: true,
-                            preConfirm: (v) => { if (!v || v <= 0 || v > sisaTagihan) Swal.showValidationMessage('Cek nominal!'); return v; }
+                            confirmButtonText: 'Bayar',
+                            preConfirm: (v) => {
+                                if (!v || v <= 0 || parseInt(v) > sisaTagihan) {
+                                    Swal.showValidationMessage(`Nominal antara Rp 1 - Rp ${sisaTagihan.toLocaleString('id-ID')}`);
+                                }
+                                return v;
+                            }
                         }).then((res) => { if (res.isConfirmed) panggilMidtransSnap(bookingId, res.value); });
                     }
                 }

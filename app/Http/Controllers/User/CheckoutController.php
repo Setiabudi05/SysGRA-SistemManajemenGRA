@@ -30,6 +30,9 @@ class CheckoutController extends Controller
     /**
      * Memproses permintaan Snap Token untuk Nominal DP / Cicilan Tertentu
      */
+    /**
+     * Memproses permintaan Snap Token untuk Nominal DP / Cicilan Tertentu
+     */
     public function process(Request $request)
     {
         $this->initMidtrans();
@@ -37,20 +40,28 @@ class CheckoutController extends Controller
         try {
             $bookingId = $request->id;
 
-            // Tangkap nominal cicilan/DP yang diinput atau dikirim dari frontend
-            $nominalBayar = $request->nominal_pembayaran;
-
-            // PERBAIKAN: Mendukung pencarian dengan status 'CONFIRMED' kapital agar cicilan ke-2 dst tidak diblokir sistem
-            $booking = Booking::where('id', $bookingId)
+            // 1. Ambil data booking beserta relasi paketnya
+            $booking = Booking::with('paket')->where('id', $bookingId)
                 ->whereIn('status', ['pending', 'PENDING', 'menunggu verifikasi', 'terkonfirmasi', 'CONFIRMED', 'success'])
                 ->firstOrFail();
 
-            // Jika pelanggan baru pertama kali bayar (DP awal) dan nominal_pembayaran kosong
+            // 2. Tentukan nominal bayar
+            $nominalBayar = $request->nominal_pembayaran;
+
+            // Jika user tidak mengirim nominal manual (DP Awal)
             if (!$nominalBayar) {
-                $nominalBayar = strtolower($booking->status) == 'pending' ? 5000000 : $booking->package_price;
+                // Ambil nama paket, pastikan lower case agar mudah dicek
+                $namaPaket = strtolower($booking->paket->nama_paket ?? '');
+
+                // Logika DP: All-in = 5jt, Paket Lain = 2jt
+                if (str_contains($namaPaket, 'all in') || str_contains($namaPaket, 'all-in')) {
+                    $nominalBayar = 5000000;
+                } else {
+                    $nominalBayar = 2000000;
+                }
             }
 
-            // Susun parameter pesanan dengan GROSS_AMOUNT dinamis sesuai cicilan
+            // 3. Susun parameter Midtrans
             $params = [
                 'transaction_details' => [
                     'order_id' => 'GRA-' . $booking->id . '-' . time(),
@@ -80,11 +91,10 @@ class CheckoutController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
     /**
      * Menangani Webhook/Callback Notifikasi Otomatis dari Midtrans via Ngrok
      */
-   public function notificationHandler(Request $request)
+    public function notificationHandler(Request $request)
     {
         try {
             $payload = $request->all();
@@ -102,7 +112,7 @@ class CheckoutController extends Controller
 
                 if ($booking) {
                     if ($transaction == 'settlement' || $transaction == 'capture') {
-                        
+
                         // 1. Cek apakah transaksi sudah pernah diproses (mencegah duplikasi)
                         $sudahDiproses = Pembayaran::where('pesanan_id', $booking->id)
                             ->where('jumlah_bayar', (int)($payload['gross_amount'] ?? 0))
@@ -138,7 +148,7 @@ class CheckoutController extends Controller
 
                             return response()->json(['status' => 'success', 'message' => 'Data berhasil dicatat otomatis.']);
                         }
-                    } 
+                    }
                     // JIKA TRANSAKSI GAGAL
                     elseif (in_array($transaction, ['deny', 'expire', 'cancel'])) {
                         if (strtoupper($booking->status) == 'PENDING') {
@@ -155,5 +165,4 @@ class CheckoutController extends Controller
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 200);
         }
     }
-    
 }
