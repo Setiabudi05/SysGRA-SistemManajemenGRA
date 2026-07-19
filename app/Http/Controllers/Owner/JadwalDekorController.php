@@ -28,7 +28,12 @@ class JadwalDekorController extends Controller
         } else {
             // Hanya gunakan bulan & tahun jika tanggal tidak dipilih
             if ($request->filled('bulan')) {
-                $query->where('bulan', $request->bulan);
+                // Fleksibel: mendukung filter nama bulan Indo atau Inggris
+                $bulanInput = $request->bulan;
+                $query->where(function ($q) use ($bulanInput) {
+                    $q->where('bulan', $bulanInput)
+                        ->orWhere('bulan', $this->translateBulan($bulanInput));
+                });
             }
             if ($request->filled('tahun')) {
                 $query->where('tahun', $request->tahun);
@@ -59,12 +64,14 @@ class JadwalDekorController extends Controller
 
     public function print(Request $request)
     {
-        // UBAH: Query dari JadwalPengantin agar semua data muncul, 
-        // lalu load relasi jadwalDekor (biar bisa akses foto & deskripsi)
         $query = \App\Models\JadwalPengantin::with(['paket', 'jadwalDekor']);
 
         if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
+            $bulanInput = $request->bulan;
+            $query->where(function ($q) use ($bulanInput) {
+                $q->where('bulan', $bulanInput)
+                    ->orWhere('bulan', $this->translateBulan($bulanInput));
+            });
         }
         if ($request->filled('tahun')) {
             $query->where('tahun', $request->tahun);
@@ -72,12 +79,30 @@ class JadwalDekorController extends Controller
 
         $jadwal = $query->orderBy('tanggal_awal', 'asc')->get();
 
-        $bulan = $request->bulan;
-        $tahun = $request->tahun;
+        return Pdf::loadView('owner.jadwaldekor.print', [
+            'jadwal' => $jadwal,
+            'bulan'  => $request->bulan ?? 'Semua',
+            'tahun'  => $request->tahun ?? ''
+        ])->setPaper('A4', 'portrait')->stream('laporan-jadwal-dekorasi.pdf');
+    }
 
-        // Pastikan view yang dipanggil sesuai dengan lokasi file print.blade.php Anda
-        return Pdf::loadView('owner.jadwaldekor.print', compact('jadwal', 'bulan', 'tahun'))
-            ->setPaper('A4', 'portrait')
-            ->stream('laporan-jadwal-dekorasi.pdf');
+    // Fungsi bantu untuk mengatasi perbedaan format bulan (Indo/Inggris)
+    private function translateBulan($namaBulan)
+    {
+        $map = [
+            'Januari' => 'January',
+            'Februari' => 'February',
+            'Maret' => 'March',
+            'April' => 'April',
+            'Mei' => 'May',
+            'Juni' => 'June',
+            'Juli' => 'July',
+            'Agustus' => 'August',
+            'September' => 'September',
+            'Oktober' => 'October',
+            'November' => 'November',
+            'Desember' => 'December'
+        ];
+        return $map[$namaBulan] ?? $namaBulan;
     }
 }

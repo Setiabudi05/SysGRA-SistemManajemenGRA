@@ -30,7 +30,12 @@ class JadwalPengantinController extends Controller
         } else {
             // Hanya gunakan bulan & tahun jika tanggal tidak dipilih
             if ($request->filled('bulan')) {
-                $query->where('bulan', $request->bulan);
+                $bulanInput = $request->bulan;
+                // Menggunakan OR agar menangkap data baik format Indo maupun Inggris
+                $query->where(function ($q) use ($bulanInput) {
+                    $q->where('bulan', $bulanInput)
+                        ->orWhere('bulan', $this->translateBulan($bulanInput));
+                });
             }
             if ($request->filled('tahun')) {
                 $query->where('tahun', $request->tahun);
@@ -45,6 +50,24 @@ class JadwalPengantinController extends Controller
             ->addColumn('action', fn($row) => '<a href="' . route('owner.jadwalpengantin.edit', $row->id) . '" class="btn btn-warning btn-sm"><i class="bi bi-pencil-square"></i> Edit</a>')
             ->rawColumns(['action'])
             ->make(true);
+    }
+    private function translateBulan($namaBulan)
+    {
+        $map = [
+            'Januari' => 'January',
+            'Februari' => 'February',
+            'Maret' => 'March',
+            'April' => 'April',
+            'Mei' => 'May',
+            'Juni' => 'June',
+            'Juli' => 'July',
+            'Agustus' => 'August',
+            'September' => 'September',
+            'Oktober' => 'October',
+            'November' => 'November',
+            'Desember' => 'December'
+        ];
+        return $map[$namaBulan] ?? $namaBulan;
     }
 
     public function edit($id)
@@ -74,8 +97,20 @@ class JadwalPengantinController extends Controller
         ]);
 
         $d = Carbon::parse($request->tanggal_awal);
-        $map = ['January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret', 'April' => 'April', 'May' => 'Mei', 'June' => 'Juni', 
-        'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September', 'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'];
+        $map = [
+            'January' => 'Januari',
+            'February' => 'Februari',
+            'March' => 'Maret',
+            'April' => 'April',
+            'May' => 'Mei',
+            'June' => 'Juni',
+            'July' => 'Juli',
+            'August' => 'Agustus',
+            'September' => 'September',
+            'October' => 'Oktober',
+            'November' => 'November',
+            'December' => 'Desember'
+        ];
 
         $validated['asisten'] = $request->has('asisten') ? implode(',', $request->asisten) : null;
         $validated['bulan'] = $map[$d->format('F')];
@@ -176,17 +211,25 @@ class JadwalPengantinController extends Controller
     }
     public function print(Request $request)
     {
-        $bulan = $request->query('bulan');
-        $tahun = $request->query('tahun');
-
         $query = JadwalPengantin::with('paket');
-        if ($bulan) $query->where('bulan', $bulan);
-        if ($tahun) $query->where('tahun', $tahun);
 
-        $data = $query->get();
+        if ($request->filled('bulan')) {
+            $bulanInput = $request->bulan;
+            $query->where(function ($q) use ($bulanInput) {
+                $q->where('bulan', $bulanInput)
+                    ->orWhere('bulan', $this->translateBulan($bulanInput));
+            });
+        }
+        if ($request->filled('tahun')) {
+            $query->where('tahun', $request->tahun);
+        }
+
+        $data = $query->orderBy('tanggal_awal', 'asc')->get();
+        $bulan = $request->bulan;
+        $tahun = $request->tahun;
 
         return Pdf::loadView('owner.jadwalpengantin.print', compact('data', 'bulan', 'tahun'))
             ->setPaper('a4', 'portrait')
-            ->download('Laporan_Jadwal_' . ($bulan ?? 'Semua') . '.pdf');
+            ->stream('Laporan_Jadwal_Pengantin.pdf');
     }
 }
