@@ -205,10 +205,13 @@
 
     {{-- METADATA LAPORAN --}}
     <table class="info-box">
+        {{-- Ganti baris Periode Jadwal Anda dengan ini --}}
         <tr>
             <td style="width: 15%;">Periode Jadwal</td>
             <td style="width: 2%;">:</td>
-            <td style="width: 33%;" class="fw-bold">{{ $bulan ?? 'Semua' }} {{ $tahun ?? '' }}</td>
+            <td style="width: 33%;" class="fw-bold">
+                {{ $bulan }} {{ $tahun }}
+            </td>
 
             <td style="width: 15%;">Tanggal Cetak</td>
             <td style="width: 2%;">:</td>

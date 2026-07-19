@@ -8,7 +8,6 @@ use App\Models\JadwalPengantin;
 use App\Models\User;
 use App\Models\Paket;
 use App\Models\Booking;
-use App\Notifications\SistemNotifikasi;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -19,47 +18,34 @@ class JadwalPengantinController extends Controller
     {
         return view('admin.jadwalpengantin.index');
     }
-    /**
-     * Menampilkan data pesanan di tabel admin
-     */
+
     public function data(Request $request)
     {
         $query = JadwalPengantin::with(['paket', 'pesanan'])->orderBy('tanggal_awal', 'asc');
 
-        // Prioritaskan filter tanggal spesifik
         if ($request->filled('tanggal')) {
             $query->whereDate('tanggal_awal', $request->tanggal);
         } else {
-            // Hanya gunakan bulan & tahun jika tanggal tidak dipilih
             if ($request->filled('bulan')) {
-                $query->where('bulan', $request->bulan);
+                // Fleksibel: mendukung filter nama bulan Indo atau Inggris
+                $bulanInput = $request->bulan;
+                $query->where(function ($q) use ($bulanInput) {
+                    $q->where('bulan', $bulanInput)
+                        ->orWhere('bulan', $this->translateBulan($bulanInput));
+                });
             }
             if ($request->filled('tahun')) {
                 $query->where('tahun', $request->tahun);
             }
         }
+
         return DataTables::of($query)
             ->addIndexColumn()
             ->editColumn('nama', fn($row) => $row->pesanan ? $row->pesanan->bride_groom_name : $row->nama)
             ->editColumn('alamat', fn($row) => $row->pesanan ? $row->pesanan->event_address : $row->alamat)
             ->addColumn('tanggal_full', function ($row) {
-                // Array pemetaan bulan ke bahasa Indonesia
-                $bulanIndo = [
-                    'January' => 'Januari',
-                    'February' => 'Februari',
-                    'March' => 'Maret',
-                    'April' => 'April',
-                    'May' => 'Mei',
-                    'June' => 'Juni',
-                    'July' => 'Juli',
-                    'August' => 'Agustus',
-                    'September' => 'September',
-                    'October' => 'Oktober',
-                    'November' => 'November',
-                    'December' => 'Desember'
-                ];
-                // Ambil tanggal
-                $tgl = \Carbon\Carbon::parse($row->tanggal_awal)->format('d');
+                $bulanIndo = ['January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret', 'April' => 'April', 'May' => 'Mei', 'June' => 'Juni', 'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September', 'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'];
+                $tgl = Carbon::parse($row->tanggal_awal)->format('d');
                 $namaBulan = isset($bulanIndo[$row->bulan]) ? $bulanIndo[$row->bulan] : $row->bulan;
                 return "$tgl $namaBulan $row->tahun";
             })
@@ -74,6 +60,13 @@ class JadwalPengantinController extends Controller
             })
             ->rawColumns(['action'])
             ->make(true);
+    }
+
+    // Fungsi bantu untuk sinkronisasi bahasa
+    private function translateBulan($namaBulan)
+    {
+        $map = ['Januari' => 'January', 'Februari' => 'February', 'Maret' => 'March', 'April' => 'April', 'Mei' => 'May', 'Juni' => 'June', 'Juli' => 'July', 'Agustus' => 'August', 'September' => 'September', 'Oktober' => 'October', 'November' => 'November', 'Desember' => 'December'];
+        return $map[$namaBulan] ?? $namaBulan;
     }
 
     public function create()
@@ -94,33 +87,51 @@ class JadwalPengantinController extends Controller
     {
         $jadwal = JadwalPengantin::findOrFail($id);
         $pakets = Paket::all();
-
-        // TAMBAHKAN TIGA BARIS INI UNTUK MENGIRIM DATA KRU
         $kruAsisten = User::where('role', 'kru')->where('jabatan', 'asisten')->get();
         $kruFG = User::where('role', 'kru')->where('jabatan', 'fg')->get();
         $kruLayos = User::where('role', 'kru')->where('jabatan', 'layos')->get();
 
-        // TAMBAHKAN VARIABLE KE DALAM COMPACT
         return view('admin.jadwalpengantin.edit', compact('jadwal', 'pakets', 'kruAsisten', 'kruFG', 'kruLayos'));
     }
 
     public function update(Request $request, $id)
     {
         $jadwal = JadwalPengantin::findOrFail($id);
-
-        // 1. Validasi
         $validated = $this->validateRequest($request);
 
-        // 2. TANGANI ARRAY ASISTEN: Ubah menjadi string (Contoh: "Budi,Ani")
         if ($request->has('asisten') && is_array($request->asisten)) {
             $validated['asisten'] = implode(',', $request->asisten);
         }
 
-        // 3. Update data
         $mapping = $this->mapBulanTahun($request->tanggal_awal);
         $jadwal->update(array_merge($validated, $mapping));
 
         return redirect()->route('admin.jadwalpengantin.index')->with('swal_success', 'Jadwal diperbarui!');
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $booking = Booking::findOrFail($id);
+        $oldStatus = $booking->status;
+
+        $booking->update(['status' => $request->status]);
+
+        if ($request->status == 'confirmed' && $oldStatus != 'confirmed') {
+            $mapping = $this->mapBulanTahun($booking->event_date);
+            \App\Models\JadwalPengantin::updateOrCreate(
+                ['booking_id' => $booking->id],
+                array_merge([
+                    'tanggal_awal' => $booking->event_date,
+                    'nama'         => $booking->bride_groom_name,
+                    'alamat'       => $booking->event_address,
+                    'paket_id'     => $booking->paket_id,
+                ], $mapping)
+            );
+        } elseif ($request->status != 'confirmed' && $oldStatus == 'confirmed') {
+            \App\Models\JadwalPengantin::where('booking_id', $booking->id)->delete();
+        }
+
+        return redirect()->route('admin.booking.index')->with('success', 'Status berhasil diperbarui!');
     }
 
     public function destroy($id)
@@ -136,7 +147,7 @@ class JadwalPengantinController extends Controller
             'nama'          => 'required|string|max:255',
             'paket_id'      => 'required',
             'alamat'        => 'required|string',
-            'asisten'       => 'nullable', // Hapus 'string' agar tidak crash saat menerima array
+            'asisten'       => 'nullable',
             'fg'            => 'nullable|string',
             'layos'         => 'nullable|string',
             'keterangan'    => 'nullable|string',
@@ -146,29 +157,37 @@ class JadwalPengantinController extends Controller
     private function mapBulanTahun($date)
     {
         $d = Carbon::parse($date);
-        // Pastikan menyimpan format Bahasa Indonesia
         $map = ['January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret', 'April' => 'April', 'May' => 'Mei', 'June' => 'Juni', 'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September', 'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'];
         return ['bulan' => $map[$d->format('F')], 'tahun' => $d->format('Y')];
     }
 
     public function print(Request $request)
     {
-        // GANTI 'jadwalPengantin' menjadi 'pesanan' (atau nama relasi yang benar di Model)
         $query = JadwalPengantin::with(['paket', 'pesanan']);
 
+        // Gunakan filter yang sama dengan fungsi 'data' agar konsisten
         if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
+            $bulanInput = $request->bulan;
+            $bulanInggris = $this->translateBulan($bulanInput);
+
+            $query->where(function ($q) use ($bulanInput, $bulanInggris) {
+                $q->where('bulan', $bulanInput)
+                    ->orWhere('bulan', $bulanInggris);
+            });
         }
+
         if ($request->filled('tahun')) {
             $query->where('tahun', $request->tahun);
         }
 
         $jadwal = $query->get();
-        $bulan = $request->bulan;
-        $tahun = $request->tahun;
 
-        return Pdf::loadView('admin.jadwalpengantin.print', compact('jadwal', 'bulan', 'tahun'))
-            ->setPaper('A4', 'portrait')
+        // Pastikan variabel ini diteruskan ke view
+        return Pdf::loadView('admin.jadwalpengantin.print', [
+            'jadwal' => $jadwal,
+            'bulan'  => $request->bulan ?? 'Semua',
+            'tahun'  => $request->tahun ?? ''
+        ])->setPaper('A4', 'portrait')
             ->stream('jadwal-pengantin.pdf');
     }
 }

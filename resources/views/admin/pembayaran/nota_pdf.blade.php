@@ -123,23 +123,6 @@
             font-size: 9.5pt;
         }
 
-        .bottom-container {
-            width: 100%;
-            margin-top: 15px;
-        }
-
-        .bank-info-box {
-            width: 48%;
-            float: left;
-            font-size: 8.5pt;
-            color: #666666;
-        }
-
-        .calc-box {
-            width: 48%;
-            float: right;
-        }
-
         .calc-table {
             width: 100%;
             border-collapse: collapse;
@@ -164,7 +147,7 @@
 
         .signature-section {
             width: 100%;
-            margin-top: 50px;
+            margin-top: 60px;
         }
 
         .sig-column {
@@ -174,17 +157,13 @@
         }
 
         .footer-note {
-            margin-top: 70px;
+            margin-top: 50px;
             text-align: center;
             font-size: 8.5pt;
             font-weight: bold;
             color: #b8943a;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-        }
-
-        .clear {
-            clear: both;
         }
     </style>
 </head>
@@ -213,8 +192,7 @@
         <table class="meta-table">
             <tr>
                 <td class="meta-label">Nama</td>
-                <td class="meta-value">
-                    {{ $pembayaran->booking->bride_groom_name ?? $pembayaran->booking->customer_name }}</td>
+                <td class="meta-value">{{ $pembayaran->booking->bride_groom_name ?? $pembayaran->booking->customer_name }}</td>
                 <td class="meta-space"></td>
                 <td class="meta-label">No. Nota</td>
                 <td class="meta-value">#GRA-{{ $pembayaran->id }}</td>
@@ -224,8 +202,7 @@
                 <td class="meta-value">{{ \Carbon\Carbon::parse($pembayaran->created_at)->isoFormat('D MMMM Y') }}</td>
                 <td class="meta-space"></td>
                 <td class="meta-label">Tgl. Acara</td>
-                <td class="meta-value">
-                    {{ \Carbon\Carbon::parse($pembayaran->booking->event_date)->isoFormat('D MMMM Y') }}</td>
+                <td class="meta-value">{{ \Carbon\Carbon::parse($pembayaran->booking->event_date)->isoFormat('D MMMM Y') }}</td>
             </tr>
         </table>
     </div>
@@ -239,18 +216,15 @@
             </tr>
         </thead>
         <tbody>
-            {{-- Item 1: Harga Paket Murni --}}
             <tr>
                 <td style="text-align: center;">1</td>
                 <td>
-                    <span style="font-weight: bold;">RIAS PENGANTIN PAKET
-                        {{ strtoupper($pembayaran->booking->paket->nama_paket ?? 'INTIMATE WEDDING') }}</span>
+                    <span style="font-weight: bold;">RIAS PENGANTIN PAKET {{ strtoupper($pembayaran->booking->paket->nama_paket ?? 'INTIMATE WEDDING') }}</span>
                 </td>
                 <td style="text-align: right; font-weight: bold;">
                     Rp {{ number_format($hargaPaketMurni, 0, ',', '.') }}
                 </td>
             </tr>
-            {{-- Item Tambahan (Add-ons) --}}
             @foreach($pembayaran->booking->addOns as $index => $add)
                 <tr>
                     <td style="text-align: center; color: #888;">{{ $index + 2 }}</td>
@@ -260,10 +234,10 @@
                     </td>
                 </tr>
             @endforeach
-        </tbody
+        </tbody>
     </table>
+
     @php
-        // Menggunakan total_harga accessor untuk perhitungan akurat
         $totalTagihanKeseluruhan = (float) $pembayaran->booking->total_harga;
         $jumlahMasukSekarang = (float) $pembayaran->jumlah_bayar;
         $totalTerbayarSebelumnya = DB::table('pembayarans')
@@ -276,48 +250,46 @@
         $sisaTagihanAkhir = $subTotalNotaIni - $jumlahMasukSekarang;
     @endphp
 
-    <div class="bottom-container">
-        <div class="bank-info-box">
-            <div style="font-weight: bold; color: #111111; margin-bottom: 6px;">Pembayaran Resmi Melalui:</div>
-            <div style="font-size: 8.5pt; color: #555555;">
-                BRI: 5868-0100-8087-506<br>
-                BCA: 3610-0662-07<br>
-                BNI: 117-418-8281
-            </div>
-        </div>
-
-        <div class="calc-box">
-            <table class="calc-table">
-                <tr>
-                    <td style="color: #555555;">SUB TOTAL</td>
-                    <td class="calc-value">Rp
-                        {{ number_format($subTotalNotaIni < 0 ? 0 : $subTotalNotaIni, 0, ',', '.') }}</td>
-                </tr>
-                <tr class="row-total-masuk">
-                    <td style="font-weight: bold; color: #198754;">TOTAL MASUK (NOTA INI)</td>
-                    <td class="calc-value" style="color: #198754;">Rp
-                        {{ number_format($jumlahMasukSekarang, 0, ',', '.') }}</td>
-                </tr>
-                <tr>
-                    <td style="font-weight: bold; color: #dc3545;">SISA TAGIHAN AKHIR</td>
-                    <td class="calc-value" style="color: #dc3545;">
-                        {{ $sisaTagihanAkhir <= 0 ? 'LUNAS' : 'Rp ' . number_format($sisaTagihanAkhir, 0, ',', '.') }}
-                    </td>
-                </tr>
-            </table>
-        </div>
-        <div class="clear"></div>
-    </div>
+    <!-- Tabel Bawah (Bank & Kalkulasi) -->
+    <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+        <tr>
+            <td style="width: 55%; vertical-align: top;">
+                <div style="font-weight: bold; color: #111111; margin-bottom: 6px;">Pembayaran Resmi Melalui:</div>
+                <div style="font-size: 8.5pt; color: #555555;">
+                    BRI: 5868-0100-8087-506<br>
+                    BCA: 3610-0662-07<br>
+                    BNI: 117-418-8281
+                </div>
+            </td>
+            <td style="width: 45%; vertical-align: top;">
+                <table class="calc-table">
+                    <tr>
+                        <td style="color: #555555;">SUB TOTAL</td>
+                        <td class="calc-value">Rp {{ number_format($subTotalNotaIni < 0 ? 0 : $subTotalNotaIni, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr class="row-total-masuk">
+                        <td style="font-weight: bold; color: #198754;">TOTAL MASUK (NOTA INI)</td>
+                        <td class="calc-value" style="color: #198754;">Rp {{ number_format($jumlahMasukSekarang, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold; color: #dc3545;">SISA TAGIHAN AKHIR</td>
+                        <td class="calc-value" style="color: #dc3545;">
+                            {{ $sisaTagihanAkhir <= 0 ? 'LUNAS' : 'Rp ' . number_format($sisaTagihanAkhir, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 
     <table class="signature-section">
         <tr>
             <td class="sig-column">
-                <p style="margin-bottom: 50px; color: #555555;">Tanda Terima,</p>
-                <p style="text-decoration: underline; font-weight: bold; color: #333333;">(
-                    .................................... )</p>
+                <p style="margin-bottom: 60px; color: #555555;">Tanda Terima,</p>
+                <p style="text-decoration: underline; font-weight: bold; color: #333333;">( .................................... )</p>
             </td>
             <td class="sig-column">
-                <p style="margin-bottom: 50px; color: #555555;">Hormat Kami,</p>
+                <p style="margin-bottom: 60px; color: #555555;">Hormat Kami,</p>
                 <p style="font-weight: bold; color: #b8943a; text-decoration: underline;">GRA MANAGEMENT</p>
             </td>
         </tr>
@@ -325,5 +297,4 @@
 
     <div class="footer-note">Terimakasih Atas Kepercayaan Anda</div>
 </body>
-
 </html>
