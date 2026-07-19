@@ -8,6 +8,7 @@ use App\Models\JadwalGown;
 use App\Models\JadwalPengantin;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class JadwalGownController extends Controller
 {
@@ -23,14 +24,19 @@ class JadwalGownController extends Controller
         if ($request->filled('tanggal')) {
             $query->whereDate('tanggal_awal', $request->tanggal);
         } else {
-            // Hanya gunakan bulan & tahun jika tanggal tidak dipilih
             if ($request->filled('bulan')) {
-                $query->where('bulan', $request->bulan);
+                // Perbaikan: Fleksibel terhadap perbedaan bahasa (Inggris/Indo)
+                $bulanInput = $request->bulan;
+                $query->where(function($q) use ($bulanInput) {
+                    $q->where('bulan', $bulanInput)
+                      ->orWhere('bulan', $this->translateBulan($bulanInput));
+                });
             }
             if ($request->filled('tahun')) {
                 $query->where('tahun', $request->tahun);
             }
         }
+
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('tanggal_full', function ($row) {
@@ -41,43 +47,43 @@ class JadwalGownController extends Controller
             ->addColumn('gown_detail', function ($row) {
                 return $row->jadwalGown ? $row->jadwalGown->gown : '<span class="text-muted small">Belum diset</span>';
             })
-            // Di dalam method data(), ubah bagian ini:
             ->addColumn('action', function ($row) {
                 $editUrl = route('admin.jadwalgown.edit', ['id' => $row->id]);
-                $gownId = $row->jadwalGown ? $row->jadwalGown->id : 'null'; // pastikan relasi konsisten
+                $gownId = $row->jadwalGown ? $row->jadwalGown->id : 'null';
                 return '
-    <div class="d-flex justify-content-center gap-2">
-        <a href="' . $editUrl . '" class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
-            <i class="bi bi-pencil-square"></i> Edit
-        </a>
-        <button onclick="hapusJadwal(' . $gownId . ')" class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
-            <i class="bi bi-trash"></i> Hapus
-        </button>
-    </div>';
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="' . $editUrl . '" class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
+                        <i class="bi bi-pencil-square"></i> Edit
+                    </a>
+                    <button onclick="hapusJadwal(' . $gownId . ')" class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
+                        <i class="bi bi-trash"></i> Hapus
+                    </button>
+                </div>';
             })
             ->rawColumns(['gown_detail', 'action'])
             ->make(true);
     }
 
+    // Fungsi bantu untuk sinkronisasi bahasa (PENTING)
+    private function translateBulan($namaBulan)
+    {
+        $map = ['Januari'=>'January', 'Februari'=>'February', 'Maret'=>'March', 'April'=>'April', 'Mei'=>'May', 'Juni'=>'June', 'Juli'=>'July', 'Agustus'=>'August', 'September'=>'September', 'Oktober'=>'October', 'November'=>'November', 'Desember'=>'December'];
+        return $map[$namaBulan] ?? $namaBulan;
+    }
+
     public function create()
     {
         $jadwals = JadwalPengantin::where('tanggal_awal', '>=', now()->toDateString())
-            ->whereDoesntHave('jadwalGown') // Sesuaikan 'jadwalGown' dengan nama fungsi relasi di Model JadwalPengantin kamu
+            ->whereDoesntHave('jadwalGown')
             ->orderBy('tanggal_awal', 'asc')
             ->get();
-
         return view('admin.jadwalgown.create', compact('jadwals'));
     }
 
-    // Pastikan fungsi edit mengirim 'jadwal' dan 'pengantin'
     public function edit($id)
     {
-        // Kita ambil pengantinnya dulu
         $pengantin = JadwalPengantin::with(['paket', 'jadwalGown'])->findOrFail($id);
-
-        // Kita siapkan objek Gown (jika null, buat objek baru)
         $jadwal = $pengantin->jadwalGown ?? new JadwalGown();
-
         return view('admin.jadwalgown.edit', compact('jadwal', 'pengantin'));
     }
 
@@ -101,81 +107,37 @@ class JadwalGownController extends Controller
         return redirect()->route('admin.jadwalgown.index')->with('swal_success', 'Data berhasil diperbarui!');
     }
 
-    /**
-     * Hapus data gown.
-     */
     public function destroy($id)
     {
         try {
             $jadwal = JadwalGown::findOrFail($id);
             $jadwal->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Data jadwal penggunaan busana/gown berhasil dihapus.'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Data berhasil dihapus.']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menghapus data: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus data.']);
         }
     }
-    /**
-     * Cetak jadwal gown ke PDF.
-     */
+
     public function print(Request $request)
     {
-        // KUNCI UTAMA: Ambil dari JadwalPengantin agar semua acara tetap muncul meskipun gown belum diset
         $query = \App\Models\JadwalPengantin::with(['paket', 'jadwalGown']);
-
-        // Filter bulan dan tahun disesuaikan dengan data acara pengantin
+        
         if ($request->filled('bulan')) {
-            $query->where('bulan', trim($request->bulan));
+            $bulanInput = $request->bulan;
+            $query->where(function($q) use ($bulanInput) {
+                $q->where('bulan', $bulanInput)
+                  ->orWhere('bulan', $this->translateBulan($bulanInput));
+            });
         }
         if ($request->filled('tahun')) {
-            $query->where('tahun', trim($request->tahun));
+            $query->where('tahun', $request->tahun);
         }
 
-        // Urutkan berdasarkan tanggal acara
-        $jadwal = $query->orderBy('tanggal_awal', 'asc')->get()->map(function ($item) {
-            $awal = $item->tanggal_awal ? \Carbon\Carbon::parse($item->tanggal_awal)->format('d') : '-';
-            $akhir = $item->tanggal_akhir ? \Carbon\Carbon::parse($item->tanggal_akhir)->format('d') : null;
-            $item->tanggal_display = $akhir && $akhir != $awal ? "$awal - $akhir" : $awal;
-            return $item;
-        });
-
-        $bulan = $request->bulan;
-        $tahun = $request->tahun;
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.jadwalgown.print', compact('jadwal', 'bulan', 'tahun'))
-            ->setPaper('A4', 'portrait')
-            ->setOptions([
-                'isRemoteEnabled' => false,
-                'isHtml5ParserEnabled' => true,
-                'isFontSubsettingEnabled' => true
-            ]);
-
-        return $pdf->stream('jadwal_gown.pdf');
-    }
-
-    /**
-     * Helper: Validasi Request.
-     */
-    private function validateRequest(Request $request)
-    {
-        return $request->validate([
-            'jadwal_pengantin_id' => 'required|exists:jadwal_pengantins,id',
-            'gown' => 'required|string|max:255',
-        ]);
-    }
-
-    private function syncWithJadwal($jadwalPengantin)
-    {
-        $date = Carbon::parse($jadwalPengantin->tanggal_awal);
-        return [
-            'bulan' => $date->locale('id')->translatedFormat('F'),
-            'tahun' => $date->year
-        ];
+        $jadwal = $query->orderBy('tanggal_awal', 'asc')->get();
+        return Pdf::loadView('admin.jadwalgown.print', [
+            'jadwal' => $jadwal,
+            'bulan'  => $request->bulan ?? 'Semua',
+            'tahun'  => $request->tahun ?? ''
+        ])->setPaper('A4', 'portrait')->stream('jadwal_gown.pdf');
     }
 }
