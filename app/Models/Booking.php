@@ -40,10 +40,10 @@ class Booking extends Model
 
     // Relasi ke tabel master Add-ons melalui tabel pivot 'add_ons_booking'
     // Pastikan di kedua Model (Booking & AddOn)
-public function addOns()
-{
-    return $this->belongsToMany(AddOn::class, 'add_ons_booking', 'booking_id', 'add_on_id');
-}
+    public function addOns()
+    {
+        return $this->belongsToMany(AddOn::class, 'add_ons_booking', 'booking_id', 'add_on_id');
+    }
 
     // Relasi ke Paket
     public function paket()
@@ -66,13 +66,15 @@ public function addOns()
     // Logic untuk menghitung total pembayaran yang sudah masuk
 
     // Tambahkan Accessor untuk Total Harga
+    // Tambahkan Accessor untuk Total Harga yang aman
     public function getTotalHargaAttribute()
     {
-        // Harga Paket
-        $hargaPaket = $this->paket->harga; // Pastikan ini mengambil harga paket asli
+        // Gunakan operator null safe (?->) agar tidak error jika paket null
+        // Gunakan ?? 0 untuk memberi nilai 0 jika paket tidak ada
+        $hargaPaket = $this->paket?->harga ?? 0;
 
-        // Harga Add-ons (Pastikan di-sum hanya sekali)
-        $hargaAddOns = $this->addOns->sum('harga');
+        // Hitung harga Add-ons
+        $hargaAddOns = $this->addOns ? $this->addOns->sum('harga') : 0;
 
         return $hargaPaket + $hargaAddOns;
     }

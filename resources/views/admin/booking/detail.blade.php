@@ -171,6 +171,17 @@
 @push('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+
+    @if(session('swal_success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: "{{ session('swal_success') }}",
+            timer: 2000,
+            showConfirmButton: false
+        });
+    @endif
+    
     function updateStatus(val) {
         Swal.fire({
             title: 'Update Status Pesanan?',

@@ -42,18 +42,14 @@
             <div
                 class="card-header bg-transparent d-flex flex-wrap align-items-center justify-content-between gap-3 border-0 pt-4">
                 <h5 class="fw-bold mb-0">Log Kesibukan & Vendor Lain</h5>
-
-                {{-- Filter Container --}}
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     <input type="date" id="filter-tanggal" class="form-control form-control-sm" style="width: 140px;">
-
                     <select id="filter-bulan" class="form-select form-select-sm" style="width: 130px;">
                         <option value="">Semua Bulan</option>
                         @foreach(['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $b)
                             <option value="{{ $b }}">{{ $b }}</option>
                         @endforeach
                     </select>
-
                     <select id="filter-tahun" class="form-select form-select-sm" style="width: 100px;">
                         <option value="">Tahun</option>
                         @for ($y = date('Y') - 1; $y <= date('Y') + 2; $y++)
@@ -89,9 +85,11 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.datatables.net/2.0.7/js/dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/2.0.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         $(document).ready(function () {
+            // 1. Inisialisasi DataTable
             var table = $('#pribadi-table').DataTable({
                 processing: true,
                 serverSide: true,
@@ -105,21 +103,57 @@
                 },
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
-                    { data: 'event_date', name: 'event_date', defaultContent: '-' },
+                    { data: 'event_date', name: 'event_date' },
                     { data: 'tipe', name: 'tipe', render: data => data == 'INTERNAL' ? '<span class="badge bg-primary">INTERNAL</span>' : '<span class="badge bg-warning text-dark">EKSTERNAL</span>' },
-                    { data: 'nama_event', name: 'nama_event', defaultContent: '-' },
-                    { data: 'nama_vendor', name: 'nama_vendor', defaultContent: '-' },
-                    { data: 'keterangan', name: 'keterangan', defaultContent: '-' },
+                    { data: 'nama_event', name: 'nama_event' },
+                    { data: 'nama_vendor', name: 'nama_vendor' },
+                    { data: 'keterangan', name: 'keterangan' },
                     { data: 'aksi', name: 'aksi', orderable: false, searchable: false, className: 'text-center' }
                 ]
             });
 
-            // Event filter
+            // 2. Event Filter
             $('#filter-tanggal, #filter-bulan, #filter-tahun').on('change', function () {
-                if ($(this).attr('id') === 'filter-tanggal' && $(this).val() !== '') {
-                    $('#filter-bulan, #filter-tahun').val('');
-                }
                 table.ajax.reload();
+            });
+
+            // 3. SweetAlert Success (Redirect dari Controller)
+            @if(session('success'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: "{{ session('success') }}",
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            @endif
+
+            // 4. SweetAlert Hapus (Event Delegation)
+            $('body').on('click', '.hapus-btn', function () {
+                let id = $(this).data('id');
+                Swal.fire({
+                    title: "Yakin Hapus Agenda?",
+                    text: "Data tidak dapat dikembalikan!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    confirmButtonText: "Ya, Hapus!"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // ... di dalam script hapus-btn
+                        $.ajax({
+                            // Pastikan nama route-nya adalah 'kru.jadwal.pribadi.destroy'
+                            // Ganti baris url lama dengan yang ini:
+                            url: "{{ route('kru.jadwal.pribadi.destroy', ':id') }}".replace(':id', id),
+                            type: "POST",
+                            data: { _method: 'DELETE', _token: "{{ csrf_token() }}" },
+                            success: function (res) {
+                                Swal.fire({ icon: 'success', title: 'Terhapus!', text: 'Agenda berhasil dihapus.', timer: 1500, showConfirmButton: false });
+                                table.ajax.reload(null, false);
+                            }
+                        });
+                    }
+                });
             });
         });
     </script>

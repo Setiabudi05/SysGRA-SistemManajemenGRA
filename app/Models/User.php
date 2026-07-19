@@ -21,6 +21,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'address', // Tambahkan kolom alamat di sini (sesuaikan dengan nama kolom di database Anda)
         'password',
         'role',
+        'email_verified_at'
     ];
 
     protected $hidden = [

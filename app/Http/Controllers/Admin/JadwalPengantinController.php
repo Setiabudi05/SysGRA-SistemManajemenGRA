@@ -107,9 +107,19 @@ class JadwalPengantinController extends Controller
     public function update(Request $request, $id)
     {
         $jadwal = JadwalPengantin::findOrFail($id);
+
+        // 1. Validasi
         $validated = $this->validateRequest($request);
+
+        // 2. TANGANI ARRAY ASISTEN: Ubah menjadi string (Contoh: "Budi,Ani")
+        if ($request->has('asisten') && is_array($request->asisten)) {
+            $validated['asisten'] = implode(',', $request->asisten);
+        }
+
+        // 3. Update data
         $mapping = $this->mapBulanTahun($request->tanggal_awal);
         $jadwal->update(array_merge($validated, $mapping));
+
         return redirect()->route('admin.jadwalpengantin.index')->with('swal_success', 'Jadwal diperbarui!');
     }
 
@@ -126,7 +136,7 @@ class JadwalPengantinController extends Controller
             'nama'          => 'required|string|max:255',
             'paket_id'      => 'required',
             'alamat'        => 'required|string',
-            'asisten'       => 'nullable|string',
+            'asisten'       => 'nullable', // Hapus 'string' agar tidak crash saat menerima array
             'fg'            => 'nullable|string',
             'layos'         => 'nullable|string',
             'keterangan'    => 'nullable|string',

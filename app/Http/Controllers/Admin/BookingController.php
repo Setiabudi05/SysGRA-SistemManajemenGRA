@@ -73,8 +73,12 @@ class BookingController extends Controller
             })
             ->editColumn('package_price', fn($row) => 'Rp ' . number_format($row->total_tagihan_final, 0, ',', '.'))
             ->editColumn('status', function ($row) {
-                $class = ['PENDING' => 'bg-light-warning text-warning', 'CONFIRMED' => 'bg-light-primary text-primary', 
-                'COMPLETED' => 'bg-light-success text-success', 'DRAFT' => 'bg-secondary text-white'][strtoupper($row->status)] ?? 'bg-secondary';
+                $class = [
+                    'PENDING' => 'bg-light-warning text-warning',
+                    'CONFIRMED' => 'bg-light-primary text-primary',
+                    'COMPLETED' => 'bg-light-success text-success',
+                    'DRAFT' => 'bg-secondary text-white'
+                ][strtoupper($row->status)] ?? 'bg-secondary';
                 return '<span class="badge ' . $class . ' px-3 py-2 fw-bold">' . strtoupper($row->status) . '</span>';
             })
             ->addColumn('action', function ($row) {
@@ -88,57 +92,78 @@ class BookingController extends Controller
     }
     public function create()
     {
-        $list_paket = Paket::orderBy('nama_paket', 'asc')->get();
-        $list_pelanggan = User::where('role', 'pelanggan')->orderBy('name', 'asc')->get();
+        $currentYear = date('Y'); // 2026
 
-        // TAMBAHKAN BARIS INI: Ambil semua data add-ons
+        // Asumsi tabel 'pakets' memiliki kolom 'tahun'
+        $list_paket = Paket::where('tahun', $currentYear)
+            ->orderBy('nama_paket', 'asc')
+            ->get();
+
+        $list_pelanggan = User::where('role', 'pelanggan')->orderBy('name', 'asc')->get();
         $list_addons = AddOn::orderBy('nama_item', 'asc')->get();
 
-        // KIRIMKAN $list_addons KE VIEW
         return view('admin.booking.create', compact('list_paket', 'list_pelanggan', 'list_addons'));
     }
-
+    /**
+     * Simpan pesanan baru ke database.
+     */
     public function store(Request $request)
     {
+        // 1. Validasi Input
         $request->validate([
             'user_id'          => 'required|exists:users,id',
-            'customer_name'    => 'required',
-            'whatsapp_number'  => 'required',
-            'bride_groom_name' => 'required',
+            'customer_name'    => 'required|string',
+            'whatsapp_number'  => 'required|string',
+            'bride_groom_name' => 'required|string',
             'event_date'       => 'required|date',
-            'event_duration'   => 'required',
-            'package_name'     => 'required',
-            'total_harga'      => 'required', // Pastikan name di blade sesuai
-            'event_address'    => 'required',
+            'event_duration'   => 'required|integer',
+            'paket_id'         => 'required|exists:pakets,id', // Harus paket_id
+            'total_harga'      => 'required',
+            'event_address'    => 'required|string',
         ]);
 
-        $cleanPrice = (int) str_replace('.', '', $request->total_harga);
+        // 2. Ambil data paket untuk mendapatkan nama paketnya
+        $paket = \App\Models\Paket::findOrFail($request->paket_id);
 
-        // Simpan Booking
-        $booking = Booking::create([
-            'user_id'          => $request->user_id,
-            'customer_name'    => $request->customer_name,
-            'whatsapp_number'  => $request->whatsapp_number,
-            'bride_groom_name' => $request->bride_groom_name,
-            'parent_name'      => $request->parent_names,
-            'facebook_name'    => $request->fb_name,
-            'instagram_name'   => $request->ig_name,
-            'event_date'       => $request->event_date,
-            'event_duration'   => $request->event_duration,
-            'event_address'    => $request->event_address,
-            'package_name'     => $request->package_name,
-            'package_price'    => $cleanPrice,
-            'notes'            => $request->notes,
-            'status'           => 'PENDING',
-        ]);
+        // 3. Bersihkan format harga (hapus titik agar menjadi integer murni)
+        $cleanPrice = (int) str_replace(['.', ','], '', $request->total_harga);
 
-        // Sinkronisasi Add-ons (tabel pivot)
-        if ($request->has('add_ons')) {
-            $booking->addOns()->sync($request->add_ons);
+        // 4. Mulai Transaksi Database (untuk memastikan data aman)
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            // 5. Simpan Booking
+            $booking = Booking::create([
+                'user_id'          => $request->user_id,
+                'customer_name'    => $request->customer_name,
+                'whatsapp_number'  => $request->whatsapp_number,
+                'bride_groom_name' => $request->bride_groom_name,
+                'parent_name'      => $request->parent_names,
+                'facebook_name'    => $request->fb_name,
+                'instagram_name'   => $request->ig_name,
+                'event_date'       => $request->event_date,
+                'event_duration'   => $request->event_duration,
+                'event_address'    => $request->event_address,
+                'paket_id'         => $request->paket_id,        // ID Paket (Integer)
+                'package_name'     => $paket->nama_paket,        // Nama Paket (String)
+                'package_price'    => $cleanPrice,               // Total Harga Bersih
+                'notes'            => $request->notes,
+                'status'           => 'PENDING',
+            ]);
+
+            // 6. Sinkronisasi Add-ons (tabel pivot)
+            if ($request->has('add_ons') && is_array($request->add_ons)) {
+                $booking->addOns()->sync($request->add_ons);
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return redirect()->route('admin.booking.show', $booking->id)
+                ->with('swal_success', 'Pesanan berhasil dibuat!');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return back()->withErrors(['error' => 'Gagal menyimpan pesanan: ' . $e->getMessage()])
+                ->withInput();
         }
-
-        return redirect()->route('admin.booking.show', $booking->id)
-            ->with('swal_success', 'Pesanan berhasil dibuat!');
     }
     public function show($id)
     {
@@ -242,25 +267,25 @@ class BookingController extends Controller
      * Menghapus data pesanan/booking (SINKRON HAPUS BERUNTUN GLOBAL)
      */
     public function destroy($id)
-{
-    DB::beginTransaction();
-    try {
-        // 1. Hapus manual dari tabel pivot dengan query builder (menghindari error relasi)
-        DB::table('add_ons_booking')->where('booking_id', $id)->delete();
+    {
+        DB::beginTransaction();
+        try {
+            // 1. Hapus manual dari tabel pivot dengan query builder (menghindari error relasi)
+            DB::table('add_ons_booking')->where('booking_id', $id)->delete();
 
-        // 2. Hapus data terkait lainnya
-        DB::table('pembayarans')->where('pesanan_id', $id)->delete();
+            // 2. Hapus data terkait lainnya
+            DB::table('pembayarans')->where('pesanan_id', $id)->delete();
 
-        // 3. Hapus booking
-        Booking::where('id', $id)->delete();
+            // 3. Hapus booking
+            Booking::where('id', $id)->delete();
 
-        DB::commit();
-        return response()->json(['success' => true, 'message' => 'Berhasil dihapus!']);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Berhasil dihapus!']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
-}
     public function print($id)
     {
         $booking = Booking::findOrFail($id);

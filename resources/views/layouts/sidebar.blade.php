@@ -21,57 +21,58 @@
         <div class="sidebar-menu">
             <ul class="menu mt-4">
                 {{-- ================= MENU OWNER ================= --}}
+                {{-- ================= MENU OWNER ================= --}}
                 @if(Auth::user()->role == 'owner')
+                    {{-- Analitik & Strategi --}}
                     <li class="sidebar-title">Analitik & Strategi</li>
                     <li class="sidebar-item {{ request()->routeIs('owner.dashboard') ? 'active' : '' }}">
-                        <a href="{{ route('owner.dashboard') }}" class="sidebar-link"><i
-                                class="bi bi-columns-gap"></i><span>Dashboard Strategis</span></a>
+                        <a href="{{ route('owner.dashboard') }}" class="sidebar-link">
+                            <i class="bi bi-columns-gap"></i><span>Dashboard Strategis</span>
+                        </a>
                     </li>
-                    <li class="sidebar-title">Kendali Operasional</li>
-                    @php $isJadwalOwnerActive = request()->is('owner/jadwal*'); @endphp
-                    <li class="sidebar-item has-sub {{ $isJadwalOwnerActive ? 'active' : '' }}">
-                        <a href="#" class="sidebar-link"><i class="bi bi-people-fill"></i><span>Pembagian Kru</span></a>
-                        <ul class="submenu {{ $isJadwalOwnerActive ? 'active' : '' }}">
-                            <li class="submenu-item {{ request()->routeIs('owner.jadwalpengantin.*') ? 'active' : '' }}"><a
-                                    href="{{ route('owner.jadwalpengantin.index') }}" class="submenu-link">Jadwal
-                                    Pengantin</a></li>
-                            <li class="submenu-item {{ request()->routeIs('owner.jadwaldekor.*') ? 'active' : '' }}"><a
-                                    href="{{ route('owner.jadwaldekor.index') }}" class="submenu-link">Jadwal Dekor</a></li>
-                        </ul>
-                    </li>
-                    <li class="sidebar-title">Keuangan & SDM</li>
 
-                    {{-- Menu Laporan Pesanan --}}
+                    {{-- Kendali Operasional (Khusus Penugasan) --}}
+                    <li class="sidebar-title">Kendali Operasional</li>
+                    <li class="sidebar-item {{ request()->routeIs('owner.jadwalpengantin.*') ? 'active' : '' }}">
+                        <a href="{{ route('owner.jadwalpengantin.index') }}" class="sidebar-link">
+                            <i class="bi bi-people-fill"></i><span>Penugasan Kru</span>
+                        </a>
+                    </li>
+
+                    {{-- Kelompok Laporan --}}
+                    <li class="sidebar-title">Laporan & Keuangan</li>
+
+                    <li class="sidebar-item {{ request()->routeIs('owner.jadwaldekor.*') ? 'active' : '' }}">
+                        <a href="{{ route('owner.jadwaldekor.index') }}" class="sidebar-link">
+                            <i class="bi bi-palette"></i><span>Laporan Jadwal Dekor</span>
+                        </a>
+                    </li>
+
                     <li class="sidebar-item {{ request()->routeIs('owner.booking.*') ? 'active' : '' }}">
                         <a href="{{ route('owner.booking.index') }}" class="sidebar-link">
-                            <i class="bi bi-cart-check"></i>
-                            <span>Laporan Pesanan</span>
+                            <i class="bi bi-cart-check"></i><span>Laporan Pesanan</span>
                         </a>
                     </li>
 
-                    {{-- Menu Pembayaran --}}
                     <li class="sidebar-item {{ request()->routeIs('owner.pembayaran.*') ? 'active' : '' }}">
                         <a href="{{ route('owner.pembayaran.index') }}" class="sidebar-link">
-                            <i class="bi bi-credit-card"></i>
-                            <span>Laporan Pembayaran</span>
+                            <i class="bi bi-credit-card"></i><span>Laporan Pembayaran</span>
                         </a>
                     </li>
 
-                    {{-- Menu Laporan Pembukuan --}}
                     <li class="sidebar-item {{ request()->routeIs('owner.pembukuan.*') ? 'active' : '' }}">
                         <a href="{{ route('owner.pembukuan.index') }}" class="sidebar-link">
-                            <i class="bi bi-journal-check"></i>
-                            <span>Laporan Pembukuan</span>
+                            <i class="bi bi-journal-check"></i><span>Laporan Pembukuan</span>
                         </a>
                     </li>
 
-                    {{-- Menu Kelola Akun --}}
+                    <li class="sidebar-title">Manajemen SDM</li>
                     <li class="sidebar-item {{ request()->routeIs('owner.users.*') ? 'active' : '' }}">
                         <a href="{{ route('owner.users.index') }}" class="sidebar-link">
-                            <i class="bi bi-person-gear"></i>
-                            <span>Kelola Akun Pegawai</span>
+                            <i class="bi bi-person-gear"></i><span>Kelola Akun Pegawai</span>
                         </a>
                     </li>
+
                     {{-- ================= MENU ADMIN ================= --}}
                 @elseif(Auth::user()->role == 'admin')
                     <li class="sidebar-title">Menu Utama</li>
@@ -147,16 +148,6 @@
                         <a href="{{ route('kru.riwayat.index') }}" class='sidebar-link'>
                             <i class="bi bi-clock-history"></i>
                             <span>Riwayat Tugas</span>
-                        </a>
-                    </li>
-
-                    <li class="sidebar-title">Informasi</li>
-
-                    {{-- Panduan Teknis --}}
-                    <li class="sidebar-item {{ request()->routeIs('kru.panduan') ? 'active' : '' }}">
-                        <a href="#" class='sidebar-link'>
-                            <i class="bi bi-info-square-fill"></i>
-                            <span>Panduan Teknis</span>
                         </a>
                     </li>
                 @endif

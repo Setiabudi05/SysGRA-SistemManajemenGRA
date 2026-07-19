@@ -83,11 +83,13 @@ class BookingController extends Controller
                 'facebook_name'    => $request->facebook_name,
                 'instagram_name'   => $request->instagram_name,
                 'event_address'    => $request->event_address,
+                'latitude'         => $request->latitude,
+                'longitude'        => $request->longitude,
                 'event_date'       => $eventDate,
                 'event_duration'   => $duration,
                 'paket_id'         => $request->paket_id,
                 'package_name'     => $paket->nama_paket,
-                'package_price'    => (string) $totalHarga, // Nilai sudah flat
+                'package_price'    => (string) $totalHarga,
                 'notes'            => $request->notes,
                 'status'           => 'draft',
                 'user_id'          => Auth::id(),
@@ -155,7 +157,7 @@ class BookingController extends Controller
                 ->where('data->booking_id', $item->id)
                 ->first();
 
-                
+
             if ($notif) {
                 $notif->update([
                     'data' => [

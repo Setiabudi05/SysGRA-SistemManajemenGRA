@@ -4,7 +4,6 @@
 @push('css')
     <link rel="stylesheet" href="{{ asset('assets-admin/css/admin-styles.css') }}">
     <style>
-        /* UI Ringkas Sesuai Pilihan Anda */
         .form-section-title {
             font-size: 0.9rem;
             font-weight: 700;
@@ -41,7 +40,6 @@
             border-radius: 6px;
         }
 
-        /* Style tambahan untuk kolom harga yang terkunci */
         .form-control:read-only {
             background-color: #f8f9fa !important;
             color: #435ebe;
@@ -51,11 +49,9 @@
 @endpush
 
 @section('content')
-    {{-- Bagian Header yang disesuaikan dengan Gaya Dekorasi --}}
     <div class="page-heading">
         <div class="page-title">
             <div class="row align-items-center">
-                {{-- Sisi Kiri: Judul dan Navigasi Breadcrumb --}}
                 <div class="col-12 col-md-6">
                     <nav aria-label="breadcrumb" class="mb-1">
                         <ol class="breadcrumb" style="font-size: 0.85rem;">
@@ -67,10 +63,7 @@
                         </ol>
                     </nav>
                     <h3 class="fw-bold mb-0">Input Pesanan Baru</h3>
-                    <p class="text-muted mb-0 small">Pendaftaran booking langsung di tempat untuk pengantin.</p>
                 </div>
-
-                {{-- POSISI KANAN: Navigasi Teks Halus sesuai Gaya Dekorasi --}}
                 <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0">
                     <a href="{{ route('admin.booking.index') }}" class="text-muted small fw-bold text-decoration-none">
                         <i class="bi bi-chevron-left"></i> Kembali ke daftar pesanan
@@ -82,37 +75,36 @@
     </div>
 
     <section class="section">
-        <form action="{{ route('admin.booking.store') }}" method="POST">
+        <form action="{{ route('admin.booking.store') }}" method="POST" id="bookingForm">
             @csrf
             <div class="row">
-                {{-- KOLOM KIRI: IDENTITAS & ACARA (Form Tetap) --}}
                 <div class="col-lg-8">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body">
                             <div class="form-section-title"><i class="bi bi-person-plus"></i> Identitas & Acara</div>
                             <div class="row g-2 mb-3">
-                                {{-- PERBAIKAN UTAMA: Mengubah input text Nama Pemesan menjadi Dropdown Akun Pelanggan --}}
                                 <div class="col-md-6">
                                     <label class="form-label text-primary">Hubungkan ke Akun Pelanggan</label>
-                                    <select name="user_id" id="user_id" class="form-select" required>
+                                    <select name="user_id" id="user_id"
+                                        class="form-select @error('user_id') is-invalid @enderror" required>
                                         <option value="">-- Pilih Akun User --</option>
                                         @foreach($list_pelanggan as $user)
-                                            <option value="{{ $user->id }}" data-name="{{ $user->name }}">
-                                                {{ $user->name }} ({{ $user->email }})
-                                            </option>
+                                            <option value="{{ $user->id }}" data-name="{{ $user->name }}">{{ $user->name }}
+                                                ({{ $user->email }})</option>
                                         @endforeach
                                     </select>
-                                    {{-- Input hidden untuk tetap mengirimkan customer_name ke controller --}}
                                     <input type="hidden" name="customer_name" id="customer_name">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">WhatsApp / No. Telp</label>
-                                    <input type="number" name="whatsapp_number" class="form-control"
+                                    <input type="number" name="whatsapp_number"
+                                        class="form-control @error('whatsapp_number') is-invalid @enderror"
                                         placeholder="08xxxxxxxx" required>
                                 </div>
                                 <div class="col-md-12">
                                     <label class="form-label text-primary">Nama Pasangan Pengantin</label>
-                                    <input type="text" name="bride_groom_name" class="form-control fw-bold"
+                                    <input type="text" name="bride_groom_name"
+                                        class="form-control @error('bride_groom_name') is-invalid @enderror"
                                         placeholder="Contoh: Umi & Mujiono" required>
                                 </div>
                             </div>
@@ -120,11 +112,13 @@
                             <div class="row g-2 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Tanggal Pelaksanaan</label>
-                                    <input type="date" name="event_date" class="form-control" required>
+                                    <input type="date" name="event_date"
+                                        class="form-control @error('event_date') is-invalid @enderror" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Durasi Acara</label>
-                                    <select name="duration" class="form-select" required>
+                                    <select name="event_duration"
+                                        class="form-select @error('event_duration') is-invalid @enderror" required>
                                         <option value="1">1 Hari (Sehari)</option>
                                         <option value="2">2 Hari (Dua Hari)</option>
                                     </select>
@@ -147,43 +141,50 @@
                                 </div>
                             </div>
 
+
                             <div class="form-section-title mt-3"><i class="bi bi-geo-alt"></i> Lokasi Acara</div>
-                            <textarea name="event_address" class="form-control" rows="2" required
-                                placeholder="Alamat lengkap lokasi acara..."></textarea>
+                            <textarea name="event_address" class="form-control @error('event_address') is-invalid @enderror"
+                                rows="2" required placeholder="Alamat lengkap lokasi acara..."></textarea>
                         </div>
                     </div>
                 </div>
 
-                {{-- KOLOM KANAN: PAKET & BIAYA (Form Tetap) --}}
                 <div class="col-lg-4">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body">
                             <div class="form-section-title"><i class="bi bi-box-seam"></i> Paket & Biaya</div>
-
-                             <div class="mb-2">
-                            <label class="form-label">Paket Utama</label>
-                            <select name="package_name" id="select_paket" class="form-select" required>
-                                <option value="" data-harga="0">-- Pilih Paket --</option>
-                                @foreach($list_paket as $p)
-                                    <option value="{{ $p->nama_paket }}" data-harga="{{ $p->harga }}">{{ $p->nama_paket }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Add-ons</label>
-                            <select name="add_ons[]" id="select_addons" class="form-select" multiple style="height: 100px;">
-                                @foreach($list_addons as $addon)
-                                    <option value="{{ $addon->id }}" data-harga="{{ $addon->harga }}">{{ $addon->nama_item }} (Rp {{ number_format($addon->harga,0,',','.') }})</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Total Harga (Otomatis)</label>
-                            <div class="input-group">
-                                <span class="input-group-text fw-bold">Rp</span>
-                                <input type="text" name="total_harga" id="package_price" class="form-control" readonly required>
+                            <div class="mb-2">
+                                <label class="form-label">Paket Utama</label>
+                                <!-- Ubah name menjadi paket_id -->
+                                <select name="paket_id" id="select_paket"
+                                    class="form-select @error('paket_id') is-invalid @enderror" required>
+                                    <option value="" data-harga="0">-- Pilih Paket --</option>
+                                    @foreach($list_paket as $p)
+                                        <!-- Pastikan value-nya adalah ID ($p->id) -->
+                                        <option value="{{ $p->id }}" data-harga="{{ $p->harga }}">
+                                            {{ $p->nama_paket }} (Rp {{ number_format($p->harga, 0, ',', '.') }})
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
-                        </div>
+                            <div class="mb-2">
+                                <label class="form-label">Add-ons</label>
+                                <select name="add_ons[]" id="select_addons" class="form-select" multiple
+                                    style="height: 100px;">
+                                    @foreach($list_addons as $addon)
+                                        <option value="{{ $addon->id }}" data-harga="{{ $addon->harga }}">
+                                            {{ $addon->nama_item }} (Rp {{ number_format($addon->harga, 0, ',', '.') }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Total Harga (Otomatis)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text fw-bold">Rp</span>
+                                    <input type="text" name="total_harga" id="package_price"
+                                        class="form-control @error('total_harga') is-invalid @enderror" readonly required>
+                                </div>
+                            </div>
                             <div class="d-grid gap-2 mt-3">
                                 <button type="submit" class="btn btn-primary fw-bold shadow-sm py-2">SIMPAN PESANAN</button>
                                 <button type="reset" class="btn btn-light py-2 border">RESET FORM</button>
@@ -199,23 +200,22 @@
 @push('js')
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>
-         $(document).ready(function() {
-        function hitungTotal() {
-            let hargaPaket = parseFloat($('#select_paket').find(':selected').data('harga')) || 0;
-            let hargaAddons = 0;
-            $('#select_addons option:selected').each(function() {
-                hargaAddons += parseFloat($(this).data('harga')) || 0;
-            });
-            let total = hargaPaket + hargaAddons;
-            $('#package_price').val(new Intl.NumberFormat('id-ID').format(total));
-        }
+        $(document).ready(function () {
+            function hitungTotal() {
+                let hargaPaket = parseFloat($('#select_paket').find(':selected').data('harga')) || 0;
+                let hargaAddons = 0;
+                $('#select_addons option:selected').each(function () {
+                    hargaAddons += parseFloat($(this).data('harga')) || 0;
+                });
+                let total = hargaPaket + hargaAddons;
+                $('#package_price').val(total.toLocaleString('id-ID'));
+            }
 
-        $('#select_paket, #select_addons').on('change', hitungTotal);
-        
-        $('#user_id').on('change', function() {
-            $('#customer_name').val($(this).find(':selected').data('name') || '');
+            $('#select_paket, #select_addons').on('change', hitungTotal);
+
+            $('#user_id').on('change', function () {
+                $('#customer_name').val($(this).find(':selected').data('name') || '');
+            });
         });
-    });
     </script>
 @endpush
-

@@ -31,37 +31,34 @@ class SocialiteController extends Controller
             return redirect()->route('login')->with('error', 'Gagal login dengan Google.');
         }
 
-        // 1. Cari user berdasarkan email
         $user = User::where('email', $googleUser->getEmail())->first();
 
         if ($user) {
-            // JIKA USER SUDAH ADA:
-            // Login saja, JANGAN update name atau role agar data kru/admin tidak rusak
+            // User sudah ada, pastikan email_verified_at terisi
+            if (is_null($user->email_verified_at)) {
+                $user->email_verified_at = now();
+                $user->save();
+            }
             Auth::login($user);
         } else {
-            // JIKA USER BARU:
-            // Baru buatkan akun dengan role pelanggan
+            // User baru, buat dengan email_verified_at yang sudah terisi
             $user = User::create([
-                'name'      => $googleUser->getName(),
-                'email'     => $googleUser->getEmail(),
-                'google_id' => $googleUser->getId(),
-                'password'  => bcrypt('password_acak_123'),
-                'role'      => 'pelanggan',
+                'name'              => $googleUser->getName(),
+                'email'             => $googleUser->getEmail(),
+                'google_id'         => $googleUser->getId(),
+                'password'          => bcrypt(Str::random(16)), // Password acak yang kuat
+                'role'              => 'pelanggan',
+                'email_verified_at' => now(), 
             ]);
             Auth::login($user);
         }
 
-        // 2. Redirect berdasarkan role
-        if ($user->role === 'admin') {
-            return redirect()->intended(route('admin.dashboard'));
-        }
+        // Redirect setelah Auth::login()
+        if ($user->role === 'admin') return redirect()->route('admin.dashboard');
+        if ($user->role === 'kru') return redirect()->route('kru.dashboard');
+        if ($user->role === 'owner') return redirect()->route('owner.dashboard');
+        if ($user->role === 'pelanggan') return redirect()->route('user.dashboard');
 
-        // Jika role-nya 'kru', arahkan ke dashboard kru (sesuaikan route-nya)
-        if ($user->role === 'kru') {
-            return redirect()->intended(route('kru.dashboard'));
-        }
-
-        // Pengalihan standar untuk pelanggan
-        return redirect()->intended(route('home'));
+        return redirect()->route('home');
     }
 }

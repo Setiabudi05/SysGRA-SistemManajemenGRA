@@ -59,8 +59,8 @@
             <div class="col-6 col-md-3">
                 <div class="card shadow-sm stats-card">
                     <div class="card-body">
-                        <h6 class="text-muted">Klien Baru</h6>
-                        <h4 class="font-extrabold">{{ $newCustomers }}</h4>
+                        <h6 class="text-muted">Pesanan Aktif</h6>
+                        <h4 class="font-extrabold">{{ $pesananAktif }}</h4>
                     </div>
                 </div>
             </div>

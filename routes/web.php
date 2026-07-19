@@ -15,7 +15,6 @@ use App\Http\Controllers\Owner\ProfileController;
 use App\Http\Controllers\Owner\UserController as OwnerUserController;
 use App\Http\Controllers\Owner\JadwalPengantinController as OwnerJadwalPengantin;
 use App\Http\Controllers\Owner\JadwalDekorController as OwnerJadwalDekor;
-use App\Http\Controllers\Owner\JadwalLayosController as OwnerJadwalLayos;
 
 // --- C. ADMIN CONTROLLERS (Operasional & Master Data) ---
 use App\Http\Controllers\Admin\DashboardController;

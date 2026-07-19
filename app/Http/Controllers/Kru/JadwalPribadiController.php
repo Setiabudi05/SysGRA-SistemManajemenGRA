@@ -38,10 +38,7 @@ class JadwalPribadiController extends Controller
             ->editColumn('event_date', fn($row) => Carbon::parse($row->event_date)->translatedFormat('d F Y'))
             ->addColumn('aksi', function ($row) {
                 return '<a href="' . route('kru.jadwal.pribadi.edit', $row->id) . '" class="btn btn-sm btn-warning">Edit</a>
-                    <form action="' . route('kru.jadwal.pribadi.destroy', $row->id) . '" method="POST" class="d-inline">
-                        ' . csrf_field() . method_field("DELETE") . '
-                        <button class="btn btn-sm btn-danger" onclick="return confirm(\'Yakin hapus?\')">Hapus</button>
-                    </form>';
+            <button class="btn btn-sm btn-danger hapus-btn" data-id="' . $row->id . '">Hapus</button>';
             })
             ->rawColumns(['aksi', 'tipe']) // Pastikan 'tipe' ada di sini jika pakai badge
             ->make(true);

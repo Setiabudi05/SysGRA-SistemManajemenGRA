@@ -30,47 +30,38 @@
         }
 
         .card { border: none; border-radius: 1rem; overflow: hidden; }
-
         .login-form { padding: 25px 35px !important; }
 
         .login-title {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #3a3b45;
-            letter-spacing: 1px;
-            margin-bottom: 0;
+            font-size: 1.5rem; font-weight: 800; color: #3a3b45;
+            letter-spacing: 1px; margin-bottom: 0;
         }
 
-        .login-subtitle {
-            color: #858796;
-            font-size: 0.9rem;
-            font-weight: 400;
-        }
+        .login-subtitle { color: #858796; font-size: 0.9rem; font-weight: 400; }
 
         .password-wrapper { position: relative; display: flex; align-items: center; }
         .password-wrapper input { padding-right: 40px !important; width: 100%; }
 
         .toggle-password {
-            position: absolute;
-            right: 15px;
-            cursor: pointer;
-            color: #d1d3e2;
-            z-index: 10;
-            top: 50%;
-            transform: translateY(-50%);
-            transition: color 0.2s;
+            position: absolute; right: 15px; cursor: pointer; color: #d1d3e2;
+            z-index: 10; top: 50%; transform: translateY(-50%); transition: color 0.2s;
         }
-
         .toggle-password:hover { color: #858796; }
 
-        .btn-primary {
-            background-color: #435ebe;
-            border-color: #435ebe;
-            font-weight: 700;
-            padding: 0.6rem;
-            border-radius: 0.5rem;
+        /* Tombol Google */
+        .btn-google {
+            color: #555 !important; background-color: #ffffff !important;
+            border: 1px solid #d1d3e2 !important; font-weight: 600;
+            transition: all 0.2s ease-in-out; display: block; width: 100%;
+            padding: 0.6rem; border-radius: 0.5rem; text-align: center;
         }
+        .btn-google:hover { background-color: #f8f9fc !important; border-color: #b7b9cc !important; text-decoration: none; }
+        .btn-google img { width: 18px; margin-right: 8px; margin-top: -3px; }
 
+        .btn-primary {
+            background-color: #435ebe; border-color: #435ebe;
+            font-weight: 700; padding: 0.6rem; border-radius: 0.5rem;
+        }
         .form-group { margin-bottom: 0.75rem !important; }
         .form-control { height: 38px; font-size: 0.85rem; }
     </style>
@@ -107,35 +98,33 @@
 
                             <form class="user" method="POST" action="{{ route('register') }}">
                                 @csrf
-
                                 <div class="form-group">
                                     <input type="text" class="form-control form-control-user" placeholder="Full Name" name="name" value="{{ old('name') }}" required autofocus>
                                 </div>
-
                                 <div class="form-group">
                                     <input type="email" class="form-control form-control-user" placeholder="Email Address" name="email" value="{{ old('email') }}" required>
                                 </div>
-
-                                {{-- Password Field dengan Ikon Mata --}}
                                 <div class="form-group">
                                     <div class="password-wrapper">
                                         <input type="password" class="form-control form-control-user" id="passwordField" placeholder="Password" name="password" required>
                                         <i class="far fa-eye toggle-password" onclick="togglePass('passwordField', this)"></i>
                                     </div>
                                 </div>
-
-                                {{-- Confirm Password Field dengan Ikon Mata --}}
                                 <div class="form-group mb-4">
                                     <div class="password-wrapper">
                                         <input type="password" class="form-control form-control-user" id="passwordConfirmation" placeholder="Confirm Password" name="password_confirmation" required>
                                         <i class="far fa-eye toggle-password" onclick="togglePass('passwordConfirmation', this)"></i>
                                     </div>
                                 </div>
-
-                                <button type="submit" class="btn btn-primary btn-user btn-block shadow-sm">
-                                    Register Account
-                                </button>
+                                <button type="submit" class="btn btn-primary btn-user btn-block shadow-sm">Register Account</button>
                             </form>
+
+                            <div class="text-center mt-3">
+                                <a href="{{ route('socialite.google.redirect') }}" class="btn btn-google btn-user btn-block">
+                                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                                    Register with Google
+                                </a>
+                            </div>
 
                             <hr class="my-3">
                             <div class="text-center">
@@ -152,13 +141,7 @@
 
     <script src="{{ asset('assets-admin/vendor/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('assets-admin/vendor/bootstrap/js/bootstrap.bundle.min1.js') }}"></script>
-    
     <script>
-        /**
-         * Fungsi Toggle Password Mandiri
-         * fieldId: ID dari input password yang akan diubah
-         * icon: Element ikon (this) yang diklik
-         */
         function togglePass(fieldId, icon) {
             const field = document.getElementById(fieldId);
             if (field.type === 'password') {
@@ -169,17 +152,11 @@
                 icon.classList.replace('fa-eye-slash', 'fa-eye');
             }
         }
-    </script>
-    <script>
         $(document).ready(function() {
             window.setTimeout(function() {
-                $(".alert").fadeTo(500, 0).slideUp(500, function(){
-                    $(this).remove(); 
-                });
+                $(".alert").fadeTo(500, 0).slideUp(500, function(){ $(this).remove(); });
             }, 3000); 
         });
     </script>
 </body>
-</body>
-
 </html>

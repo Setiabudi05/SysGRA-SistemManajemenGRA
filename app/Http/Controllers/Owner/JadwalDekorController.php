@@ -59,8 +59,10 @@ class JadwalDekorController extends Controller
 
     public function print(Request $request)
     {
-        // Laporan PDF mengambil data dekorasi yang sudah ada rinciannya
-        $query = JadwalDekor::with(['paket', 'jadwalPengantin']);
+        // UBAH: Query dari JadwalPengantin agar semua data muncul, 
+        // lalu load relasi jadwalDekor (biar bisa akses foto & deskripsi)
+        $query = \App\Models\JadwalPengantin::with(['paket', 'jadwalDekor']);
+
         if ($request->filled('bulan')) {
             $query->where('bulan', $request->bulan);
         }
@@ -68,10 +70,12 @@ class JadwalDekorController extends Controller
             $query->where('tahun', $request->tahun);
         }
 
-        $jadwal = $query->get();
+        $jadwal = $query->orderBy('tanggal_awal', 'asc')->get();
+
         $bulan = $request->bulan;
         $tahun = $request->tahun;
 
+        // Pastikan view yang dipanggil sesuai dengan lokasi file print.blade.php Anda
         return Pdf::loadView('owner.jadwaldekor.print', compact('jadwal', 'bulan', 'tahun'))
             ->setPaper('A4', 'portrait')
             ->stream('laporan-jadwal-dekorasi.pdf');

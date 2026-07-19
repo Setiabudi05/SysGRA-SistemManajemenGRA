@@ -1,90 +1,129 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <title>Jadwal Penugasan - {{ Auth::user()->name }}</title>
     <style>
-        @page { 
-            margin: 0.8cm; 
+        @page {
+            margin: 0.8cm;
             size: A4 portrait;
         }
-        body { 
-            font-family: 'Helvetica', 'Arial', sans-serif; 
-            font-size: 10px; 
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10px;
             color: #333;
             line-height: 1.5;
         }
+
         /* Header Style */
-        .header { 
-            text-align: center; 
-            border-bottom: 2px solid #435ebe; 
-            padding-bottom: 10px; 
-            margin-bottom: 20px; 
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #435ebe;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
-        .header h2 { 
-            text-transform: uppercase; 
-            color: #435ebe; 
-            margin: 0; 
+
+        .header h2 {
+            text-transform: uppercase;
+            color: #435ebe;
+            margin: 0;
             font-size: 18px;
             letter-spacing: 1px;
         }
-        .header p { 
-            margin: 4px 0 0; 
-            color: #555; 
+
+        .header p {
+            margin: 4px 0 0;
+            color: #555;
             font-size: 12px;
             font-weight: bold;
         }
 
         /* Table Style - Dibuat Mirip DataTables Dashboard */
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
+        table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 10px;
-            table-layout: fixed; /* Menjaga kolom tidak meluber */
+            table-layout: fixed;
+            /* Menjaga kolom tidak meluber */
         }
-        th { 
-            background-color: #f8f9fa; 
-            color: #444; 
-            text-transform: uppercase; 
-            padding: 12px 5px; 
+
+        th {
+            background-color: #f8f9fa;
+            color: #444;
+            text-transform: uppercase;
+            padding: 12px 5px;
             font-size: 9px;
             border: 1px solid #dee2e6;
             text-align: center;
         }
-        td { 
-            border: 1px solid #dee2e6; 
-            padding: 10px 6px; 
+
+        td {
+            border: 1px solid #dee2e6;
+            padding: 10px 6px;
             vertical-align: top;
-            word-wrap: break-word; /* Alamat panjang akan terpotong ke bawah */
+            word-wrap: break-word;
+            /* Alamat panjang akan terpotong ke bawah */
         }
-        tr:nth-child(even) { background-color: #fcfcfc; }
-        
+
+        tr:nth-child(even) {
+            background-color: #fcfcfc;
+        }
+
         /* Helper Classes */
-        .text-center { text-align: center; }
-        .fw-bold { font-weight: bold; }
-        .text-primary { color: #435ebe; }
+        .text-center {
+            text-align: center;
+        }
+
+        .fw-bold {
+            font-weight: bold;
+        }
+
+        .text-primary {
+            color: #435ebe;
+        }
 
         /* Column Sizing */
-        .col-no { width: 25px; }
-        .col-tgl { width: 85px; }
-        .col-nama { width: 100px; }
-        .col-alamat { width: 140px; }
-        .col-paket { width: 80px; }
-        .col-tim { width: auto; }
+        .col-no {
+            width: 25px;
+        }
+
+        .col-tgl {
+            width: 85px;
+        }
+
+        .col-nama {
+            width: 100px;
+        }
+
+        .col-alamat {
+            width: 140px;
+        }
+
+        .col-paket {
+            width: 80px;
+        }
+
+        .col-tim {
+            width: auto;
+        }
 
         /* Meta Info */
-        .meta-info { 
-            margin-bottom: 10px; 
-            width: 100%; 
+        .meta-info {
+            margin-bottom: 10px;
+            width: 100%;
         }
-        .meta-info td { 
-            border: none; 
-            padding: 0; 
-            font-size: 11px; 
+
+        .meta-info td {
+            border: none;
+            padding: 0;
+            font-size: 11px;
             background: none !important;
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h2>Jadwal Penugasan Kru</h2>
@@ -123,17 +162,7 @@
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td class="text-center fw-bold">
-                        {{ $row->tanggal_display }} 
-                        @php
-                            $bulanIndo = [
-                                'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
-                                'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
-                                'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September',
-                                'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
-                            ];
-                            echo $bulanIndo[$row->bulan] ?? $row->bulan;
-                        @endphp
-                        {{ $row->tahun }}
+                        {{ $row->tanggal_display }} <!-- Sudah diformat di controller -->
                     </td>
                     <td class="fw-bold text-primary">{{ $row->nama }}</td>
                     <td style="font-size: 9px;">{{ $row->alamat }}</td>
@@ -151,8 +180,10 @@
         </tbody>
     </table>
 
-    <div style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 10px; text-align: center; font-size: 9px; color: #777;">
+    <div
+        style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 10px; text-align: center; font-size: 9px; color: #777;">
         * Harap pastikan peralatan sudah siap dan sampai di lokasi tepat waktu sesuai arahan koordinator.
     </div>
 </body>
+
 </html>

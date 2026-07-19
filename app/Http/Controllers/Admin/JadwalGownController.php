@@ -41,16 +41,16 @@ class JadwalGownController extends Controller
             ->addColumn('gown_detail', function ($row) {
                 return $row->jadwalGown ? $row->jadwalGown->gown : '<span class="text-muted small">Belum diset</span>';
             })
+            // Di dalam method data(), ubah bagian ini:
             ->addColumn('action', function ($row) {
-                // Alur mengikuti Dekor: Mengarahkan ke edit ID Pengantin
                 $editUrl = route('admin.jadwalgown.edit', ['id' => $row->id]);
-                $gownId = $row->jadwalgown ? $row->jadwalGown->id : 'null';
+                $gownId = $row->jadwalGown ? $row->jadwalGown->id : 'null'; // pastikan relasi konsisten
                 return '
     <div class="d-flex justify-content-center gap-2">
         <a href="' . $editUrl . '" class="btn btn-warning btn-sm px-2 py-1 fw-bold shadow-sm">
             <i class="bi bi-pencil-square"></i> Edit
         </a>
-        <button onclick="hapusGown(' . $gownId . ')" class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
+        <button onclick="hapusJadwal(' . $gownId . ')" class="btn btn-danger btn-sm px-2 py-1 fw-bold shadow-sm">
             <i class="bi bi-trash"></i> Hapus
         </button>
     </div>';
@@ -98,7 +98,7 @@ class JadwalGownController extends Controller
             ]
         );
 
-        return redirect()->route('admin.jadwalgown.index')->with('success', 'Data berhasil diperbarui!');
+        return redirect()->route('admin.jadwalgown.index')->with('swal_success', 'Data berhasil diperbarui!');
     }
 
     /**

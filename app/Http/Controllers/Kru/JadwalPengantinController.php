@@ -44,8 +44,8 @@ class JadwalPengantinController extends Controller
         return $query->where(function ($q) use ($namaKru) {
             // Menggunakan TRIM untuk memastikan spasi tidak menggagalkan pencarian
             $q->whereRaw("TRIM(fg) = ?", [$namaKru])
-              ->orWhereRaw("TRIM(asisten) LIKE ?", ["%$namaKru%"])
-              ->orWhereRaw("TRIM(layos) = ?", [$namaKru]);
+                ->orWhereRaw("TRIM(asisten) LIKE ?", ["%$namaKru%"])
+                ->orWhereRaw("TRIM(layos) = ?", [$namaKru]);
         });
     }
 
@@ -64,10 +64,18 @@ class JadwalPengantinController extends Controller
             ->addIndexColumn()
             ->addColumn('tanggal_custom', function ($row) {
                 $bulanIndo = [
-                    'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
-                    'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
-                    'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September',
-                    'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
+                    'January' => 'Januari',
+                    'February' => 'Februari',
+                    'March' => 'Maret',
+                    'April' => 'April',
+                    'May' => 'Mei',
+                    'June' => 'Juni',
+                    'July' => 'Juli',
+                    'August' => 'Agustus',
+                    'September' => 'September',
+                    'October' => 'Oktober',
+                    'November' => 'November',
+                    'December' => 'Desember'
                 ];
                 return "{$this->formatTanggal($row)} " . ($bulanIndo[$row->bulan] ?? $row->bulan) . " {$row->tahun}";
             })
@@ -101,4 +109,35 @@ class JadwalPengantinController extends Controller
         }
         return $tglAwal;
     }
+    public function print(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $namaKru = trim($user->name);
+
+        $query = JadwalPengantin::with('paket')
+            ->where(function ($q) use ($namaKru) {
+                $q->whereRaw("TRIM(fg) = ?", [$namaKru])
+                    ->orWhereRaw("TRIM(asisten) LIKE ?", ["%$namaKru%"])
+                    ->orWhereRaw("TRIM(layos) = ?", [$namaKru]);
+            });
+
+        if ($request->filled('bulan')) $query->where('bulan', $request->bulan);
+        if ($request->filled('tahun')) $query->where('tahun', $request->tahun);
+
+        // Ambil data dan format tanggalnya
+        $jadwal = $query->orderBy('tanggal_awal', 'asc')->get()->map(function ($item) {
+            // Panggil fungsi formatTanggal yang sudah ada
+            $item->tanggal_display = $this->formatTanggal($item);
+            return $item;
+        });
+
+        $pdf = Pdf::loadView('kru.jadwal.print', [
+            'jadwal' => $jadwal,
+            'bulan' => $request->bulan ?? 'Semua',
+            'tahun' => $request->tahun ?? date('Y'),
+        ])->setPaper('A4', 'portrait');
+
+        return $pdf->stream('jadwal_kru_' . strtolower(str_replace(' ', '_', $namaKru)) . '.pdf');
     }
+}

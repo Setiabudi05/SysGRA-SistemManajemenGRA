@@ -222,24 +222,26 @@ class JadwalDekorController extends Controller
      */
     public function print(Request $request)
     {
-        $query = JadwalDekor::with(['paket', 'jadwalPengantin']);
+        // KUNCI: Query dari JadwalPengantin agar semua data muncul
+        $query = \App\Models\JadwalPengantin::with(['paket', 'jadwalDekor']);
 
+        // Filter berdasarkan bulan dan tahun yang ada di tabel JadwalPengantin
         if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
+            $query->where('bulan', trim($request->bulan));
         }
         if ($request->filled('tahun')) {
-            $query->where('tahun', $request->tahun);
+            $query->where('tahun', trim($request->tahun));
         }
 
-        $jadwal = $query->get();
+        $jadwal = $query->orderBy('tanggal_awal', 'asc')->get();
         $bulan = $request->bulan;
         $tahun = $request->tahun;
 
+        // Pastikan view Anda menggunakan variabel $jadwal yang berisi kumpulan JadwalPengantin
         return Pdf::loadView('admin.jadwaldekor.print', compact('jadwal', 'bulan', 'tahun'))
             ->setPaper('A4', 'portrait')
             ->stream('jadwal-dekorasi.pdf');
     }
-
     /**
      * Helper: Validasi Request.
      */

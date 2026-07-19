@@ -117,16 +117,25 @@
         }
 
         /* Utility Helpers */
-        .fw-bold { font-weight: bold; }
-        .text-center { text-align: center; }
-        .text-left { text-align: left; }
-        
+        .fw-bold {
+            font-weight: bold;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
         /* Gaya Khusus Gambar Foto di dalam Tabel */
         .img-cell {
             text-align: center;
             vertical-align: middle;
             padding: 5px !important;
         }
+
         .img-dekor {
             max-width: 70px;
             height: auto;
@@ -147,7 +156,7 @@
             </td>
         </tr>
     </table>
-    
+
     <div class="GarisKop"></div>
 
     <div class="report-title">JADWAL OPERASIONAL DEKORASI</div>
@@ -157,7 +166,7 @@
             <td style="width: 18%;">Periode Jadwal</td>
             <td style="width: 2%;">:</td>
             <td style="width: 30%;" class="fw-bold">{{ $bulan ?? 'Semua' }} {{ $tahun ?? '' }}</td>
-            
+
             <td style="width: 18%;">Tanggal Cetak</td>
             <td style="width: 2%;">:</td>
             <td style="width: 30%;">{{ date('d F Y') }}</td>
@@ -166,7 +175,7 @@
             <td>Jumlah Jadwal</td>
             <td>:</td>
             <td class="fw-bold">{{ $jadwal->count() }} Acara</td>
-            
+
             <td>Cetak Oleh</td>
             <td>:</td>
             <td class="fw-bold" style="text-transform: uppercase;">Admin (SysGRA)</td>
@@ -190,32 +199,27 @@
                 <tr>
                     <td class="text-center fw-bold">{{ $i + 1 }}</td>
                     <td class="text-center">
-                        @if($row->jadwalPengantin)
-                            {{ \Carbon\Carbon::parse($row->jadwalPengantin->tanggal_awal)->format('d') }}
-                            @if($row->jadwalPengantin->tanggal_akhir && $row->jadwalPengantin->tanggal_akhir != $row->jadwalPengantin->tanggal_awal)
-                                - {{ \Carbon\Carbon::parse($row->jadwalPengantin->tanggal_akhir)->format('d') }}
-                            @endif
-                            {{ $row->bulan }} {{ $tahun ?? '' }}
-                        @else
-                            -
+                        {{ \Carbon\Carbon::parse($row->tanggal_awal)->format('d') }}
+                        @if($row->tanggal_akhir && $row->tanggal_akhir != $row->tanggal_awal)
+                            - {{ \Carbon\Carbon::parse($row->tanggal_akhir)->format('d') }}
                         @endif
+                        {{ $row->bulan }} {{ $row->tahun }}
                     </td>
                     <td class="fw-bold">{{ $row->nama }}</td>
                     <td class="text-left">{{ $row->alamat }}</td>
                     <td class="text-left">{{ $row->paket?->nama_paket ?? '-' }}</td>
                     <td class="img-cell">
-                        @php
-                            $path = public_path('storage/' . $row->foto);
-                        @endphp
-                        {{-- Cek keberadaan file murni lokal sebelum di-convert --}}
-                        @if(file_exists($path) && $row->foto)
-                            {{-- Ganti tag img lama dengan konversi biner langsung di Controller agar aman dari pemblokiran --}}
-                            <img src="data:image/png;base64,{{ base64_encode(file_get_contents($path)) }}" class="img-dekor" alt="Foto Dekorasi">
+                        @if($row->jadwalDekor && $row->jadwalDekor->foto)
+                            @php $path = public_path('storage/' . $row->jadwalDekor->foto); @endphp
+                            @if(file_exists($path))
+                                <img src="data:image/png;base64,{{ base64_encode(file_get_contents($path)) }}" class="img-dekor"
+                                    alt="Foto">
+                            @endif
                         @else
-                            <span style="font-size: 8pt; color: #666;">-</span>
+                            -
                         @endif
                     </td>
-                    <td class="text-left">{{ $row->deskripsi ?? '-' }}</td>
+                    <td class="text-left">{{ $row->jadwalDekor->deskripsi ?? '-' }}</td>
                 </tr>
             @empty
                 <tr>

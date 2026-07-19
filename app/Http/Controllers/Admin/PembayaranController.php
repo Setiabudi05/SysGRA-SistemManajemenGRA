@@ -238,17 +238,25 @@ class PembayaranController extends Controller
      */
     public function cetakNota($id)
     {
-        $pembayaran = Pembayaran::with('booking')->findOrFail($id);
+        $pembayaran = Pembayaran::with(['booking.paket', 'booking.addOns'])->findOrFail($id);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.pembayaran.nota_pdf', compact('pembayaran'))
-            ->setOptions([
-                'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled' => true,
-                'chroot' => public_path()
-            ])
+        // 1. Ambil harga paket murni (bukan total_harga yang terakumulasi)
+        // Asumsi: Anda memiliki relasi 'paket' di model Booking
+        $hargaPaketMurni = (float)($pembayaran->booking->paket->harga ?? 0);
+
+        // 2. Hitung total add-ons dari relasi
+        $totalAddons = (float)$pembayaran->booking->addOns->sum('harga');
+
+        // 3. Subtotal untuk nota ini tetap sama, tapi komponennya kita pecah
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.pembayaran.nota_pdf', compact(
+            'pembayaran',
+            'hargaPaketMurni',
+            'totalAddons'
+        ))
+            ->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true])
             ->setPaper('A4', 'portrait');
 
-        return $pdf->stream("Nota_GRA_{$pembayaran->booking->customer_name}.pdf");
+        return $pdf->stream("Nota_GRA_{$pembayaran->booking->bride_groom_name}.pdf");
     }
 
     /**
