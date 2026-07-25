@@ -16,10 +16,10 @@ class Jadwal extends Model
     protected $fillable = [
         'user_id', 
         'event_date', 
-        'nama_event', 
+        'event_date',
         'tipe',         // Kolom baru untuk GRA/EKSTERNAL
         'nama_vendor',  // Kolom baru untuk nama vendor luar
-        'keterangan'    // Kolom baru untuk catatan
+        'keterangan',    // Kolom baru untuk catatan
     ];
 
     // Opsional: Jika ingin menambahkan relasi ke User (Kru)

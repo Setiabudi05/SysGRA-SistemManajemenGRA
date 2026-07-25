@@ -42,15 +42,26 @@
                 </div>
 
                 <div class="card-body p-4">
-                    <div class="row g-3 mb-4 pb-3 border-bottom border-light">
+                    <div class="row g-3 mb-4 pb-3 border-bottom border-light align-items-start">
                         <div class="col-md-3">
                             <small class="text-muted text-uppercase d-block fw-bold mb-1" style="font-size: 0.7rem;">Nama Pengantin</small>
                             <span class="fw-bold text-dark fs-5">{{ $hb->bride_groom_name }}</span>
                         </div>
                         <div class="col-md-3">
                             <small class="text-muted text-uppercase d-block fw-bold mb-1" style="font-size: 0.7rem;">Paket Pernikahan</small>
-                            <span class="fw-bold text-primary d-block">{{ $hb->package_name }}</span>
-                            <span class="text-secondary fw-semibold small">Rp {{ number_format((float) $hb->total_harga, 0, ',', '.') }}</span>
+                            
+                            {{-- NAMA PAKET & TOMBOL DETAIL (SEJAJAR PERSIS DI SAMPINGNYA) --}}
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold text-primary fs-6">{{ $hb->package_name }}</span>
+                                
+                                @if($hb->paket)
+                                    <button class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold text-nowrap shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#detailPaket{{ $hb->id }}" aria-expanded="false" style="font-size: 0.65rem; border-radius: 6px; height: 22px;">
+                                        <i class="bi bi-eye me-1"></i> Detail
+                                    </button>
+                                @endif
+                            </div>
+
+                            <span class="text-secondary fw-semibold small d-block">Rp {{ number_format((float) $hb->total_harga, 0, ',', '.') }}</span>
                             
                             {{-- Menampilkan daftar Add-ons --}}
                             @if($hb->addOns->isNotEmpty())
@@ -77,6 +88,76 @@
                             </span>
                         </div>
                     </div>
+
+                    {{-- AREA DETAIL FASILITAS PAKET (YANG MUNCUL KETIKA TOMBOL DETAIL DIKLIK) --}}
+                    @if($hb->paket)
+                        <div class="collapse mb-4" id="detailPaket{{ $hb->id }}">
+                            <div class="p-3 rounded-4 bg-light border shadow-sm">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-primary fw-bold text-uppercase" style="font-size: 0.75rem;">
+                                        <i class="bi bi-box-seam-fill me-1"></i> Rincian Fasilitas & Layanan Paket ({{ $hb->package_name }})
+                                    </span>
+                                    <button type="button" class="btn-close" data-bs-toggle="collapse" data-bs-target="#detailPaket{{ $hb->id }}" style="font-size: 0.6rem;"></button>
+                                </div>
+                                
+                                <div class="row g-2 small">
+                                    @if($hb->paket->makeup)
+                                        <div class="col-md-6">
+                                            <div class="p-2 rounded-3 bg-white border h-100">
+                                                <strong class="text-dark d-block mb-1" style="font-size: 0.7rem;"><i class="bi bi-brush text-danger me-1"></i> Makeup:</strong>
+                                                <span class="text-muted" style="font-size: 0.75rem; line-height: 1.3; display: block;">{{ $hb->paket->makeup }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    @if($hb->paket->dekorasi)
+                                        <div class="col-md-6">
+                                            <div class="p-2 rounded-3 bg-white border h-100">
+                                                <strong class="text-dark d-block mb-1" style="font-size: 0.7rem;"><i class="bi bi-flower1 text-success me-1"></i> Dekorasi:</strong>
+                                                <span class="text-muted" style="font-size: 0.75rem; line-height: 1.3; display: block;">{{ $hb->paket->dekorasi }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    @if($hb->paket->layos)
+                                        <div class="col-md-6">
+                                            <div class="p-2 rounded-3 bg-white border h-100">
+                                                <strong class="text-dark d-block mb-1" style="font-size: 0.7rem;"><i class="bi bi-people text-info me-1"></i> Layos:</strong>
+                                                <span class="text-muted" style="font-size: 0.75rem; line-height: 1.3; display: block;">{{ $hb->paket->layos }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    @if($hb->paket->dokumentasi)
+                                        <div class="col-md-6">
+                                            <div class="p-2 rounded-3 bg-white border h-100">
+                                                <strong class="text-dark d-block mb-1" style="font-size: 0.7rem;"><i class="bi bi-camera text-warning me-1"></i> Dokumentasi:</strong>
+                                                <span class="text-muted" style="font-size: 0.75rem; line-height: 1.3; display: block;">{{ $hb->paket->dokumentasi }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    @if($hb->paket->include)
+                                        <div class="col-12">
+                                            <div class="p-2 rounded-3 bg-white border">
+                                                <strong class="text-dark d-block mb-1" style="font-size: 0.7rem;"><i class="bi bi-check-circle text-primary me-1"></i> Include Fasilitas Lainnya:</strong>
+                                                <span class="text-muted" style="font-size: 0.75rem;">{{ $hb->paket->include }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    @if($hb->paket->bonus)
+                                        <div class="col-12">
+                                            <div class="p-2 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25">
+                                                <strong class="text-success d-block mb-1" style="font-size: 0.7rem;"><i class="bi bi-gift-fill me-1"></i> Bonus Spesial:</strong>
+                                                <span class="text-dark fw-semibold" style="font-size: 0.75rem;">{{ $hb->paket->bonus }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- TABEL HISTORI PEMBAYARAN --}}
                     <div class="table-responsive rounded-3 border">

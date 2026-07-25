@@ -7,18 +7,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Notifications\ResetPasswordNotificationCustom;
+use Illuminate\Database\Eloquent\SoftDeletes; // 1. TAMBAHKAN BARIS INI
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes; // 2. TAMBAHKAN SoftDeletes DI SINI
     
-
     protected $fillable = [
         'name',
         'jabatan',
         'email',
         'phone',
-        'address', // Tambahkan kolom alamat di sini (sesuaikan dengan nama kolom di database Anda)
+        'address', 
         'password',
         'role',
         'email_verified_at'
